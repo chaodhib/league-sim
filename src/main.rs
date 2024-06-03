@@ -1,9 +1,20 @@
 // use ddragon::{
 // cache_middleware::CacheMiddleware, models::Items, Client, ClientBuilder, ClientError,
 // };
-use std::{collections::HashMap, fs::File, io::BufReader, time::Instant};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::BufReader,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    time::Instant,
+};
 
+use crossbeam::queue::ArrayQueue;
 use itertools::Itertools;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -43,6 +54,24 @@ struct ChampionStats {
     pub attack_speed_per_level: f64,
 }
 
+struct Build {
+    damage: f64,
+    item_ids: Vec<u64>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct TopResult {
+    damage: f64,
+    item_names: Vec<String>,
+    cost: u64,
+}
+
+struct Damage {
+    min: f64,
+    max: f64,
+    avg: f64,
+}
+
 fn main() -> std::io::Result<()> {
     let global_start = Instant::now();
     // let client = ClientBuilder::new().build()?;
@@ -70,55 +99,93 @@ fn main() -> std::io::Result<()> {
 
     enrich_items_data(&mut items_map);
 
-    let level: u64 = 18;
+    let level: u64 = 15;
+    let gold_cap: u64 = 10_000;
     let def_stats: DefensiveStats = DefensiveStats {
-        armor: 250.0,
+        armor: 170.0,
         hp: 2600.0,
     };
 
-    let mut top_total_damage = 0.0;
-    let mut top_build: Vec<u64> = Vec::new();
-
-    let perms = item_ids.into_iter().combinations(5);
-    let mut progress = 0;
+    let perms = item_ids.into_iter().combinations(3);
+    let progress = Arc::new(AtomicUsize::new(0));
     let size: usize = perms.size_hint().1.unwrap();
-    // println!("perms.size_hint(): {:#?}", perms.size_hint());
+    let best_builds: ArrayQueue<Build> = ArrayQueue::new(size);
 
-    for selected_item_ids in perms.into_iter() {
+    perms.par_bridge().for_each(|selected_item_ids| {
         let now = Instant::now();
         let champ_stats: ChampionStats = get_base_champion_stats();
         let mut selected_items: Vec<&Item> = Vec::new();
-        println!("items:");
+        // println!("items:");
         for selected_item_id in selected_item_ids.iter() {
             let new_item = items_map.get(selected_item_id).unwrap();
-            println!("{:#?}", new_item.name);
+            // println!("{:#?}", new_item.name);
             selected_items.push(new_item);
         }
 
-        if has_item_group_duplicates(&selected_items) {
-            continue;
+        if has_item_group_duplicates(&selected_items) || above_gold_cap(&selected_items, &gold_cap)
+        {
+            return;
         }
 
         let burst_total_damage: f64 =
             simulate_burst(&selected_items, &champ_stats, &level, &def_stats);
-        println!("total_damage: {:#?}", burst_total_damage);
+        // println!("total_damage: {:#?}", burst_total_damage);
 
-        if burst_total_damage > top_total_damage {
-            top_total_damage = burst_total_damage;
-            top_build = selected_item_ids;
+        let build = Build {
+            damage: burst_total_damage,
+            item_ids: selected_item_ids.clone(),
+        };
+
+        let push_result = best_builds.push(build);
+        if push_result.is_err() {
+            panic!();
         }
 
-        progress += 1;
+        // if burst_total_damage > top_total_damage {
+        //     top_total_damage = burst_total_damage;
+        //     top_build = selected_item_ids;
+        // }
+
+        let current_progress = progress.fetch_add(1, Ordering::Relaxed);
         let elapsed = now.elapsed();
         println!("Elapsed: {:.2?}", elapsed);
-        println!("Progress: {:#?}%", progress as f64 / size as f64 * 100.0);
-    }
+        println!(
+            "Progress: {:#?}%",
+            current_progress as f64 / size as f64 * 100.0
+        );
+    });
 
-    println!("Top damage: {:#?}", top_total_damage);
-    println!("Top build:");
-    for item_id in top_build.iter() {
-        println!("{:#?}", items_map.get(item_id).unwrap().name);
-    }
+    let results = best_builds
+        .into_iter()
+        .sorted_by(|a, b| b.damage.partial_cmp(&a.damage).unwrap())
+        .take(50)
+        .map(|build| {
+            let item_names = build
+                .item_ids
+                .iter()
+                .map(|item_id| items_map.get(item_id).unwrap().name.clone())
+                .collect_vec();
+
+            let cost = build
+                .item_ids
+                .iter()
+                .map(|item_id| items_map.get(item_id).unwrap())
+                .fold(0, |acc, item| acc + item.total_cost);
+
+            TopResult {
+                damage: build.damage,
+                item_names,
+                cost,
+            }
+        })
+        .collect_vec();
+
+    println!("Top results: {:#?}", results);
+    // println!("Top damage: {:#?}", top_total_damage);
+    // println!("Top build:");
+    // for item_id in top_build.iter() {
+    //     println!("{:#?}", items_map.get(item_id).unwrap().name);
+    // }
 
     let global_elapsed = global_start.elapsed();
     println!("Elapsed: {:.2?}", global_elapsed);
@@ -308,7 +375,7 @@ fn apply_passives(offensive_stats: &mut OffensiveStats, items: &Vec<&Item>) {
     }
 }
 
-fn compute_q_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, level: &u64) -> f64 {
+fn compute_q_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, level: &u64) -> Damage {
     let spell_rank = match level {
         1..=3 => 1,
         4 => 2,
@@ -341,19 +408,33 @@ fn compute_q_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, leve
     base_damage += 2.31 * off_stats.ad_bonus;
 
     // println!("2 base_damage: {:#?}", base_damage);
-
-    return compute_mitigated_damage(def_stats, off_stats, base_damage);
+    let dmg = compute_mitigated_damage(def_stats, off_stats, base_damage);
+    return Damage {
+        min: dmg,
+        max: dmg,
+        avg: dmg,
+    };
 }
 
-fn compute_aa_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, _level: &u64) -> f64 {
+fn compute_aa_damage(
+    off_stats: &OffensiveStats,
+    def_stats: &DefensiveStats,
+    _level: &u64,
+) -> Damage {
     let base_damage: f64 = off_stats.ad_base + off_stats.ad_bonus;
+    let crit_damage: f64 = base_damage * 1.75;
+    let avg_damage: f64 = base_damage * (1.0 + off_stats.crit_chance * 0.75);
 
     // println!("1 base_damage: {:#?}", base_damage);
 
-    return compute_mitigated_damage(def_stats, off_stats, base_damage);
+    return Damage {
+        min: compute_mitigated_damage(def_stats, off_stats, base_damage),
+        max: compute_mitigated_damage(def_stats, off_stats, crit_damage),
+        avg: compute_mitigated_damage(def_stats, off_stats, avg_damage),
+    };
 }
 
-fn compute_w_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, level: &u64) -> f64 {
+fn compute_w_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, level: &u64) -> Damage {
     let spell_rank = match level {
         1 => 0,
         2..=7 => 1,
@@ -380,10 +461,16 @@ fn compute_w_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, leve
 
     // println!("2 base_damage: {:#?}", base_damage);
 
-    return compute_mitigated_damage(def_stats, off_stats, base_damage);
+    let dmg = compute_mitigated_damage(def_stats, off_stats, base_damage);
+
+    return Damage {
+        min: dmg,
+        max: dmg,
+        avg: dmg,
+    };
 }
 
-fn compute_e_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, level: &u64) -> f64 {
+fn compute_e_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, level: &u64) -> Damage {
     let spell_rank = match level {
         1..=2 => 0,
         3..=13 => 1,
@@ -410,7 +497,13 @@ fn compute_e_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, leve
 
     // println!("2 base_damage: {:#?}", base_damage);
 
-    return compute_mitigated_damage(def_stats, off_stats, base_damage);
+    let dmg = compute_mitigated_damage(def_stats, off_stats, base_damage);
+
+    return Damage {
+        min: dmg,
+        max: dmg,
+        avg: dmg,
+    };
 }
 
 fn compute_mitigated_damage(
@@ -442,12 +535,12 @@ fn simulate_spell(
     level: &u64,
     def_stats: &DefensiveStats,
     spell_name: &str,
-) -> f64 {
+) -> Damage {
     //     let source_stats = compute_source_champion_stats(level as f64, &selected_items);
     //     println!("level: {:#?}, source_stats: {:#?}", level, source_stats);
     // }
 
-    let damage: f64 = match spell_name {
+    let damage: Damage = match spell_name {
         "Q" => compute_q_damage(off_stats, def_stats, level),
         "AA" => compute_aa_damage(off_stats, def_stats, level),
         "W" => compute_w_damage(off_stats, def_stats, level),
@@ -527,5 +620,13 @@ fn has_item_group_duplicates(selected_items: &Vec<&Item>) -> bool {
     item_groups_present.dedup();
     let length_after_dedup = item_groups_present.len();
 
-    return length_before_dedup != length_after_dedup;
+    length_before_dedup != length_after_dedup
+}
+
+fn above_gold_cap(selected_items: &Vec<&Item>, gold_cap: &u64) -> bool {
+    let build_cost: u64 = selected_items
+        .iter()
+        .fold(0, |acc, item| acc + item.total_cost);
+
+    build_cost > *gold_cap
 }
