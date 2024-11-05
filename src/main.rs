@@ -5,6 +5,7 @@ use std::{
     collections::HashMap,
     fs::File,
     io::BufReader,
+    ops::{Add, Mul},
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
@@ -45,6 +46,7 @@ struct DefensiveStats {
     pub hp: f64,
 }
 
+#[derive(Clone)]
 struct ChampionStats {
     pub armor_flat: f64,
     pub armor_per_level: f64,
@@ -55,13 +57,15 @@ struct ChampionStats {
 }
 
 struct Build {
-    damage: f64,
+    damage: Damage,
     item_ids: Vec<u64>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 struct TopResult {
-    damage: f64,
+    min_damage: f64,
+    max_damage: f64,
+    avg_damage: f64,
     item_names: Vec<String>,
     cost: u64,
 }
@@ -70,6 +74,30 @@ struct Damage {
     min: f64,
     max: f64,
     avg: f64,
+}
+
+impl Add for Damage {
+    type Output = Self;
+
+    fn add(self, other: Damage) -> Damage {
+        Damage {
+            min: self.min + other.min,
+            max: self.max + other.max,
+            avg: self.avg + other.avg,
+        }
+    }
+}
+
+impl Mul<f64> for Damage {
+    type Output = Self;
+
+    fn mul(self, other: f64) -> Damage {
+        Damage {
+            min: self.min * other,
+            max: self.max * other,
+            avg: self.avg * other,
+        }
+    }
 }
 
 fn main() -> std::io::Result<()> {
@@ -99,21 +127,22 @@ fn main() -> std::io::Result<()> {
 
     enrich_items_data(&mut items_map);
 
-    let level: u64 = 15;
-    let gold_cap: u64 = 10_000;
+    let level: u64 = 18;
+    let gold_cap: u64 = 99_000;
     let def_stats: DefensiveStats = DefensiveStats {
-        armor: 170.0,
+        armor: 100.0,
         hp: 2600.0,
     };
 
-    let perms = item_ids.into_iter().combinations(3);
+    let perms = item_ids.into_iter().combinations(5);
     let progress = Arc::new(AtomicUsize::new(0));
     let size: usize = perms.size_hint().1.unwrap();
     let best_builds: ArrayQueue<Build> = ArrayQueue::new(size);
+    let base_champion_stats = get_base_champion_stats();
 
     perms.par_bridge().for_each(|selected_item_ids| {
         let now = Instant::now();
-        let champ_stats: ChampionStats = get_base_champion_stats();
+        let champ_stats: ChampionStats = base_champion_stats.clone();
         let mut selected_items: Vec<&Item> = Vec::new();
         // println!("items:");
         for selected_item_id in selected_item_ids.iter() {
@@ -127,7 +156,7 @@ fn main() -> std::io::Result<()> {
             return;
         }
 
-        let burst_total_damage: f64 =
+        let burst_total_damage: Damage =
             simulate_burst(&selected_items, &champ_stats, &level, &def_stats);
         // println!("total_damage: {:#?}", burst_total_damage);
 
@@ -157,7 +186,7 @@ fn main() -> std::io::Result<()> {
 
     let results = best_builds
         .into_iter()
-        .sorted_by(|a, b| b.damage.partial_cmp(&a.damage).unwrap())
+        .sorted_by(|a, b| b.damage.min.partial_cmp(&a.damage.min).unwrap())
         .take(50)
         .map(|build| {
             let item_names = build
@@ -173,7 +202,9 @@ fn main() -> std::io::Result<()> {
                 .fold(0, |acc, item| acc + item.total_cost);
 
             TopResult {
-                damage: build.damage,
+                min_damage: build.damage.min,
+                max_damage: build.damage.max,
+                avg_damage: build.damage.avg,
                 item_names,
                 cost,
             }
@@ -422,8 +453,12 @@ fn compute_aa_damage(
     _level: &u64,
 ) -> Damage {
     let base_damage: f64 = off_stats.ad_base + off_stats.ad_bonus;
-    let crit_damage: f64 = base_damage * 1.75;
-    let avg_damage: f64 = base_damage * (1.0 + off_stats.crit_chance * 0.75);
+    let crit_damage: f64 = if off_stats.crit_chance > 0.0 {
+        base_damage * 1.75
+    } else {
+        base_damage
+    };
+    let avg_damage: f64 = base_damage * (1.0 + off_stats.crit_chance * 0.75 / 100.0);
 
     // println!("1 base_damage: {:#?}", base_damage);
 
@@ -558,7 +593,7 @@ fn simulate_burst(
     champ_stats: &ChampionStats,
     level: &u64,
     def_stats: &DefensiveStats,
-) -> f64 {
+) -> Damage {
     let off_stats: OffensiveStats =
         compute_source_champion_stats(champ_stats, *level as f64, &selected_items);
     // println!("level: {:#?}, source_stats: {:#?}", level, off_stats);
@@ -568,7 +603,7 @@ fn simulate_burst(
     let w_damage = simulate_spell(&off_stats, level, def_stats, "W");
     let e_damage = simulate_spell(&off_stats, level, def_stats, "E");
 
-    let burst_total_damage: f64 = 1.0 * q_damage + 1.0 * aa_damage + w_damage + e_damage;
+    let burst_total_damage: Damage = q_damage * 1.0 + aa_damage * 1.0 + w_damage + e_damage;
 
     return burst_total_damage;
 }
