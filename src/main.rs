@@ -28,6 +28,10 @@ struct Item {
     item_groups: Vec<String>,
 }
 
+struct SpellData {
+    spellKey: String,
+}
+
 // see https://leagueoflegends.fandom.com/wiki/Champion_statistic?so=search#Offensive
 #[derive(Serialize, Deserialize, Debug)]
 struct OffensiveStats {
@@ -70,6 +74,7 @@ struct TopResult {
     cost: u64,
 }
 
+#[derive(Debug)]
 struct Damage {
     min: f64,
     max: f64,
@@ -121,18 +126,26 @@ fn main() -> std::io::Result<()> {
     ];
 
     let mut items_map: HashMap<u64, Item> = pull_item_stats(&item_ids);
-    // for ele in items.iter() {
-    //     println!("{:#?}", ele);
-    // }
 
     enrich_items_data(&mut items_map);
+    for ele in items_map.iter() {
+        println!("{:#?}", ele);
+    }
 
-    let level: u64 = 18;
-    let gold_cap: u64 = 99_000;
+    // let mut spell_stats: HashMap<&str, SpellData> = pull_spell_stats();
+
+    let level: u64 = 6;
+    let gold_cap: u64 = 20000;
     let def_stats: DefensiveStats = DefensiveStats {
         armor: 100.0,
         hp: 2600.0,
     };
+
+    let mut config: HashMap<String, String> = HashMap::new();
+    config.insert(
+        "CHAMPION_KHAZIX_ISOLATED_TARGET".to_string(),
+        "TRUE".to_string(),
+    );
 
     let perms = item_ids.into_iter().combinations(5);
     let progress = Arc::new(AtomicUsize::new(0));
@@ -140,7 +153,8 @@ fn main() -> std::io::Result<()> {
     let best_builds: ArrayQueue<Build> = ArrayQueue::new(size);
     let base_champion_stats = get_base_champion_stats();
 
-    perms.par_bridge().for_each(|selected_item_ids| {
+    // perms.par_bridge().for_each(|selected_item_ids| {
+    perms.for_each(|selected_item_ids| {
         let now = Instant::now();
         let champ_stats: ChampionStats = base_champion_stats.clone();
         let mut selected_items: Vec<&Item> = Vec::new();
@@ -156,9 +170,10 @@ fn main() -> std::io::Result<()> {
             return;
         }
 
+        println!("selected_items: {:#?}", selected_items);
         let burst_total_damage: Damage =
-            simulate_burst(&selected_items, &champ_stats, &level, &def_stats);
-        // println!("total_damage: {:#?}", burst_total_damage);
+            simulate_burst(&selected_items, &champ_stats, &level, &def_stats, &config);
+        println!("total_damage: {:#?}", burst_total_damage);
 
         let build = Build {
             damage: burst_total_damage,
@@ -187,7 +202,7 @@ fn main() -> std::io::Result<()> {
     let results = best_builds
         .into_iter()
         .sorted_by(|a, b| b.damage.min.partial_cmp(&a.damage.min).unwrap())
-        .take(50)
+        .take(3)
         .map(|build| {
             let item_names = build
                 .item_ids
@@ -283,57 +298,62 @@ fn main() -> std::io::Result<()> {
 // }
 
 fn pull_item_stats(item_ids: &Vec<u64>) -> HashMap<u64, Item> {
-    let file = File::open("source_3/items_formatted.json").unwrap();
+    let file = File::open("source_2/items_formatted.json").unwrap();
     let reader: BufReader<File> = BufReader::new(file);
     let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
 
     let mut map = HashMap::new();
+    let mut sanity_checker: Vec<String> = Vec::new();
     for ele in json_input.iter() {
-        let item_id = ele.1["id"].as_u64().unwrap();
+        let item_id = ele.1["itemID"].as_u64().unwrap_or_default();
         if !item_ids.contains(&item_id) {
             continue;
         }
 
         let stats = OffensiveStats {
-            ability_haste: ele.1["stats"]["abilityHaste"]["flat"].as_f64().unwrap_or(
-                ele.1["stats"]["ability_haste"]["flat"]
-                    .as_f64()
-                    .unwrap_or_default(),
-            ),
+            ability_haste: ele.1["mAbilityHasteMod"].as_f64().unwrap_or_default(),
             ad_base: 0.0,
-            ad_bonus: ele.1["stats"]["attackDamage"]["flat"].as_f64().unwrap_or(
-                ele.1["stats"]["attack_damage"]["flat"]
-                    .as_f64()
-                    .unwrap_or_default(),
-            ),
-            armor_penetration_perc: ele.1["stats"]["armorPenetration"]["percent"]
-                .as_f64()
-                .unwrap_or(
-                    ele.1["stats"]["armor_penetration"]["percent"]
-                        .as_f64()
-                        .unwrap_or_default(),
-                ),
-            crit_chance: ele.1["stats"]["criticalStrikeChance"]["percent"]
-                .as_f64()
-                .unwrap_or(
-                    ele.1["stats"]["critical_strike_chance"]["percent"]
-                        .as_f64()
-                        .unwrap_or_default(),
-                ),
-            lethality: ele.1["stats"]["lethality"]["flat"]
+            ad_bonus: ele.1["mFlatPhysicalDamageMod"].as_f64().unwrap_or_default(),
+            armor_penetration_perc: ele.1["mPercentArmorPenetrationMod"]
                 .as_f64()
                 .unwrap_or_default(),
+            crit_chance: ele.1["mFlatCritChanceMod"].as_f64().unwrap_or_default(),
+            lethality: ele.1["PhysicalLethality"].as_f64().unwrap_or_default(),
         };
 
+        let mut item_groups = Vec::new();
+
+        let item_groups_source = ele.1["mItemGroups"].as_array().unwrap();
+        for item_group_source in item_groups_source.iter() {
+            let new_value = item_group_source.as_str().unwrap();
+            if new_value != "Items/ItemGroups/Default" {
+                item_groups.push(new_value.to_string());
+            }
+
+            if new_value.starts_with("{") {
+                sanity_checker.push(new_value.to_string());
+            }
+        }
+
         let item = Item {
-            id: ele.1["id"].as_u64().unwrap(),
-            name: ele.1["name"].as_str().unwrap().to_string(),
-            total_cost: ele.1["shop"]["prices"]["total"].as_u64().unwrap(),
+            id: ele.1["itemID"].as_u64().unwrap(),
+            name: "".to_string(),
+            total_cost: 0,
             offensive_stats: stats,
-            item_groups: Vec::new(),
+            item_groups: item_groups,
         };
 
         map.insert(item.id, item);
+    }
+
+    // ensure that the unknown hashes amongst the item groups are not causing issues
+    sanity_checker.sort();
+    let length_before_dedup = sanity_checker.len();
+    sanity_checker.dedup();
+    let length_after_dedup = sanity_checker.len();
+    if length_before_dedup != length_after_dedup {
+        println!("{:#?}", sanity_checker);
+        panic!();
     }
 
     return map;
@@ -372,25 +392,24 @@ fn compute_source_champion_stats(
 }
 
 fn get_base_champion_stats() -> ChampionStats {
-    let file = File::open("source_3/champions_formatted.json").unwrap();
+    let file = File::open("data/champions/khazix.bin_formated.json").unwrap();
     let reader: BufReader<File> = BufReader::new(file);
     let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
-    let character = json_input.get("Khazix").unwrap();
+    let root = json_input
+        .get("Characters/Khazix/CharacterRecords/Root")
+        .unwrap();
 
     return ChampionStats {
-        armor_flat: character["stats"]["armor"]["flat"].as_f64().unwrap(),
-        armor_per_level: character["stats"]["armor"]["perLevel"].as_f64().unwrap(),
-        attack_damage_flat: character["stats"]["attackDamage"]["flat"].as_f64().unwrap(),
-        attack_damage_per_level: character["stats"]["attackDamage"]["perLevel"]
-            .as_f64()
-            .unwrap(),
-        attack_speed_flat: character["stats"]["attackSpeed"]["flat"].as_f64().unwrap(),
-        attack_speed_per_level: character["stats"]["attackSpeed"]["perLevel"]
-            .as_f64()
-            .unwrap(),
+        armor_flat: root["baseArmor"].as_f64().unwrap(),
+        armor_per_level: root["armorPerLevel"].as_f64().unwrap(),
+        attack_damage_flat: root["baseDamage"].as_f64().unwrap(),
+        attack_damage_per_level: root["damagePerLevel"].as_f64().unwrap(),
+        attack_speed_flat: root["attackSpeed"].as_f64().unwrap(),
+        attack_speed_per_level: root["attackSpeedPerLevel"].as_f64().unwrap(),
     };
 }
 
+// source: https://leagueoflegends.fandom.com/wiki/Champion_statistic#Increasing_Statistics
 fn stat_increase(per_level: f64, level: f64) -> f64 {
     return per_level * (level - 1.0) * (0.7025 + 0.0175 * (level - 1.0));
 }
@@ -406,8 +425,20 @@ fn apply_passives(offensive_stats: &mut OffensiveStats, items: &Vec<&Item>) {
     }
 }
 
-fn compute_q_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, level: &u64) -> Damage {
-    let spell_rank = match level {
+fn compute_q_damage(
+    off_stats: &OffensiveStats,
+    def_stats: &DefensiveStats,
+    level: &u64,
+    config: &HashMap<String, String>,
+) -> Damage {
+    // let isolated_target: bool = config
+    //     .get("CHAMPION_KHAZIX_ISOLATED_TARGET")
+    //     .unwrap_or(&"TRUE".to_string())
+    //     == "TRUE";
+
+    let isolated_target: bool = true;
+
+    let spell_rank: u64 = match level {
         1..=3 => 1,
         4 => 2,
         5..=6 => 3,
@@ -415,31 +446,36 @@ fn compute_q_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, leve
         9..=18 => 5,
         0_u64 | 19_u64..=u64::MAX => panic!(),
     };
-    // let base_damage = match spell_rank {
-    //     1 => 70.0,
-    //     2 => 95.0,
-    //     3 => 120.0,
-    //     4 => 145.0,
-    //     5 => 170.0,
-    //     0_u64 | 6_u64..=u64::MAX => panic!(),
-    // };
 
-    let mut base_damage: f64 = match spell_rank {
-        1 => 147.0,
-        2 => 199.5,
-        3 => 252.0,
-        4 => 304.5,
-        5 => 357.0,
+    let base_damage: f64 = match spell_rank {
+        1 => 80.0,
+        2 => 105.0,
+        3 => 130.0,
+        4 => 155.0,
+        5 => 180.0,
         0_u64 | 6_u64..=u64::MAX => panic!(),
     };
 
-    // println!("1 base_damage: {:#?}", base_damage);
+    println!("1 base_damage: {:#?}", base_damage);
 
     // include AD ratio
-    base_damage += 2.31 * off_stats.ad_bonus;
+    const BONUS_RATIO: f64 = 1.1;
+    let bonus_damage: f64 = BONUS_RATIO * off_stats.ad_bonus;
+    println!("2 bonus_damage: {:#?}", bonus_damage);
 
-    // println!("2 base_damage: {:#?}", base_damage);
-    let dmg = compute_mitigated_damage(def_stats, off_stats, base_damage);
+    let mut total_damage: f64 = base_damage + bonus_damage;
+    println!("3 total_damage: {:#?}", total_damage);
+
+    if isolated_target {
+        const ISOLATED_TARGET_BONUS: f64 = 1.1;
+        total_damage *= 1.0 + ISOLATED_TARGET_BONUS;
+    }
+    println!("4 total_damage after iso bonus: {:#?}", total_damage);
+
+    let dmg = compute_mitigated_damage(def_stats, off_stats, total_damage);
+
+    println!("5 total_damage post mitigation: {:#?}", dmg);
+
     return Damage {
         min: dmg,
         max: dmg,
@@ -458,7 +494,7 @@ fn compute_aa_damage(
     } else {
         base_damage
     };
-    let avg_damage: f64 = base_damage * (1.0 + off_stats.crit_chance * 0.75 / 100.0);
+    let avg_damage: f64 = base_damage * (1.0 + off_stats.crit_chance * 0.75);
 
     // println!("1 base_damage: {:#?}", base_damage);
 
@@ -553,7 +589,7 @@ fn compute_mitigated_damage(
     // todo: add armor reduction
 
     // include armor penetration %
-    armor *= 1.0 - off_stats.armor_penetration_perc / 100.0;
+    armor *= 1.0 - off_stats.armor_penetration_perc;
 
     // println!("4 armor: {:#?}", armor);
 
@@ -570,13 +606,14 @@ fn simulate_spell(
     level: &u64,
     def_stats: &DefensiveStats,
     spell_name: &str,
+    config: &HashMap<String, String>,
 ) -> Damage {
     //     let source_stats = compute_source_champion_stats(level as f64, &selected_items);
     //     println!("level: {:#?}, source_stats: {:#?}", level, source_stats);
     // }
 
     let damage: Damage = match spell_name {
-        "Q" => compute_q_damage(off_stats, def_stats, level),
+        "Q" => compute_q_damage(off_stats, def_stats, level, config),
         "AA" => compute_aa_damage(off_stats, def_stats, level),
         "W" => compute_w_damage(off_stats, def_stats, level),
         "E" => compute_e_damage(off_stats, def_stats, level),
@@ -593,15 +630,20 @@ fn simulate_burst(
     champ_stats: &ChampionStats,
     level: &u64,
     def_stats: &DefensiveStats,
+    config: &HashMap<String, String>,
 ) -> Damage {
     let off_stats: OffensiveStats =
         compute_source_champion_stats(champ_stats, *level as f64, &selected_items);
-    // println!("level: {:#?}, source_stats: {:#?}", level, off_stats);
+    println!("level: {:#?}, source_stats: {:#?}", level, off_stats);
 
-    let q_damage = simulate_spell(&off_stats, level, def_stats, "Q");
-    let aa_damage = simulate_spell(&off_stats, level, def_stats, "AA");
-    let w_damage = simulate_spell(&off_stats, level, def_stats, "W");
-    let e_damage = simulate_spell(&off_stats, level, def_stats, "E");
+    let q_damage = simulate_spell(&off_stats, level, def_stats, "Q", config);
+    let aa_damage = simulate_spell(&off_stats, level, def_stats, "AA", config);
+    let w_damage = simulate_spell(&off_stats, level, def_stats, "W", config);
+    let e_damage = simulate_spell(&off_stats, level, def_stats, "E", config);
+    println!("q_damage: {:#?}", q_damage);
+    println!("aa_damage: {:#?}", aa_damage);
+    println!("w_damage: {:#?}", w_damage);
+    println!("e_damage: {:#?}", e_damage);
 
     let burst_total_damage: Damage = q_damage * 1.0 + aa_damage * 1.0 + w_damage + e_damage;
 
@@ -609,38 +651,44 @@ fn simulate_burst(
 }
 
 fn enrich_items_data(items_map: &mut HashMap<u64, Item>) {
-    let file = File::open("source_2/items_formatted.json").unwrap();
+    let file = File::open("source_1/items_formatted.json").unwrap();
     let reader: BufReader<File> = BufReader::new(file);
-    let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
+    let json_input: Vec<Value> = serde_json::from_reader(reader).unwrap();
 
-    let mut sanity_checker: Vec<String> = Vec::new();
+    // let mut sanity_checker: Vec<String> = Vec::new();
 
     for ele in items_map.iter_mut() {
-        let item_key = format!("Items/{}", ele.0);
-        let item_data = json_input.get(&item_key).unwrap();
+        // let item_key = format!("Items/{}", ele.0);
+        let item_data = json_input
+            .iter()
+            .find(|&x| &x["id"].as_u64().unwrap_or_default() == ele.0)
+            .unwrap();
 
-        let item_groups = item_data["mItemGroups"].as_array().unwrap();
-        for item_group_source in item_groups.iter() {
-            let new_value = item_group_source.as_str().unwrap();
-            if new_value != "Items/ItemGroups/Default" {
-                ele.1.item_groups.push(new_value.to_string());
-            }
+        ele.1.name = item_data["name"].as_str().unwrap().to_string();
+        ele.1.total_cost = item_data["priceTotal"].as_u64().unwrap();
 
-            if new_value.starts_with("{") {
-                sanity_checker.push(new_value.to_string());
-            }
-        }
+        // let item_groups = item_data["mItemGroups"].as_array().unwrap();
+        // for item_group_source in item_groups.iter() {
+        //     let new_value = item_group_source.as_str().unwrap();
+        //     if new_value != "Items/ItemGroups/Default" {
+        //         ele.1.item_groups.push(new_value.to_string());
+        //     }
+
+        //     if new_value.starts_with("{") {
+        //         sanity_checker.push(new_value.to_string());
+        //     }
+        // }
     }
 
-    // ensure that the unknown hashes amongst the item groups are not causing issues
-    sanity_checker.sort();
-    let length_before_dedup = sanity_checker.len();
-    sanity_checker.dedup();
-    let length_after_dedup = sanity_checker.len();
-    if length_before_dedup != length_after_dedup {
-        println!("{:#?}", sanity_checker);
-        panic!();
-    }
+    // // ensure that the unknown hashes amongst the item groups are not causing issues
+    // sanity_checker.sort();
+    // let length_before_dedup = sanity_checker.len();
+    // sanity_checker.dedup();
+    // let length_after_dedup = sanity_checker.len();
+    // if length_before_dedup != length_after_dedup {
+    //     println!("{:#?}", sanity_checker);
+    //     panic!();
+    // }
 }
 
 fn has_item_group_duplicates(selected_items: &Vec<&Item>) -> bool {
