@@ -1,10 +1,5 @@
-// use ddragon::{
-// cache_middleware::CacheMiddleware, models::Items, Client, ClientBuilder, ClientError,
-// };
 use std::{
     collections::HashMap,
-    fs::File,
-    io::BufReader,
     ops::{Add, Mul},
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -13,59 +8,28 @@ use std::{
     time::Instant,
 };
 
+use abilities::SpellData;
+use champions::ChampionStats;
 use crossbeam::queue::ArrayQueue;
 use itertools::Itertools;
 use rayon::iter::{ParallelBridge, ParallelIterator};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Item {
-    name: String,
-    id: u64,
-    total_cost: u64,
-    offensive_stats: OffensiveStats,
-    item_groups: Vec<String>,
-}
+mod abilities;
+mod champions;
+mod game_data;
+mod items;
 
-struct SpellData {
-    spellKey: String,
-}
-
-// see https://leagueoflegends.fandom.com/wiki/Champion_statistic?so=search#Offensive
-#[derive(Serialize, Deserialize, Debug)]
-struct OffensiveStats {
-    pub ability_haste: f64,
-    pub ad_base: f64,
-    pub ad_bonus: f64,
-    pub lethality: f64,
-    pub armor_penetration_perc: f64,
-    pub crit_chance: f64,
-}
-
-// see https://leagueoflegends.fandom.com/wiki/Champion_statistic?so=search#Defensive
-#[derive(Serialize, Deserialize, Debug)]
-struct DefensiveStats {
-    pub armor: f64,
-    pub hp: f64,
-}
-
-#[derive(Clone)]
-struct ChampionStats {
-    pub armor_flat: f64,
-    pub armor_per_level: f64,
-    pub attack_damage_flat: f64,
-    pub attack_damage_per_level: f64,
-    pub attack_speed_flat: f64,
-    pub attack_speed_per_level: f64,
-}
+use abilities::*;
+use champions::*;
+use game_data::*;
+use items::*;
 
 struct Build {
     damage: Damage,
     item_ids: Vec<u64>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 struct TopResult {
     min_damage: f64,
     max_damage: f64,
@@ -119,20 +83,25 @@ fn main() -> std::io::Result<()> {
     //     }
     // }
 
+    let base_champion_stats: ChampionStats = get_base_champion_stats();
+    // println!("base_champion_stats {:#?}", base_champion_stats);
+
     let item_ids: Vec<u64> = vec![
         //3158,
         3142, 6701, 3814, 6694, 6698, 6692, 3156, 3179, 6697, 6333, 3036, 3033, 6609, 3071, 6676,
         3072,
     ];
 
-    let mut items_map: HashMap<u64, Item> = pull_item_stats(&item_ids);
+    let mut items_map: HashMap<u64, Item> = items::pull_item_stats(&item_ids);
 
     enrich_items_data(&mut items_map);
-    for ele in items_map.iter() {
-        println!("{:#?}", ele);
-    }
+    // for ele in items_map.iter() {
+    //     println!("{:#?}", ele);
+    // }
 
-    // let mut spell_stats: HashMap<&str, SpellData> = pull_spell_stats();
+    let abilities: Vec<SpellData> = pull_abilities_data();
+
+    // println!("abilities_data: {:#?}", abilities);
 
     let level: u64 = 6;
     let gold_cap: u64 = 20000;
@@ -151,7 +120,6 @@ fn main() -> std::io::Result<()> {
     let progress = Arc::new(AtomicUsize::new(0));
     let size: usize = perms.size_hint().1.unwrap();
     let best_builds: ArrayQueue<Build> = ArrayQueue::new(size);
-    let base_champion_stats = get_base_champion_stats();
 
     // perms.par_bridge().for_each(|selected_item_ids| {
     perms.for_each(|selected_item_ids| {
@@ -171,8 +139,14 @@ fn main() -> std::io::Result<()> {
         }
 
         println!("selected_items: {:#?}", selected_items);
-        let burst_total_damage: Damage =
-            simulate_burst(&selected_items, &champ_stats, &level, &def_stats, &config);
+        let burst_total_damage: Damage = simulate_burst(
+            &selected_items,
+            &champ_stats,
+            &level,
+            &def_stats,
+            &config,
+            &abilities,
+        );
         println!("total_damage: {:#?}", burst_total_damage);
 
         let build = Build {
@@ -270,174 +244,40 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-// fn has_desireable_stats(item: &Value) -> bool {
-//     return (not_nul(&item, "abilityHaste")
-//         || not_nul(&item, "armorPenetration")
-//         || not_nul(&item, "attackDamage")
-//         // || not_nul(&item, "cooldownReduction")
-//         || not_nul(&item, "lethality"))
-//         && !not_nul(&item, "abilityPower")
-//         && !not_nul(&item, "criticalStrikeChance")
-//         && !not_nul(&item, "attackSpeed");
-// }
+fn compute_ability_damage(
+    off_stats: &OffensiveStats,
+    def_stats: &DefensiveStats,
+    ability: &SpellData,
+    // config: &HashMap<String, String>,
+    spell_rank: &u64,
+) -> Damage {
+    let base_damage: &f64 = ability.ad_damage.get(&spell_rank).unwrap();
+    // println!("1 base_damage: {:#?}", base_damage);
 
-// fn not_nul(item: &Value, stat_category: &str) -> bool {
-//     let values = item["stats"].clone()[stat_category].clone();
-//     match values.as_object() {
-//         Some(category) => {
-//             for ele in category.iter() {
-//                 if ele.1.as_number().unwrap().as_f64() != Some(0.0) {
-//                     // println!("item: {:#?}", item);
-//                     return true;
-//                 }
-//             }
-//         }
-//         None => (),
-//     };
-//     return false;
-// }
+    // include AD ratio
+    let bonus_damage: f64 = ability.coefficient_ad * off_stats.ad_bonus;
+    // println!("2 bonus_damage: {:#?}", bonus_damage);
 
-fn pull_item_stats(item_ids: &Vec<u64>) -> HashMap<u64, Item> {
-    let file = File::open("source_2/items_formatted.json").unwrap();
-    let reader: BufReader<File> = BufReader::new(file);
-    let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
+    let total_damage: f64 = base_damage + bonus_damage;
+    // println!("3 total_damage: {:#?}", total_damage);
 
-    let mut map = HashMap::new();
-    let mut sanity_checker: Vec<String> = Vec::new();
-    for ele in json_input.iter() {
-        let item_id = ele.1["itemID"].as_u64().unwrap_or_default();
-        if !item_ids.contains(&item_id) {
-            continue;
-        }
+    let dmg = compute_mitigated_damage(def_stats, off_stats, total_damage);
 
-        let stats = OffensiveStats {
-            ability_haste: ele.1["mAbilityHasteMod"].as_f64().unwrap_or_default(),
-            ad_base: 0.0,
-            ad_bonus: ele.1["mFlatPhysicalDamageMod"].as_f64().unwrap_or_default(),
-            armor_penetration_perc: ele.1["mPercentArmorPenetrationMod"]
-                .as_f64()
-                .unwrap_or_default(),
-            crit_chance: ele.1["mFlatCritChanceMod"].as_f64().unwrap_or_default(),
-            lethality: ele.1["PhysicalLethality"].as_f64().unwrap_or_default(),
-        };
+    // println!("5 total_damage post mitigation: {:#?}", dmg);
 
-        let mut item_groups = Vec::new();
-
-        let item_groups_source = ele.1["mItemGroups"].as_array().unwrap();
-        for item_group_source in item_groups_source.iter() {
-            let new_value = item_group_source.as_str().unwrap();
-            if new_value != "Items/ItemGroups/Default" {
-                item_groups.push(new_value.to_string());
-            }
-
-            if new_value.starts_with("{") {
-                sanity_checker.push(new_value.to_string());
-            }
-        }
-
-        let item = Item {
-            id: ele.1["itemID"].as_u64().unwrap(),
-            name: "".to_string(),
-            total_cost: 0,
-            offensive_stats: stats,
-            item_groups: item_groups,
-        };
-
-        map.insert(item.id, item);
-    }
-
-    // ensure that the unknown hashes amongst the item groups are not causing issues
-    sanity_checker.sort();
-    let length_before_dedup = sanity_checker.len();
-    sanity_checker.dedup();
-    let length_after_dedup = sanity_checker.len();
-    if length_before_dedup != length_after_dedup {
-        println!("{:#?}", sanity_checker);
-        panic!();
-    }
-
-    return map;
-}
-
-fn compute_source_champion_stats(
-    champ_stats: &ChampionStats,
-    level: f64,
-    // runes: HashMap<String, String>,
-    items: &Vec<&Item>,
-) -> OffensiveStats {
-    // see https://leagueoflegends.fandom.com/wiki/Champion_statistic
-    let mut offensive_stats: OffensiveStats = OffensiveStats {
-        ability_haste: items
-            .iter()
-            .fold(0.0, |acc, x| acc + x.offensive_stats.ability_haste),
-        ad_base: champ_stats.attack_damage_flat
-            + stat_increase(champ_stats.attack_damage_per_level, level),
-        ad_bonus: items
-            .iter()
-            .fold(0.0, |acc, x| acc + x.offensive_stats.ad_bonus),
-        armor_penetration_perc: items
-            .iter()
-            .fold(0.0, |acc, x| acc + x.offensive_stats.armor_penetration_perc),
-        crit_chance: items
-            .iter()
-            .fold(0.0, |acc, x| acc + x.offensive_stats.crit_chance),
-        lethality: items
-            .iter()
-            .fold(0.0, |acc, x| acc + x.offensive_stats.lethality),
+    return Damage {
+        min: dmg,
+        max: dmg,
+        avg: dmg,
     };
-
-    apply_passives(&mut offensive_stats, items);
-
-    return offensive_stats;
-}
-
-fn get_base_champion_stats() -> ChampionStats {
-    let file = File::open("data/champions/khazix.bin_formated.json").unwrap();
-    let reader: BufReader<File> = BufReader::new(file);
-    let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
-    let root = json_input
-        .get("Characters/Khazix/CharacterRecords/Root")
-        .unwrap();
-
-    return ChampionStats {
-        armor_flat: root["baseArmor"].as_f64().unwrap(),
-        armor_per_level: root["armorPerLevel"].as_f64().unwrap(),
-        attack_damage_flat: root["baseDamage"].as_f64().unwrap(),
-        attack_damage_per_level: root["damagePerLevel"].as_f64().unwrap(),
-        attack_speed_flat: root["attackSpeed"].as_f64().unwrap(),
-        attack_speed_per_level: root["attackSpeedPerLevel"].as_f64().unwrap(),
-    };
-}
-
-// source: https://leagueoflegends.fandom.com/wiki/Champion_statistic#Increasing_Statistics
-fn stat_increase(per_level: f64, level: f64) -> f64 {
-    return per_level * (level - 1.0) * (0.7025 + 0.0175 * (level - 1.0));
-}
-
-fn apply_passives(offensive_stats: &mut OffensiveStats, items: &Vec<&Item>) {
-    // todo: change this in a callback fashion
-    if items
-        .iter()
-        .find(|&elem| elem.name == "Serylda's Grudge".to_string())
-        .is_some()
-    {
-        offensive_stats.armor_penetration_perc += 20.0 + offensive_stats.lethality * 0.11;
-    }
 }
 
 fn compute_q_damage(
     off_stats: &OffensiveStats,
     def_stats: &DefensiveStats,
     level: &u64,
-    config: &HashMap<String, String>,
+    ability: &SpellData,
 ) -> Damage {
-    // let isolated_target: bool = config
-    //     .get("CHAMPION_KHAZIX_ISOLATED_TARGET")
-    //     .unwrap_or(&"TRUE".to_string())
-    //     == "TRUE";
-
-    let isolated_target: bool = true;
-
     let spell_rank: u64 = match level {
         1..=3 => 1,
         4 => 2,
@@ -447,40 +287,7 @@ fn compute_q_damage(
         0_u64 | 19_u64..=u64::MAX => panic!(),
     };
 
-    let base_damage: f64 = match spell_rank {
-        1 => 80.0,
-        2 => 105.0,
-        3 => 130.0,
-        4 => 155.0,
-        5 => 180.0,
-        0_u64 | 6_u64..=u64::MAX => panic!(),
-    };
-
-    println!("1 base_damage: {:#?}", base_damage);
-
-    // include AD ratio
-    const BONUS_RATIO: f64 = 1.1;
-    let bonus_damage: f64 = BONUS_RATIO * off_stats.ad_bonus;
-    println!("2 bonus_damage: {:#?}", bonus_damage);
-
-    let mut total_damage: f64 = base_damage + bonus_damage;
-    println!("3 total_damage: {:#?}", total_damage);
-
-    if isolated_target {
-        const ISOLATED_TARGET_BONUS: f64 = 1.1;
-        total_damage *= 1.0 + ISOLATED_TARGET_BONUS;
-    }
-    println!("4 total_damage after iso bonus: {:#?}", total_damage);
-
-    let dmg = compute_mitigated_damage(def_stats, off_stats, total_damage);
-
-    println!("5 total_damage post mitigation: {:#?}", dmg);
-
-    return Damage {
-        min: dmg,
-        max: dmg,
-        avg: dmg,
-    };
+    return compute_ability_damage(off_stats, def_stats, ability, &spell_rank);
 }
 
 fn compute_aa_damage(
@@ -505,7 +312,12 @@ fn compute_aa_damage(
     };
 }
 
-fn compute_w_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, level: &u64) -> Damage {
+fn compute_w_damage(
+    off_stats: &OffensiveStats,
+    def_stats: &DefensiveStats,
+    level: &u64,
+    ability: &SpellData,
+) -> Damage {
     let spell_rank = match level {
         1 => 0,
         2..=7 => 1,
@@ -516,32 +328,15 @@ fn compute_w_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, leve
         0_u64 | 19_u64..=u64::MAX => panic!(),
     };
 
-    let mut base_damage: f64 = match spell_rank {
-        1 => 85.0,
-        2 => 115.0,
-        3 => 145.0,
-        4 => 175.0,
-        5 => 205.0,
-        0_u64 | 6_u64..=u64::MAX => panic!(),
-    };
-
-    // println!("1 base_damage: {:#?}", base_damage);
-
-    // include AD ratio
-    base_damage += 1.0 * off_stats.ad_bonus;
-
-    // println!("2 base_damage: {:#?}", base_damage);
-
-    let dmg = compute_mitigated_damage(def_stats, off_stats, base_damage);
-
-    return Damage {
-        min: dmg,
-        max: dmg,
-        avg: dmg,
-    };
+    return compute_ability_damage(off_stats, def_stats, ability, &spell_rank);
 }
 
-fn compute_e_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, level: &u64) -> Damage {
+fn compute_e_damage(
+    off_stats: &OffensiveStats,
+    def_stats: &DefensiveStats,
+    level: &u64,
+    ability: &SpellData,
+) -> Damage {
     let spell_rank = match level {
         1..=2 => 0,
         3..=13 => 1,
@@ -552,29 +347,7 @@ fn compute_e_damage(off_stats: &OffensiveStats, def_stats: &DefensiveStats, leve
         0_u64 | 19_u64..=u64::MAX => panic!(),
     };
 
-    let mut base_damage: f64 = match spell_rank {
-        1 => 65.0,
-        2 => 100.0,
-        3 => 135.0,
-        4 => 170.0,
-        5 => 205.0,
-        0_u64 | 6_u64..=u64::MAX => panic!(),
-    };
-
-    // println!("1 base_damage: {:#?}", base_damage);
-
-    // include AD ratio
-    base_damage += 0.2 * off_stats.ad_bonus;
-
-    // println!("2 base_damage: {:#?}", base_damage);
-
-    let dmg = compute_mitigated_damage(def_stats, off_stats, base_damage);
-
-    return Damage {
-        min: dmg,
-        max: dmg,
-        avg: dmg,
-    };
+    return compute_ability_damage(off_stats, def_stats, ability, &spell_rank);
 }
 
 fn compute_mitigated_damage(
@@ -607,16 +380,22 @@ fn simulate_spell(
     def_stats: &DefensiveStats,
     spell_name: &str,
     config: &HashMap<String, String>,
+    abilities: &Vec<SpellData>,
 ) -> Damage {
     //     let source_stats = compute_source_champion_stats(level as f64, &selected_items);
     //     println!("level: {:#?}, source_stats: {:#?}", level, source_stats);
     // }
 
+    let mut ability: Option<&SpellData> = None;
+    if spell_name != "AA" {
+        ability = Some(find_ability(abilities, spell_name, config));
+    }
+
     let damage: Damage = match spell_name {
-        "Q" => compute_q_damage(off_stats, def_stats, level, config),
         "AA" => compute_aa_damage(off_stats, def_stats, level),
-        "W" => compute_w_damage(off_stats, def_stats, level),
-        "E" => compute_e_damage(off_stats, def_stats, level),
+        "Q" => compute_q_damage(off_stats, def_stats, level, ability.unwrap()),
+        "W" => compute_w_damage(off_stats, def_stats, level, ability.unwrap()),
+        "E" => compute_e_damage(off_stats, def_stats, level, ability.unwrap()),
         &_ => todo!(),
     };
 
@@ -631,85 +410,22 @@ fn simulate_burst(
     level: &u64,
     def_stats: &DefensiveStats,
     config: &HashMap<String, String>,
+    abilities: &Vec<SpellData>,
 ) -> Damage {
     let off_stats: OffensiveStats =
         compute_source_champion_stats(champ_stats, *level as f64, &selected_items);
-    println!("level: {:#?}, source_stats: {:#?}", level, off_stats);
+    // println!("level: {:#?}, source_stats: {:#?}", level, off_stats);
 
-    let q_damage = simulate_spell(&off_stats, level, def_stats, "Q", config);
-    let aa_damage = simulate_spell(&off_stats, level, def_stats, "AA", config);
-    let w_damage = simulate_spell(&off_stats, level, def_stats, "W", config);
-    let e_damage = simulate_spell(&off_stats, level, def_stats, "E", config);
-    println!("q_damage: {:#?}", q_damage);
-    println!("aa_damage: {:#?}", aa_damage);
-    println!("w_damage: {:#?}", w_damage);
-    println!("e_damage: {:#?}", e_damage);
+    let q_damage = simulate_spell(&off_stats, level, def_stats, "Q", config, abilities);
+    let aa_damage = simulate_spell(&off_stats, level, def_stats, "AA", config, abilities);
+    let w_damage = simulate_spell(&off_stats, level, def_stats, "W", config, abilities);
+    let e_damage = simulate_spell(&off_stats, level, def_stats, "E", config, abilities);
+    // println!("q_damage: {:#?}", q_damage);
+    // println!("aa_damage: {:#?}", aa_damage);
+    // println!("w_damage: {:#?}", w_damage);
+    // println!("e_damage: {:#?}", e_damage);
 
     let burst_total_damage: Damage = q_damage * 1.0 + aa_damage * 1.0 + w_damage + e_damage;
 
     return burst_total_damage;
-}
-
-fn enrich_items_data(items_map: &mut HashMap<u64, Item>) {
-    let file = File::open("source_1/items_formatted.json").unwrap();
-    let reader: BufReader<File> = BufReader::new(file);
-    let json_input: Vec<Value> = serde_json::from_reader(reader).unwrap();
-
-    // let mut sanity_checker: Vec<String> = Vec::new();
-
-    for ele in items_map.iter_mut() {
-        // let item_key = format!("Items/{}", ele.0);
-        let item_data = json_input
-            .iter()
-            .find(|&x| &x["id"].as_u64().unwrap_or_default() == ele.0)
-            .unwrap();
-
-        ele.1.name = item_data["name"].as_str().unwrap().to_string();
-        ele.1.total_cost = item_data["priceTotal"].as_u64().unwrap();
-
-        // let item_groups = item_data["mItemGroups"].as_array().unwrap();
-        // for item_group_source in item_groups.iter() {
-        //     let new_value = item_group_source.as_str().unwrap();
-        //     if new_value != "Items/ItemGroups/Default" {
-        //         ele.1.item_groups.push(new_value.to_string());
-        //     }
-
-        //     if new_value.starts_with("{") {
-        //         sanity_checker.push(new_value.to_string());
-        //     }
-        // }
-    }
-
-    // // ensure that the unknown hashes amongst the item groups are not causing issues
-    // sanity_checker.sort();
-    // let length_before_dedup = sanity_checker.len();
-    // sanity_checker.dedup();
-    // let length_after_dedup = sanity_checker.len();
-    // if length_before_dedup != length_after_dedup {
-    //     println!("{:#?}", sanity_checker);
-    //     panic!();
-    // }
-}
-
-fn has_item_group_duplicates(selected_items: &Vec<&Item>) -> bool {
-    let mut item_groups_present: Vec<String> = Vec::new();
-
-    for selected_item in selected_items.iter() {
-        item_groups_present.extend(selected_item.item_groups.clone())
-    }
-
-    item_groups_present.sort();
-    let length_before_dedup = item_groups_present.len();
-    item_groups_present.dedup();
-    let length_after_dedup = item_groups_present.len();
-
-    length_before_dedup != length_after_dedup
-}
-
-fn above_gold_cap(selected_items: &Vec<&Item>, gold_cap: &u64) -> bool {
-    let build_cost: u64 = selected_items
-        .iter()
-        .fold(0, |acc, item| acc + item.total_cost);
-
-    build_cost > *gold_cap
 }
