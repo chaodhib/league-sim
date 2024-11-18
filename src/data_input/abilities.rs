@@ -2,6 +2,8 @@ use std::{collections::HashMap, fs::File, io::BufReader};
 
 use serde_json::Value;
 
+use crate::simulation::AttackType;
+
 #[derive(Debug)]
 pub struct SpellData {
     pub key: String,
@@ -10,6 +12,7 @@ pub struct SpellData {
     pub ad_damage: HashMap<u64, f64>,
     pub ap_damage: HashMap<u64, f64>,
     pub variation_name: Option<String>,
+    pub cast_time_ms: Option<u64>,
 }
 
 // fn has_desireable_stats(item: &Value) -> bool {
@@ -58,10 +61,16 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         );
     }
 
+    let cast_time_s = abilities["Q"][0]["castTime"]
+        .as_str()
+        .unwrap()
+        .parse::<f64>()
+        .unwrap();
+
     let ap_damage: HashMap<u64, f64> = HashMap::new();
     abilities_data.push(SpellData {
-        ad_damage: ad_damage,
-        ap_damage: ap_damage,
+        ad_damage,
+        ap_damage,
         coefficient_ad: abilities["Q"][0]["effects"][1]["leveling"][0]["modifiers"][1]["values"][0]
             .as_f64()
             .unwrap()
@@ -69,6 +78,7 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         coefficient_ap: 0.0f64,
         key: "Q".to_string(),
         variation_name: Some("Physical Damage".to_string()),
+        cast_time_ms: Some((cast_time_s * 1000f64) as u64),
     });
 
     // Q (variation 2)
@@ -84,8 +94,8 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
 
     let ap_damage: HashMap<u64, f64> = HashMap::new();
     abilities_data.push(SpellData {
-        ad_damage: ad_damage,
-        ap_damage: ap_damage,
+        ad_damage,
+        ap_damage,
         coefficient_ad: abilities["Q"][0]["effects"][1]["leveling"][1]["modifiers"][1]["values"][0]
             .as_f64()
             .unwrap()
@@ -93,6 +103,7 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         coefficient_ap: 0.0f64,
         key: "Q".to_string(),
         variation_name: Some("Increased Damage".to_string()),
+        cast_time_ms: Some((cast_time_s * 1000f64) as u64),
     });
 
     // W
@@ -106,10 +117,16 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         );
     }
 
+    let cast_time_s = abilities["W"][0]["castTime"]
+        .as_str()
+        .unwrap()
+        .parse::<f64>()
+        .unwrap();
+
     let ap_damage: HashMap<u64, f64> = HashMap::new();
     abilities_data.push(SpellData {
-        ad_damage: ad_damage,
-        ap_damage: ap_damage,
+        ad_damage,
+        ap_damage,
         coefficient_ad: abilities["W"][0]["effects"][0]["leveling"][0]["modifiers"][1]["values"][0]
             .as_f64()
             .unwrap()
@@ -117,6 +134,7 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         coefficient_ap: 0.0f64,
         key: "W".to_string(),
         variation_name: None,
+        cast_time_ms: Some((cast_time_s * 1000f64) as u64),
     });
 
     // E
@@ -132,8 +150,8 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
 
     let ap_damage: HashMap<u64, f64> = HashMap::new();
     abilities_data.push(SpellData {
-        ad_damage: ad_damage,
-        ap_damage: ap_damage,
+        ad_damage,
+        ap_damage,
         coefficient_ad: abilities["E"][0]["effects"][0]["leveling"][0]["modifiers"][1]["values"][0]
             .as_f64()
             .unwrap()
@@ -141,17 +159,18 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         coefficient_ap: 0.0f64,
         key: "E".to_string(),
         variation_name: None,
+        cast_time_ms: None,
     });
 
     // R
     // not a damage ability
 
-    return abilities_data;
+    abilities_data
 }
 
 pub fn find_ability<'a>(
     abilities: &'a Vec<SpellData>,
-    spell_name: &str,
+    spell_name: AttackType,
     configs: &HashMap<String, String>,
 ) -> &'a SpellData {
     // println!("abilities {:#?}", abilities);
@@ -159,7 +178,7 @@ pub fn find_ability<'a>(
     // println!("configs {:#?}", configs);
     let mut variation_name: Option<String> = None;
 
-    if spell_name == "Q" {
+    if spell_name == AttackType::Q {
         // Khazix's Q
         if configs.get("CHAMPION_KHAZIX_ISOLATED_TARGET").unwrap() == "TRUE" {
             variation_name = Some("Increased Damage".to_string());
@@ -168,18 +187,17 @@ pub fn find_ability<'a>(
         }
     }
 
-    let ability: &SpellData;
-    if variation_name.is_some() {
-        ability = abilities
+    let ability: &SpellData = if variation_name.is_some() {
+        abilities
             .iter()
             .find(|&x| x.key == spell_name.to_string() && x.variation_name == variation_name)
-            .unwrap();
+            .unwrap()
     } else {
-        ability = abilities
+        abilities
             .iter()
             .find(|&x| x.key == spell_name.to_string())
-            .unwrap();
-    }
+            .unwrap()
+    };
 
-    return ability;
+    ability
 }

@@ -17,7 +17,7 @@ pub fn get_base_champion_stats() -> ChampionStats {
     let reader: BufReader<File> = BufReader::new(file);
     let character: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
 
-    return ChampionStats {
+    ChampionStats {
         armor_flat: character["stats"]["armor"]["flat"].as_f64().unwrap(),
         armor_per_level: character["stats"]["armor"]["perLevel"].as_f64().unwrap(),
         attack_damage_flat: character["stats"]["attackDamage"]["flat"].as_f64().unwrap(),
@@ -28,10 +28,10 @@ pub fn get_base_champion_stats() -> ChampionStats {
         attack_speed_per_level: character["stats"]["attackSpeed"]["perLevel"]
             .as_f64()
             .unwrap(),
-    };
+    }
 }
 
 // source: https://leagueoflegends.fandom.com/wiki/Champion_statistic#Increasing_Statistics
 pub fn stat_increase(per_level: f64, level: f64) -> f64 {
-    return per_level * (level - 1.0) * (0.7025 + 0.0175 * (level - 1.0));
+    per_level * (level - 1.0) * (0.7025 + 0.0175 * (level - 1.0))
 }

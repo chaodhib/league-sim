@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs::File, io::BufReader};
 
 use serde_json::Value;
 
-use crate::OffensiveStats;
+use super::common::OffensiveStats;
 
 #[derive(Debug)]
 pub struct Item {
@@ -13,7 +13,7 @@ pub struct Item {
     pub item_groups: Vec<String>,
 }
 
-pub fn pull_item_stats(item_ids: &Vec<u64>) -> HashMap<u64, Item> {
+pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, Item> {
     let file = File::open("source_2/items_formatted.json").unwrap();
     let reader: BufReader<File> = BufReader::new(file);
     let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
@@ -56,7 +56,7 @@ pub fn pull_item_stats(item_ids: &Vec<u64>) -> HashMap<u64, Item> {
             name: "".to_string(),
             total_cost: 0,
             offensive_stats: stats,
-            item_groups: item_groups,
+            item_groups,
         };
 
         map.insert(item.id, item);
@@ -72,10 +72,12 @@ pub fn pull_item_stats(item_ids: &Vec<u64>) -> HashMap<u64, Item> {
         panic!();
     }
 
-    return map;
+    enrich_items_data(&mut map);
+
+    map
 }
 
-pub fn has_item_group_duplicates(selected_items: &Vec<&Item>) -> bool {
+pub fn has_item_group_duplicates(selected_items: &[&Item]) -> bool {
     let mut item_groups_present: Vec<String> = Vec::new();
 
     for selected_item in selected_items.iter() {
@@ -90,7 +92,7 @@ pub fn has_item_group_duplicates(selected_items: &Vec<&Item>) -> bool {
     length_before_dedup != length_after_dedup
 }
 
-pub fn above_gold_cap(selected_items: &Vec<&Item>, gold_cap: &u64) -> bool {
+pub fn above_gold_cap(selected_items: &[&Item], gold_cap: &u64) -> bool {
     let build_cost: u64 = selected_items
         .iter()
         .fold(0, |acc, item| acc + item.total_cost);
@@ -98,7 +100,7 @@ pub fn above_gold_cap(selected_items: &Vec<&Item>, gold_cap: &u64) -> bool {
     build_cost > *gold_cap
 }
 
-pub fn enrich_items_data(items_map: &mut HashMap<u64, Item>) {
+fn enrich_items_data(items_map: &mut HashMap<u64, Item>) {
     let file = File::open("source_1/items_formatted.json").unwrap();
     let reader: BufReader<File> = BufReader::new(file);
     let json_input: Vec<Value> = serde_json::from_reader(reader).unwrap();

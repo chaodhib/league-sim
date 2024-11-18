@@ -1,5 +1,10 @@
-use crate::champions::*;
-use crate::items::*;
+use std::collections::HashMap;
+
+use super::{
+    abilities::SpellData,
+    champions::{stat_increase, ChampionStats},
+    items::Item,
+};
 
 // see https://leagueoflegends.fandom.com/wiki/Champion_statistic?so=search#Offensive
 #[derive(Debug)]
@@ -19,11 +24,21 @@ pub struct DefensiveStats {
     pub hp: f64,
 }
 
+pub struct GameParams<'a> {
+    pub champion_stats: &'a ChampionStats,
+    pub level: u64,
+    pub items: &'a Vec<&'a Item>,
+    pub config: &'a HashMap<String, String>,
+    pub abilities: &'a Vec<SpellData>,
+    pub def_stats: &'a DefensiveStats,
+}
+
 pub fn compute_source_champion_stats(
     champ_stats: &ChampionStats,
-    level: f64,
+    level: u64,
     // runes: HashMap<String, String>,
     items: &Vec<&Item>,
+    // auras: &Vec<&Aura>,
 ) -> OffensiveStats {
     // see https://leagueoflegends.fandom.com/wiki/Champion_statistic
     let mut offensive_stats: OffensiveStats = OffensiveStats {
@@ -31,7 +46,7 @@ pub fn compute_source_champion_stats(
             .iter()
             .fold(0.0, |acc, x| acc + x.offensive_stats.ability_haste),
         ad_base: champ_stats.attack_damage_flat
-            + stat_increase(champ_stats.attack_damage_per_level, level),
+            + stat_increase(champ_stats.attack_damage_per_level, level as f64),
         ad_bonus: items
             .iter()
             .fold(0.0, |acc, x| acc + x.offensive_stats.ad_bonus),
@@ -48,7 +63,7 @@ pub fn compute_source_champion_stats(
 
     apply_passives(&mut offensive_stats, items);
 
-    return offensive_stats;
+    offensive_stats
 }
 
 fn apply_passives(offensive_stats: &mut OffensiveStats, items: &Vec<&Item>) {
