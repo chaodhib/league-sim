@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::{
     data_input::{
         abilities::{find_ability, SpellData},
+        champions::ChampionStats,
         common::{DefensiveStats, OffensiveStats},
     },
     simulation::AttackType,
@@ -34,6 +35,60 @@ pub fn simulate_spell(
     // println!("damage: {:#?}", damage);
 
     return spell_result;
+}
+
+pub fn cast_time(
+    champ_stats: &ChampionStats,
+    off_stats: &OffensiveStats,
+    spell_name: AttackType,
+    config: &HashMap<String, String>,
+    abilities: &Vec<SpellData>,
+) -> u64 {
+    if spell_name != AttackType::AA {
+        let ability: &SpellData = find_ability(abilities, spell_name, config);
+
+        ability.cast_time_ms.unwrap_or_default()
+    } else {
+        // the cast time of an auto attack is the windup time
+        let windup_percent = if champ_stats.attack_delay_offset != 0_f64 {
+            0.3_f64 + champ_stats.attack_delay_offset
+        } else {
+            champ_stats.attack_cast_time / champ_stats.attack_total_time
+        };
+
+        (1000.0_f64 * windup_percent / total_attack_speed(off_stats, champ_stats)).round() as u64
+    }
+}
+
+pub fn total_attack_speed(off_stats: &OffensiveStats, champ_stats: &ChampionStats) -> f64 {
+    // total attack speed = base_attack_speed + attack_speed_ratio * attack_speed_bonus
+    // see https://wiki.leagueoflegends.com/en-us/Attack_speed#Generalization
+    let total_attack_speed: f64 =
+        off_stats.attack_speed_base + off_stats.attack_speed_bonus * champ_stats.attack_speed_ratio;
+
+    println!("total_attack_speed: {:#?}", total_attack_speed);
+
+    total_attack_speed
+}
+
+pub fn cooldown(
+    champ_stats: &ChampionStats,
+    off_stats: &OffensiveStats,
+    spell_name: AttackType,
+    config: &HashMap<String, String>,
+    abilities: &Vec<SpellData>,
+) -> u64 {
+    if spell_name != AttackType::AA {
+        let ability: &SpellData = find_ability(abilities, spell_name, config);
+
+        ability.cast_time_ms.unwrap_or_default()
+    } else {
+        // the cooldown of an auto attack is the attack timer
+        // attack_timer = 1 / total attack speed
+        // see https://wiki.leagueoflegends.com/en-us/Basic_attack#Attack_speed
+
+        (1000.0_f64 / total_attack_speed(off_stats, champ_stats)).round() as u64
+    }
 }
 
 fn compute_ability_damage(

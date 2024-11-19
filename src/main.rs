@@ -106,8 +106,8 @@ fn main() -> std::io::Result<()> {
     );
 
     let item_ids: Vec<u64> = vec![
-        3158, 3142, 6701, 3814, 6694, 6698, 6692, 3156, 3179, 6697, 6333, 3036, 3033, 6609, 3071,
-        6676, 3072,
+        3158, 3006, 3142, 6701, 3814, 6694, 6698, 6692, 3156, 3179, 6697, 6333, 3036, 3033, 6609,
+        3071, 6676, 3072,
     ];
 
     let static_data = data_input::parse_files(&item_ids);
@@ -115,7 +115,8 @@ fn main() -> std::io::Result<()> {
     let mut selected_items: Vec<&Item> = Vec::new();
 
     let selected_item_names: Vec<&str> = vec![
-        "Ionian Boots of Lucidity",
+        // "Ionian Boots of Lucidity",
+        "Berserker's Greaves",
         // "Youmuu's Ghostblade",
         // "Profane Hydra",
         "Bloodthirster",

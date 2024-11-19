@@ -16,9 +16,17 @@ pub struct StaticData {
 }
 
 pub fn parse_files(item_ids: &[u64]) -> StaticData {
+    let base_champion_stats = get_base_champion_stats();
+    let items_map = pull_items_data(item_ids);
+    let abilities = pull_abilities_data();
+
+    // println!("base_champion_stats: {:#?}", base_champion_stats);
+    // println!("items_map: {:#?}", items_map);
+    // println!("abilities: {:#?}", abilities);
+
     StaticData {
-        items_map: pull_items_data(item_ids),
-        base_champion_stats: get_base_champion_stats(),
-        abilities: pull_abilities_data(),
+        items_map,
+        base_champion_stats,
+        abilities,
     }
 }

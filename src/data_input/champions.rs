@@ -8,8 +8,15 @@ pub struct ChampionStats {
     pub armor_per_level: f64,
     pub attack_damage_flat: f64,
     pub attack_damage_per_level: f64,
+    // attack speed calculation
     pub attack_speed_flat: f64,
     pub attack_speed_per_level: f64,
+    pub attack_speed_ratio: f64,
+    // windup calculation (older formula)
+    pub attack_delay_offset: f64,
+    // windup calculation (newer formula)
+    pub attack_cast_time: f64,
+    pub attack_total_time: f64,
 }
 
 pub fn get_base_champion_stats() -> ChampionStats {
@@ -26,6 +33,19 @@ pub fn get_base_champion_stats() -> ChampionStats {
             .unwrap(),
         attack_speed_flat: character["stats"]["attackSpeed"]["flat"].as_f64().unwrap(),
         attack_speed_per_level: character["stats"]["attackSpeed"]["perLevel"]
+            .as_f64()
+            .unwrap()
+            / 100.0,
+        attack_speed_ratio: character["stats"]["attackSpeedRatio"]["flat"]
+            .as_f64()
+            .unwrap(),
+        attack_delay_offset: character["stats"]["attackDelayOffset"]["flat"]
+            .as_f64()
+            .unwrap(),
+        attack_cast_time: character["stats"]["attackCastTime"]["flat"]
+            .as_f64()
+            .unwrap(),
+        attack_total_time: character["stats"]["attackTotalTime"]["flat"]
             .as_f64()
             .unwrap(),
     }

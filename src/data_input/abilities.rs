@@ -13,6 +13,7 @@ pub struct SpellData {
     pub ap_damage: HashMap<u64, f64>,
     pub variation_name: Option<String>,
     pub cast_time_ms: Option<u64>,
+    pub cooldown_ms: Option<HashMap<u64, u64>>,
 }
 
 // fn has_desireable_stats(item: &Value) -> bool {
@@ -67,6 +68,17 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         .parse::<f64>()
         .unwrap();
 
+    let mut cooldown_ms: HashMap<u64, u64> = HashMap::new();
+    for rank in 1..=5usize {
+        cooldown_ms.insert(
+            rank.try_into().unwrap(),
+            abilities["Q"][0]["cooldown"]["modifiers"][0]["values"][rank - 1]
+                .as_u64()
+                .unwrap()
+                * 1000u64,
+        );
+    }
+
     let ap_damage: HashMap<u64, f64> = HashMap::new();
     abilities_data.push(SpellData {
         ad_damage,
@@ -79,6 +91,7 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         key: "Q".to_string(),
         variation_name: Some("Physical Damage".to_string()),
         cast_time_ms: Some((cast_time_s * 1000f64) as u64),
+        cooldown_ms: Some(cooldown_ms.clone()),
     });
 
     // Q (variation 2)
@@ -104,6 +117,7 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         key: "Q".to_string(),
         variation_name: Some("Increased Damage".to_string()),
         cast_time_ms: Some((cast_time_s * 1000f64) as u64),
+        cooldown_ms: Some(cooldown_ms.clone()),
     });
 
     // W
@@ -123,6 +137,17 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         .parse::<f64>()
         .unwrap();
 
+    let mut cooldown_ms: HashMap<u64, u64> = HashMap::new();
+    for rank in 1..=5usize {
+        cooldown_ms.insert(
+            rank.try_into().unwrap(),
+            abilities["W"][0]["cooldown"]["modifiers"][0]["values"][rank - 1]
+                .as_u64()
+                .unwrap()
+                * 1000u64,
+        );
+    }
+
     let ap_damage: HashMap<u64, f64> = HashMap::new();
     abilities_data.push(SpellData {
         ad_damage,
@@ -135,6 +160,7 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         key: "W".to_string(),
         variation_name: None,
         cast_time_ms: Some((cast_time_s * 1000f64) as u64),
+        cooldown_ms: Some(cooldown_ms.clone()),
     });
 
     // E
@@ -145,6 +171,17 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
             abilities["E"][0]["effects"][0]["leveling"][0]["modifiers"][0]["values"][rank - 1]
                 .as_f64()
                 .unwrap(),
+        );
+    }
+
+    let mut cooldown_ms: HashMap<u64, u64> = HashMap::new();
+    for rank in 1..=5usize {
+        cooldown_ms.insert(
+            rank.try_into().unwrap(),
+            abilities["E"][0]["cooldown"]["modifiers"][0]["values"][rank - 1]
+                .as_u64()
+                .unwrap()
+                * 1000u64,
         );
     }
 
@@ -160,10 +197,13 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         key: "E".to_string(),
         variation_name: None,
         cast_time_ms: None,
+        cooldown_ms: Some(cooldown_ms.clone()),
     });
 
     // R
     // not a damage ability
+
+    println!("abilities_data {:#?}", abilities_data);
 
     abilities_data
 }

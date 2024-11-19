@@ -15,6 +15,10 @@ pub struct OffensiveStats {
     pub lethality: f64,
     pub armor_penetration_perc: f64,
     pub crit_chance: f64,
+    pub attack_speed_base: f64,
+    pub attack_speed_bonus: f64,
+    // pub attack_speed_ratio: f64,
+    // pub attack_windup: f64,
 }
 
 // see https://leagueoflegends.fandom.com/wiki/Champion_statistic?so=search#Defensive
@@ -59,6 +63,14 @@ pub fn compute_source_champion_stats(
         lethality: items
             .iter()
             .fold(0.0, |acc, x| acc + x.offensive_stats.lethality),
+        // see https://leagueoflegends.fandom.com/wiki/Attack_speed#Calculations
+        attack_speed_base: champ_stats.attack_speed_flat,
+        attack_speed_bonus: stat_increase(champ_stats.attack_speed_per_level, level as f64)
+            + items
+                .iter()
+                .fold(0.0, |acc, x| acc + x.offensive_stats.attack_speed_bonus),
+        // attack_speed_ratio: champ_stats.attack_speed_ratio,
+        // attack_windup: todo!(),
     };
 
     apply_passives(&mut offensive_stats, items);
