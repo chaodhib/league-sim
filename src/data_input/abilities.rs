@@ -203,7 +203,7 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
     // R
     // not a damage ability
 
-    println!("abilities_data {:#?}", abilities_data);
+    // println!("abilities_data {:#?}", abilities_data);
 
     abilities_data
 }

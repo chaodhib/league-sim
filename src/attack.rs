@@ -66,7 +66,7 @@ pub fn total_attack_speed(off_stats: &OffensiveStats, champ_stats: &ChampionStat
     let total_attack_speed: f64 =
         off_stats.attack_speed_base + off_stats.attack_speed_bonus * champ_stats.attack_speed_ratio;
 
-    println!("total_attack_speed: {:#?}", total_attack_speed);
+    // println!("total_attack_speed: {:#?}", total_attack_speed);
 
     total_attack_speed
 }

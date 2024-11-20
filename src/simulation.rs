@@ -108,7 +108,7 @@ fn on_event(
     game_params: &GameParams,
     state: &mut State,
 ) {
-    println!("on_event: {:#?}", event);
+    // println!("on_event: {:#?}", event);
     // advance time
     state.time_ms = event.time_ms;
 
@@ -155,7 +155,7 @@ fn on_event(
                 game_params.config,
                 game_params.abilities,
             );
-            println!("spell_result: {:#?}", spell_result);
+            // println!("spell_result: {:#?}", spell_result);
             on_damage_event(spell_result, state);
 
             insert_next_attack_event(events, remaining_commands, event.time_ms);
