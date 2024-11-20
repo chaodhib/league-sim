@@ -33,7 +33,7 @@ struct TopResult {
     cost: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Damage {
     min: f64,
     max: f64,
@@ -64,6 +64,14 @@ impl Mul<f64> for Damage {
     }
 }
 
+impl Damage {
+    fn add(&mut self, other: Damage) {
+        self.min += other.min;
+        self.max += other.max;
+        self.avg += other.avg;
+    }
+}
+
 #[derive(Debug)]
 struct SpellResult {
     damage: Damage,
@@ -71,7 +79,6 @@ struct SpellResult {
 }
 
 fn main() -> std::io::Result<()> {
-    let global_start = Instant::now();
     // let base_champion_stats: ChampionStats = get_base_champion_stats();
     // let item_ids: Vec<u64> = vec![
     //     //3158,
@@ -106,8 +113,24 @@ fn main() -> std::io::Result<()> {
     );
 
     let item_ids: Vec<u64> = vec![
-        3158, 3006, 3142, 6701, 3814, 6694, 6698, 6692, 3156, 3179, 6697, 6333, 3036, 3033, 6609,
-        3071, 6676, 3072,
+        3158, // Ionian Boots of Lucidity
+        3006, // Berserker's Greaves
+        3142, // Youmuu's Ghostblade
+        6701, // Opportunity
+        3814, // Edge of Night
+        6694, // Serylda's Grudge
+        6698, // Profane Hydra
+        6692, // Eclipse
+        3156, // Maw of Malmortius
+        3179, // Umbral Glaive
+        6697, // Hubris
+        6333, // Death's Dance
+        3036, // Lord Dominik's Regards
+        3033, // Mortal Reminder
+        6609, // Chempunk Chainsword
+        3071, // Black Cleaver
+        6676, // The Collector
+        3072, // Bloodthirster
     ];
 
     let static_data = data_input::parse_files(&item_ids);
@@ -116,7 +139,7 @@ fn main() -> std::io::Result<()> {
 
     let selected_item_names: Vec<&str> = vec![
         // "Ionian Boots of Lucidity",
-        "Berserker's Greaves",
+        // "Berserker's Greaves",
         // "Youmuu's Ghostblade",
         // "Profane Hydra",
         "Bloodthirster",
@@ -144,7 +167,14 @@ fn main() -> std::io::Result<()> {
         def_stats: &target_stats,
     };
 
-    simulation::run(selected_commands, &game_params);
+    let global_start = Instant::now();
+    let (damage, time_ms) = simulation::run(selected_commands, &game_params);
+    println!("damage: {:#?}", damage);
+    println!("time_ms: {:#?}", time_ms);
+    println!("DPS:: {:#?}", damage * (1000_f64 / time_ms as f64));
+
+    let global_elapsed = global_start.elapsed();
+    println!("Elapsed: {:.2?}", global_elapsed);
 
     return Ok(());
 

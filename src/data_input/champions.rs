@@ -8,10 +8,12 @@ pub struct ChampionStats {
     pub armor_per_level: f64,
     pub attack_damage_flat: f64,
     pub attack_damage_per_level: f64,
+
     // attack speed calculation
     pub attack_speed_flat: f64,
     pub attack_speed_per_level: f64,
     pub attack_speed_ratio: f64,
+
     // windup calculation (older formula)
     pub attack_delay_offset: f64,
     // windup calculation (newer formula)

@@ -7,7 +7,7 @@ use std::{
 use crate::{
     attack::{cast_time, cooldown, simulate_spell},
     data_input::common::{compute_source_champion_stats, GameParams, OffensiveStats},
-    SpellResult,
+    Damage, SpellResult,
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -57,7 +57,12 @@ impl PartialOrd for Event {
     }
 }
 
-pub fn run(mut selected_commands: VecDeque<AttackType>, game_params: &GameParams) {
+struct State<'a> {
+    damage: &'a mut Damage,
+    time_ms: u64,
+}
+
+pub fn run(mut selected_commands: VecDeque<AttackType>, game_params: &GameParams) -> (Damage, u64) {
     // use a priority queue to manage the events
     let mut events: BinaryHeap<Event> = BinaryHeap::new();
 
@@ -65,18 +70,33 @@ pub fn run(mut selected_commands: VecDeque<AttackType>, game_params: &GameParams
     insert_next_attack_event(&mut events, &mut selected_commands, 0);
 
     // and launch
-    execute_commands(&mut events, &mut selected_commands, game_params);
+    return execute_commands(&mut events, &mut selected_commands, game_params);
 }
 
 fn execute_commands(
     events: &mut BinaryHeap<Event>,
     remaining_commands: &mut VecDeque<AttackType>,
     game_params: &GameParams,
-) {
+) -> (Damage, u64) {
+    let mut state: State = State {
+        damage: &mut Damage {
+            min: 0.0,
+            max: 0.0,
+            avg: 0.0,
+        },
+        time_ms: 0,
+    };
+
     loop {
         match events.pop() {
-            None => return,
-            Some(next_event) => on_event(&next_event, events, remaining_commands, game_params),
+            None => return (state.damage.clone(), state.time_ms),
+            Some(next_event) => on_event(
+                &next_event,
+                events,
+                remaining_commands,
+                game_params,
+                &mut state,
+            ),
         }
     }
 }
@@ -86,8 +106,12 @@ fn on_event(
     events: &mut BinaryHeap<Event>,
     remaining_commands: &mut VecDeque<AttackType>,
     game_params: &GameParams,
+    state: &mut State,
 ) {
     println!("on_event: {:#?}", event);
+    // advance time
+    state.time_ms = event.time_ms;
+
     match event.category {
         EventCategory::AttackCastStart => {
             let off_stats: OffensiveStats = compute_source_champion_stats(
@@ -132,12 +156,17 @@ fn on_event(
                 game_params.abilities,
             );
             println!("spell_result: {:#?}", spell_result);
+            on_damage_event(spell_result, state);
 
             insert_next_attack_event(events, remaining_commands, event.time_ms);
         }
         EventCategory::AuraUpdateAttacker => todo!(),
         EventCategory::AuraUpdateTarget => todo!(),
     }
+}
+
+fn on_damage_event(spell_result: SpellResult, state: &mut State) {
+    state.damage.add(spell_result.damage);
 }
 
 fn insert_attack_cast_end_event(
