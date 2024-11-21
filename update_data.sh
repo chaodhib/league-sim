@@ -16,3 +16,6 @@ cat source_4/121.json | json_pp > source_4/121_formatted.json
 
 wget -O data/champions/khazix.bin.json https://raw.communitydragon.org/pbe/game/data/characters/khazix/khazix.bin.json
 cat data/champions/khazix.bin.json | json_pp > data/champions/khazix.bin_formated.json
+
+wget -O source_1/perks.json https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perks.json
+cat source_1/perks.json | json_pp > source_1/perks_formated.json
