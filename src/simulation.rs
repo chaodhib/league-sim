@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    attack::{cast_time, cooldown, simulate_spell},
+    attack::{cast_time, simulate_spell},
     data_input::common::{compute_source_champion_stats, GameParams, OffensiveStats},
     Damage, SpellResult,
 };
@@ -17,6 +17,8 @@ pub enum EventCategory {
     // An aura is either a buff or a debuff
     AuraUpdateAttacker,
     AuraUpdateTarget,
+    // cooldown
+    CooldownEnded,
     // WAIT,
 }
 
@@ -148,6 +150,7 @@ fn on_event(
             );
 
             let spell_result: SpellResult = simulate_spell(
+                game_params.champion_stats,
                 &off_stats,
                 game_params.level,
                 game_params.def_stats,
@@ -155,18 +158,27 @@ fn on_event(
                 game_params.config,
                 game_params.abilities,
             );
-            // println!("spell_result: {:#?}", spell_result);
-            on_damage_event(spell_result, state);
 
+            // println!("spell_result: {:#?}", spell_result);
+            on_damage_event(&spell_result.damage, state);
+
+            if spell_result.cooldown.is_some() {
+                insert_cooldown_ended_event(
+                    events,
+                    event,
+                    spell_result.cooldown.unwrap() + event.time_ms,
+                );
+            }
             insert_next_attack_event(events, remaining_commands, event.time_ms);
         }
         EventCategory::AuraUpdateAttacker => todo!(),
         EventCategory::AuraUpdateTarget => todo!(),
+        EventCategory::CooldownEnded => on_cooldown_ended(event),
     }
 }
 
-fn on_damage_event(spell_result: SpellResult, state: &mut State) {
-    state.damage.add(spell_result.damage);
+fn on_damage_event(damage: &Damage, state: &mut State) {
+    state.damage.add(damage);
 }
 
 fn insert_attack_cast_end_event(
@@ -198,4 +210,21 @@ fn insert_next_attack_event(
 
         events.push(event);
     }
+}
+
+fn insert_cooldown_ended_event(events: &mut BinaryHeap<Event>, event: &Event, time_ms: u64) {
+    let event = Event {
+        attack_type: event.attack_type,
+        category: EventCategory::CooldownEnded,
+        time_ms,
+    };
+
+    events.push(event);
+}
+
+fn on_cooldown_ended(event: &Event) {
+    println!(
+        "cooldown ended for {:#?} at {:#?}",
+        event.attack_type, event.time_ms
+    );
 }

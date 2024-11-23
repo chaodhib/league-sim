@@ -11,6 +11,7 @@ use crate::{
 };
 
 pub fn simulate_spell(
+    champ_stats: &ChampionStats,
     off_stats: &OffensiveStats,
     level: u64,
     def_stats: &DefensiveStats,
@@ -24,10 +25,10 @@ pub fn simulate_spell(
     }
 
     let spell_result: SpellResult = match spell_name {
-        AttackType::AA => compute_aa_damage(off_stats, def_stats, level),
-        AttackType::Q => compute_q_damage(off_stats, def_stats, level, ability.unwrap()),
-        AttackType::W => compute_w_damage(off_stats, def_stats, level, ability.unwrap()),
-        AttackType::E => compute_e_damage(off_stats, def_stats, level, ability.unwrap()),
+        AttackType::AA => simulate_aa(champ_stats, off_stats, def_stats, level),
+        AttackType::Q => simulate_q(off_stats, def_stats, level, ability.unwrap()),
+        AttackType::W => simulate_w(off_stats, def_stats, level, ability.unwrap()),
+        AttackType::E => simulate_e(off_stats, def_stats, level, ability.unwrap()),
         AttackType::R => todo!(),
         // &_ => todo!(),
     };
@@ -71,25 +72,25 @@ pub fn total_attack_speed(off_stats: &OffensiveStats, champ_stats: &ChampionStat
     total_attack_speed
 }
 
-pub fn cooldown(
-    champ_stats: &ChampionStats,
-    off_stats: &OffensiveStats,
-    spell_name: AttackType,
-    config: &HashMap<String, String>,
-    abilities: &Vec<SpellData>,
-) -> u64 {
-    if spell_name != AttackType::AA {
-        let ability: &SpellData = find_ability(abilities, spell_name, config);
+// pub fn cooldown(
+//     champ_stats: &ChampionStats,
+//     off_stats: &OffensiveStats,
+//     spell_name: AttackType,
+//     config: &HashMap<String, String>,
+//     abilities: &Vec<SpellData>,
+// ) -> u64 {
+//     if spell_name != AttackType::AA {
+//         let ability: &SpellData = find_ability(abilities, spell_name, config);
 
-        ability.cast_time_ms.unwrap_or_default()
-    } else {
-        // the cooldown of an auto attack is the attack timer
-        // attack_timer = 1 / total attack speed
-        // see https://wiki.leagueoflegends.com/en-us/Basic_attack#Attack_speed
+//         ability.cooldown_ms
+//     } else {
+//         // the cooldown of an auto attack is the attack timer
+//         // attack_timer = 1 / total attack speed
+//         // see https://wiki.leagueoflegends.com/en-us/Basic_attack#Attack_speed
 
-        (1000.0_f64 / total_attack_speed(off_stats, champ_stats)).round() as u64
-    }
-}
+//         (1000.0_f64 / total_attack_speed(off_stats, champ_stats)).round() as u64
+//     }
+// }
 
 fn compute_ability_damage(
     off_stats: &OffensiveStats,
@@ -119,7 +120,39 @@ fn compute_ability_damage(
     };
 }
 
-fn compute_q_damage(
+fn simulate_aa(
+    champ_stats: &ChampionStats,
+    off_stats: &OffensiveStats,
+    def_stats: &DefensiveStats,
+    _level: u64,
+) -> SpellResult {
+    let base_damage: f64 = off_stats.ad_base + off_stats.ad_bonus;
+    let crit_damage: f64 = if off_stats.crit_chance > 0.0 {
+        base_damage * 1.75
+    } else {
+        base_damage
+    };
+    let avg_damage: f64 = base_damage * (1.0 + off_stats.crit_chance * 0.75);
+
+    // println!("1 base_damage: {:#?}", base_damage);
+
+    // the cooldown of an auto attack is the attack timer
+    // attack_timer = 1 / total attack speed
+    // see https://wiki.leagueoflegends.com/en-us/Basic_attack#Attack_speed
+
+    let cooldown = (1000.0_f64 / total_attack_speed(off_stats, champ_stats)).round() as u64;
+
+    SpellResult {
+        damage: Damage {
+            min: compute_mitigated_damage(def_stats, off_stats, base_damage),
+            max: compute_mitigated_damage(def_stats, off_stats, crit_damage),
+            avg: compute_mitigated_damage(def_stats, off_stats, avg_damage),
+        },
+        cooldown: Some(cooldown),
+    }
+}
+
+fn simulate_q(
     off_stats: &OffensiveStats,
     def_stats: &DefensiveStats,
     level: u64,
@@ -136,36 +169,11 @@ fn compute_q_damage(
 
     return SpellResult {
         damage: compute_ability_damage(off_stats, def_stats, ability, spell_rank),
-        duration: ability.cast_time_ms.unwrap_or_default(),
+        cooldown: cooldown(ability, spell_rank),
     };
 }
 
-fn compute_aa_damage(
-    off_stats: &OffensiveStats,
-    def_stats: &DefensiveStats,
-    _level: u64,
-) -> SpellResult {
-    let base_damage: f64 = off_stats.ad_base + off_stats.ad_bonus;
-    let crit_damage: f64 = if off_stats.crit_chance > 0.0 {
-        base_damage * 1.75
-    } else {
-        base_damage
-    };
-    let avg_damage: f64 = base_damage * (1.0 + off_stats.crit_chance * 0.75);
-
-    // println!("1 base_damage: {:#?}", base_damage);
-
-    SpellResult {
-        damage: Damage {
-            min: compute_mitigated_damage(def_stats, off_stats, base_damage),
-            max: compute_mitigated_damage(def_stats, off_stats, crit_damage),
-            avg: compute_mitigated_damage(def_stats, off_stats, avg_damage),
-        },
-        duration: 0,
-    }
-}
-
-fn compute_w_damage(
+fn simulate_w(
     off_stats: &OffensiveStats,
     def_stats: &DefensiveStats,
     level: u64,
@@ -183,11 +191,11 @@ fn compute_w_damage(
 
     SpellResult {
         damage: compute_ability_damage(off_stats, def_stats, ability, spell_rank),
-        duration: ability.cast_time_ms.unwrap_or_default(),
+        cooldown: cooldown(ability, spell_rank),
     }
 }
 
-fn compute_e_damage(
+fn simulate_e(
     off_stats: &OffensiveStats,
     def_stats: &DefensiveStats,
     level: u64,
@@ -205,7 +213,7 @@ fn compute_e_damage(
 
     SpellResult {
         damage: compute_ability_damage(off_stats, def_stats, ability, spell_rank),
-        duration: ability.cast_time_ms.unwrap_or_default(),
+        cooldown: cooldown(ability, spell_rank),
     }
 }
 
@@ -231,4 +239,19 @@ fn compute_mitigated_damage(
     // println!("5 armor: {:#?}", armor);
 
     base_damage * 100.0 / (100.0 + armor)
+}
+
+fn cooldown(ability: &SpellData, spell_rank: u64) -> Option<u64> {
+    if ability.cooldown_ms.is_some() {
+        Some(
+            *ability
+                .cooldown_ms
+                .as_ref()
+                .unwrap()
+                .get(&spell_rank)
+                .unwrap(),
+        )
+    } else {
+        None
+    }
 }

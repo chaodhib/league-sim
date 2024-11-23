@@ -24,6 +24,7 @@ struct Build {
     damage: Damage,
     dps: Damage,
     item_ids: Vec<u64>,
+    time_ms: u64,
 }
 
 #[derive(Debug)]
@@ -36,6 +37,7 @@ struct TopResult {
     dps_avg: f64,
     item_names: Vec<String>,
     cost: u64,
+    time_ms: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -70,7 +72,7 @@ impl Mul<f64> for Damage {
 }
 
 impl Damage {
-    fn add(&mut self, other: Damage) {
+    fn add(&mut self, other: &Damage) {
         self.min += other.min;
         self.max += other.max;
         self.avg += other.avg;
@@ -80,7 +82,7 @@ impl Damage {
 #[derive(Debug)]
 struct SpellResult {
     damage: Damage,
-    duration: u64,
+    cooldown: Option<u64>,
 }
 
 fn main() -> std::io::Result<()> {
@@ -173,6 +175,7 @@ fn run_multiple() {
             damage: damage.clone(),
             item_ids: selected_item_ids.clone(),
             dps: damage.clone() * (1000_f64 / time_ms as f64),
+            time_ms,
         };
 
         let push_result = best_builds.push(build);
@@ -215,6 +218,7 @@ fn run_multiple() {
                 dps_avg: build.dps.avg,
                 item_names,
                 cost,
+                time_ms: build.time_ms,
             }
         })
         .collect_vec();
