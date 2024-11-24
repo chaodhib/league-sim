@@ -99,6 +99,7 @@ fn run_multiple() {
     selected_commands.push_back(simulation::AttackType::W);
     selected_commands.push_back(simulation::AttackType::E);
     selected_commands.push_back(simulation::AttackType::AA);
+    selected_commands.push_back(simulation::AttackType::Q);
 
     let level: u64 = 6;
     let gold_cap: u64 = 20000;

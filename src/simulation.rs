@@ -1,6 +1,6 @@
 use std::{
     cmp::Ordering,
-    collections::{BinaryHeap, VecDeque},
+    collections::{BinaryHeap, HashMap, VecDeque},
     fmt,
 };
 
@@ -22,7 +22,7 @@ pub enum EventCategory {
     // WAIT,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum AttackType {
     AA,
     Q,
@@ -62,24 +62,14 @@ impl PartialOrd for Event {
 struct State<'a> {
     damage: &'a mut Damage,
     time_ms: u64,
+    cooldowns: &'a mut HashMap<AttackType, u64>,
+    last_attack_time_ms: u64,
 }
 
 pub fn run(mut selected_commands: VecDeque<AttackType>, game_params: &GameParams) -> (Damage, u64) {
     // use a priority queue to manage the events
     let mut events: BinaryHeap<Event> = BinaryHeap::new();
 
-    // add first attack event
-    insert_next_attack_event(&mut events, &mut selected_commands, 0);
-
-    // and launch
-    return execute_commands(&mut events, &mut selected_commands, game_params);
-}
-
-fn execute_commands(
-    events: &mut BinaryHeap<Event>,
-    remaining_commands: &mut VecDeque<AttackType>,
-    game_params: &GameParams,
-) -> (Damage, u64) {
     let mut state: State = State {
         damage: &mut Damage {
             min: 0.0,
@@ -87,18 +77,29 @@ fn execute_commands(
             avg: 0.0,
         },
         time_ms: 0,
+        cooldowns: &mut HashMap::new(),
+        last_attack_time_ms: 0,
     };
 
+    // add first attack event
+    insert_next_attack_event(&mut events, &mut selected_commands, &mut state, 0);
+
+    // and launch
+    return execute_commands(&mut events, &mut selected_commands, &mut state, game_params);
+}
+
+fn execute_commands(
+    events: &mut BinaryHeap<Event>,
+    remaining_commands: &mut VecDeque<AttackType>,
+    state: &mut State,
+    game_params: &GameParams,
+) -> (Damage, u64) {
     loop {
         match events.pop() {
-            None => return (state.damage.clone(), state.time_ms),
-            Some(next_event) => on_event(
-                &next_event,
-                events,
-                remaining_commands,
-                game_params,
-                &mut state,
-            ),
+            None => return (state.damage.clone(), state.last_attack_time_ms),
+            Some(next_event) => {
+                on_event(&next_event, events, remaining_commands, game_params, state)
+            }
         }
     }
 }
@@ -110,7 +111,7 @@ fn on_event(
     game_params: &GameParams,
     state: &mut State,
 ) {
-    // println!("on_event: {:#?}", event);
+    println!("on_event: {:#?}", event);
     // advance time
     state.time_ms = event.time_ms;
 
@@ -160,16 +161,14 @@ fn on_event(
             );
 
             // println!("spell_result: {:#?}", spell_result);
-            on_damage_event(&spell_result.damage, state);
+            on_damage_event(&spell_result.damage, state, event.time_ms);
 
             if spell_result.cooldown.is_some() {
-                insert_cooldown_ended_event(
-                    events,
-                    event,
-                    spell_result.cooldown.unwrap() + event.time_ms,
-                );
+                let cooldown_end_ms = spell_result.cooldown.unwrap() + event.time_ms;
+                insert_cooldown_ended_event(events, event, cooldown_end_ms);
+                add_cooldown_to_state(state, event.attack_type, cooldown_end_ms);
             }
-            insert_next_attack_event(events, remaining_commands, event.time_ms);
+            insert_next_attack_event(events, remaining_commands, state, event.time_ms);
         }
         EventCategory::AuraUpdateAttacker => todo!(),
         EventCategory::AuraUpdateTarget => todo!(),
@@ -177,8 +176,13 @@ fn on_event(
     }
 }
 
-fn on_damage_event(damage: &Damage, state: &mut State) {
+fn add_cooldown_to_state(state: &mut State<'_>, attack_type: AttackType, cooldown_end_ms: u64) {
+    state.cooldowns.insert(attack_type, cooldown_end_ms);
+}
+
+fn on_damage_event(damage: &Damage, state: &mut State, time_ms: u64) {
     state.damage.add(damage);
+    state.last_attack_time_ms = time_ms;
 }
 
 fn insert_attack_cast_end_event(
@@ -198,12 +202,22 @@ fn insert_attack_cast_end_event(
 fn insert_next_attack_event(
     events: &mut BinaryHeap<Event>,
     commands: &mut VecDeque<AttackType>,
-    time_ms: u64,
+    state: &mut State,
+    current_time_ms: u64,
 ) {
     let command = commands.pop_front();
     if command.is_some() {
+        let attack_type = command.unwrap();
+        let time_ms: u64 = if state.cooldowns.contains_key(&attack_type) {
+            // the ability is in cooldown. We can't queue it right away.
+            state.cooldowns.remove(&attack_type).unwrap()
+        } else {
+            // ability is off CD. Let's start it right away
+            current_time_ms
+        };
+
         let event = Event {
-            attack_type: command.unwrap(),
+            attack_type,
             category: EventCategory::AttackCastStart,
             time_ms,
         };
