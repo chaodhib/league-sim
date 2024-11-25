@@ -169,7 +169,7 @@ fn simulate_q(
 
     return SpellResult {
         damage: compute_ability_damage(off_stats, def_stats, ability, spell_rank),
-        cooldown: cooldown(ability, spell_rank),
+        cooldown: cooldown(ability, spell_rank, off_stats),
     };
 }
 
@@ -191,7 +191,7 @@ fn simulate_w(
 
     SpellResult {
         damage: compute_ability_damage(off_stats, def_stats, ability, spell_rank),
-        cooldown: cooldown(ability, spell_rank),
+        cooldown: cooldown(ability, spell_rank, off_stats),
     }
 }
 
@@ -213,7 +213,7 @@ fn simulate_e(
 
     SpellResult {
         damage: compute_ability_damage(off_stats, def_stats, ability, spell_rank),
-        cooldown: cooldown(ability, spell_rank),
+        cooldown: cooldown(ability, spell_rank, off_stats),
     }
 }
 
@@ -241,16 +241,21 @@ fn compute_mitigated_damage(
     base_damage * 100.0 / (100.0 + armor)
 }
 
-fn cooldown(ability: &SpellData, spell_rank: u64) -> Option<u64> {
+fn cooldown(ability: &SpellData, spell_rank: u64, off_stats: &OffensiveStats) -> Option<u64> {
     if ability.cooldown_ms.is_some() {
-        Some(
-            *ability
-                .cooldown_ms
-                .as_ref()
-                .unwrap()
-                .get(&spell_rank)
-                .unwrap(),
-        )
+        let base_cd = *ability
+            .cooldown_ms
+            .as_ref()
+            .unwrap()
+            .get(&spell_rank)
+            .unwrap();
+
+        let reduced_cd: u64 = (base_cd as f64 * 100.0 / (100.0 + off_stats.ability_haste)) as u64;
+
+        println!("base_cd: {:#?}", base_cd);
+        println!("reduced_cd: {:#?}", reduced_cd);
+
+        Some(reduced_cd)
     } else {
         None
     }
