@@ -28,16 +28,16 @@ pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, Item> {
 
         let stats = OffensiveStats {
             ability_haste: ele.1["mAbilityHasteMod"].as_f64().unwrap_or_default(),
-            ad_base: 0.0,
+            // ad_base: 0.0,
             ad_bonus: ele.1["mFlatPhysicalDamageMod"].as_f64().unwrap_or_default(),
             armor_penetration_perc: ele.1["mPercentArmorPenetrationMod"]
                 .as_f64()
                 .unwrap_or_default(),
             crit_chance: ele.1["mFlatCritChanceMod"].as_f64().unwrap_or_default(),
             lethality: ele.1["PhysicalLethality"].as_f64().unwrap_or_default(),
-            attack_speed_base: 0.0,
+            // attack_speed_base: 0.0,
             attack_speed_bonus: ele.1["mPercentAttackSpeedMod"].as_f64().unwrap_or_default(),
-            // attack_speed_ratio: 0.0,
+            ..Default::default()
         };
 
         let mut item_groups = Vec::new();

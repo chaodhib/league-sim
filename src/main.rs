@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{HashMap, HashSet, VecDeque},
     ops::{Add, Mul},
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -16,6 +16,7 @@ use crossbeam::queue::ArrayQueue;
 use data_input::{
     common::{DefensiveStats, GameParams},
     items::{above_gold_cap, has_item_group_duplicates, Item},
+    runes::Rune,
 };
 use itertools::Itertools;
 use rayon::iter::{ParallelBridge, ParallelIterator};
@@ -86,7 +87,8 @@ struct SpellResult {
 }
 
 fn main() -> std::io::Result<()> {
-    run_multiple();
+    // run_multiple();
+    run_single();
 
     Ok(())
 }
@@ -101,6 +103,7 @@ fn run_multiple() {
     selected_commands.push_back(simulation::AttackType::AA);
     selected_commands.push_back(simulation::AttackType::Q);
 
+    let hp_perc = 100.0;
     let level: u64 = 6;
     let gold_cap: u64 = 20000;
     let target_stats: DefensiveStats = DefensiveStats {
@@ -136,7 +139,18 @@ fn run_multiple() {
         3072, // Bloodthirster
     ];
 
+    let mut runes: HashSet<Rune> = HashSet::new();
+    runes.insert(Rune::DarkHarvest);
+    runes.insert(Rune::SuddenImpact);
+    runes.insert(Rune::EyeballCollection);
+    runes.insert(Rune::AbsoluteFocus);
+    runes.insert(Rune::GatheringStorm);
+    runes.insert(Rune::AdaptiveForce1);
+    runes.insert(Rune::AdaptiveForce2);
+
     let static_data = data_input::parse_files(&item_ids);
+
+    // return;
 
     let perms = item_ids.into_iter().combinations(5);
     let progress = Arc::new(AtomicUsize::new(0));
@@ -164,9 +178,12 @@ fn run_multiple() {
             champion_stats: &static_data.base_champion_stats,
             level: level,
             items: &selected_items,
-            config: &config,
+            configs: &config,
             abilities: &static_data.abilities,
             def_stats: &target_stats,
+            runes: &runes,
+            hp_perc: hp_perc,
+            runes_data: &static_data.runes_data,
         };
 
         let (damage, time_ms) = simulation::run(selected_commands.clone(), &game_params);
@@ -244,6 +261,7 @@ fn run_single() {
     selected_commands.push_back(simulation::AttackType::E);
     selected_commands.push_back(simulation::AttackType::AA);
 
+    let hp_perc: f64 = 100.0;
     let level: u64 = 6;
     let _gold_cap: u64 = 20000;
     let target_stats: DefensiveStats = DefensiveStats {
@@ -284,15 +302,24 @@ fn run_single() {
     let mut selected_items: Vec<&Item> = Vec::new();
 
     let selected_item_names: Vec<&str> = vec![
-        // "Ionian Boots of Lucidity",
+        "Ionian Boots of Lucidity",
         // "Berserker's Greaves",
         // "Youmuu's Ghostblade",
         // "Profane Hydra",
-        "Bloodthirster",
+        // "Bloodthirster",
         // "Opportunity",
         // "Black Cleaver",
         // "Serylda's Grudge",
     ];
+
+    let mut runes: HashSet<Rune> = HashSet::new();
+    runes.insert(Rune::DarkHarvest);
+    runes.insert(Rune::SuddenImpact);
+    runes.insert(Rune::EyeballCollection);
+    runes.insert(Rune::AbsoluteFocus);
+    runes.insert(Rune::GatheringStorm);
+    runes.insert(Rune::AdaptiveForce1);
+    runes.insert(Rune::AdaptiveForce2);
 
     for ele in selected_item_names.iter() {
         let found_item = static_data
@@ -307,9 +334,12 @@ fn run_single() {
         champion_stats: &static_data.base_champion_stats,
         level: level,
         items: &selected_items,
-        config: &config,
+        configs: &config,
         abilities: &static_data.abilities,
         def_stats: &target_stats,
+        runes_data: &static_data.runes_data,
+        runes: &runes,
+        hp_perc: hp_perc,
     };
 
     let (damage, time_ms) = simulation::run(selected_commands.clone(), &game_params);

@@ -59,9 +59,9 @@ impl PartialOrd for Event {
     }
 }
 
-struct State<'a> {
+pub struct State<'a> {
     damage: &'a mut Damage,
-    time_ms: u64,
+    pub time_ms: u64,
     cooldowns: &'a mut HashMap<AttackType, u64>,
     last_attack_time_ms: u64,
 }
@@ -117,25 +117,13 @@ fn on_event(
 
     match event.category {
         EventCategory::AttackCastStart => {
-            let off_stats: OffensiveStats = compute_source_champion_stats(
-                game_params.champion_stats,
-                game_params.level,
-                game_params.items,
-            );
-
-            // let cooldown = cooldown(
-            //     game_params.champion_stats,
-            //     &off_stats,
-            //     event.attack_type,
-            //     game_params.config,
-            //     game_params.abilities,
-            // );
+            let off_stats: OffensiveStats = compute_source_champion_stats(game_params, state);
 
             let cast_time = cast_time(
                 game_params.champion_stats,
                 &off_stats,
                 event.attack_type,
-                game_params.config,
+                game_params.configs,
                 game_params.abilities,
             );
             // println!("cooldown: {:#?}", cooldown);
@@ -144,11 +132,7 @@ fn on_event(
             insert_attack_cast_end_event(event, events, event.time_ms + cast_time);
         }
         EventCategory::AttackCastEnd => {
-            let off_stats: OffensiveStats = compute_source_champion_stats(
-                game_params.champion_stats,
-                game_params.level,
-                game_params.items,
-            );
+            let off_stats: OffensiveStats = compute_source_champion_stats(game_params, state);
 
             let spell_result: SpellResult = simulate_spell(
                 game_params.champion_stats,
@@ -156,7 +140,7 @@ fn on_event(
                 game_params.level,
                 game_params.def_stats,
                 event.attack_type,
-                game_params.config,
+                game_params.configs,
                 game_params.abilities,
             );
 
