@@ -2,7 +2,9 @@ use std::{collections::HashMap, fs::File, io::BufReader};
 
 use serde_json::Value;
 
-use crate::simulation::AttackType;
+use crate::attack::{AttackType, SpellCategory};
+
+use super::common::PassiveEffect;
 
 #[derive(Debug)]
 pub struct SpellData {
@@ -14,6 +16,8 @@ pub struct SpellData {
     pub variation_name: Option<String>,
     pub cast_time_ms: Option<u64>,
     pub cooldown_ms: Option<HashMap<u64, u64>>,
+    pub passive_effects: Vec<PassiveEffect>,
+    pub category: Option<SpellCategory>,
 }
 
 // fn has_desireable_stats(item: &Value) -> bool {
@@ -92,6 +96,8 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         variation_name: Some("Physical Damage".to_string()),
         cast_time_ms: Some((cast_time_s * 1000f64) as u64),
         cooldown_ms: Some(cooldown_ms.clone()),
+        passive_effects: Vec::new(),
+        category: None,
     });
 
     // Q (variation 2)
@@ -118,6 +124,8 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         variation_name: Some("Increased Damage".to_string()),
         cast_time_ms: Some((cast_time_s * 1000f64) as u64),
         cooldown_ms: Some(cooldown_ms.clone()),
+        passive_effects: Vec::new(),
+        category: None,
     });
 
     // W
@@ -161,6 +169,8 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         variation_name: None,
         cast_time_ms: Some((cast_time_s * 1000f64) as u64),
         cooldown_ms: Some(cooldown_ms.clone()),
+        passive_effects: Vec::new(),
+        category: None,
     });
 
     // E
@@ -198,10 +208,34 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         variation_name: None,
         cast_time_ms: None,
         cooldown_ms: Some(cooldown_ms.clone()),
+        passive_effects: Vec::new(),
+        category: Some(SpellCategory::Dash),
     });
 
     // R
-    // not a damage ability
+    let mut cooldown_ms: HashMap<u64, u64> = HashMap::new();
+    for rank in 1..=3usize {
+        cooldown_ms.insert(
+            rank.try_into().unwrap(),
+            abilities["R"][0]["cooldown"]["modifiers"][0]["values"][rank - 1]
+                .as_u64()
+                .unwrap()
+                * 1000u64,
+        );
+    }
+
+    abilities_data.push(SpellData {
+        ad_damage: HashMap::new(),
+        ap_damage: HashMap::new(),
+        coefficient_ad: 0.0f64,
+        coefficient_ap: 0.0f64,
+        key: "R".to_string(),
+        variation_name: None,
+        cast_time_ms: None,
+        cooldown_ms: Some(cooldown_ms.clone()),
+        passive_effects: Vec::new(),
+        category: Some(SpellCategory::Stealth),
+    });
 
     // println!("abilities_data {:#?}", abilities_data);
 

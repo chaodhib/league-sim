@@ -2,15 +2,16 @@ use std::{collections::HashMap, fs::File, io::BufReader};
 
 use serde_json::Value;
 
-use super::common::OffensiveStats;
+use super::common::{AttackerStats, PassiveEffect};
 
 #[derive(Debug)]
 pub struct Item {
     pub name: String,
     pub id: u64,
     pub total_cost: u64,
-    pub offensive_stats: OffensiveStats,
+    pub offensive_stats: AttackerStats,
     pub item_groups: Vec<String>,
+    pub passives: Vec<PassiveEffect>,
 }
 
 pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, Item> {
@@ -26,7 +27,7 @@ pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, Item> {
             continue;
         }
 
-        let stats = OffensiveStats {
+        let stats = AttackerStats {
             ability_haste: ele.1["mAbilityHasteMod"].as_f64().unwrap_or_default(),
             // ad_base: 0.0,
             ad_bonus: ele.1["mFlatPhysicalDamageMod"].as_f64().unwrap_or_default(),
@@ -60,6 +61,7 @@ pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, Item> {
             total_cost: 0,
             offensive_stats: stats,
             item_groups,
+            passives: Vec::new(),
         };
 
         map.insert(item.id, item);
@@ -76,6 +78,7 @@ pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, Item> {
     }
 
     enrich_items_data(&mut map);
+    enrich_with_item_effects(&mut map);
 
     map
 }
@@ -117,5 +120,22 @@ fn enrich_items_data(items_map: &mut HashMap<u64, Item>) {
 
         ele.1.name = item_data["name"].as_str().unwrap().to_string();
         ele.1.total_cost = item_data["priceTotal"].as_u64().unwrap();
+    }
+}
+
+fn enrich_with_item_effects(items_map: &mut HashMap<u64, Item>) {
+    let file = File::open("source_3/items_formatted.json").unwrap();
+    let reader: BufReader<File> = BufReader::new(file);
+    let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
+
+    for ele in items_map.iter_mut() {
+        let item_key = format!("{}", ele.0);
+        let item_data = json_input.get(&item_key).unwrap();
+        for passive in item_data["passives"].as_array().unwrap().iter() {
+            let passive_name = passive["name"].as_str().unwrap();
+            let passive_effect = PassiveEffect::from_string(passive_name);
+            // println!("{:#?} {:#?}", ele.1.name, passive_name.unwrap().to_string());
+            ele.1.passives.push(passive_effect);
+        }
     }
 }

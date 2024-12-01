@@ -12,9 +12,10 @@ mod attack;
 mod data_input;
 mod simulation;
 
+use attack::Damage;
 use crossbeam::queue::ArrayQueue;
 use data_input::{
-    common::{DefensiveStats, GameParams},
+    common::{fill_passive_effects, GameParams, TargetStats},
     items::{above_gold_cap, has_item_group_duplicates, Item},
     runes::Rune,
 };
@@ -41,51 +42,6 @@ struct TopResult {
     time_ms: u64,
 }
 
-#[derive(Debug, Clone)]
-struct Damage {
-    min: f64,
-    max: f64,
-    avg: f64,
-}
-
-impl Add for Damage {
-    type Output = Self;
-
-    fn add(self, other: Damage) -> Damage {
-        Damage {
-            min: self.min + other.min,
-            max: self.max + other.max,
-            avg: self.avg + other.avg,
-        }
-    }
-}
-
-impl Mul<f64> for Damage {
-    type Output = Self;
-
-    fn mul(self, other: f64) -> Damage {
-        Damage {
-            min: self.min * other,
-            max: self.max * other,
-            avg: self.avg * other,
-        }
-    }
-}
-
-impl Damage {
-    fn add(&mut self, other: &Damage) {
-        self.min += other.min;
-        self.max += other.max;
-        self.avg += other.avg;
-    }
-}
-
-#[derive(Debug)]
-struct SpellResult {
-    damage: Damage,
-    cooldown: Option<u64>,
-}
-
 fn main() -> std::io::Result<()> {
     // run_multiple();
     run_single();
@@ -97,16 +53,15 @@ fn run_multiple() {
     let global_start = Instant::now();
 
     let mut selected_commands = VecDeque::new();
-    selected_commands.push_back(simulation::AttackType::Q);
-    selected_commands.push_back(simulation::AttackType::W);
-    selected_commands.push_back(simulation::AttackType::E);
-    selected_commands.push_back(simulation::AttackType::AA);
-    selected_commands.push_back(simulation::AttackType::Q);
-
+    selected_commands.push_back(attack::AttackType::Q);
+    selected_commands.push_back(attack::AttackType::W);
+    selected_commands.push_back(attack::AttackType::E);
+    selected_commands.push_back(attack::AttackType::AA);
+    selected_commands.push_back(attack::AttackType::Q);
     let hp_perc = 100.0;
     let level: u64 = 6;
     let gold_cap: u64 = 20000;
-    let target_stats: DefensiveStats = DefensiveStats {
+    let target_stats: TargetStats = TargetStats {
         armor: 100.0,
         hp: 2600.0,
     };
@@ -174,17 +129,20 @@ fn run_multiple() {
             return;
         }
 
-        let game_params: GameParams<'_> = GameParams {
+        let mut game_params: GameParams<'_> = GameParams {
             champion_stats: &static_data.base_champion_stats,
             level: level,
             items: &selected_items,
-            configs: &config,
+            initial_config: &config,
             abilities: &static_data.abilities,
-            def_stats: &target_stats,
+            target_stats: &target_stats,
             runes: &runes,
-            hp_perc: hp_perc,
+            attacker_hp_perc: hp_perc,
             runes_data: &static_data.runes_data,
+            passive_effects: Vec::new(),
         };
+
+        fill_passive_effects(&mut game_params);
 
         let (damage, time_ms) = simulation::run(selected_commands.clone(), &game_params);
 
@@ -256,15 +214,15 @@ fn run_single() {
     let global_start = Instant::now();
 
     let mut selected_commands = VecDeque::new();
-    selected_commands.push_back(simulation::AttackType::Q);
-    selected_commands.push_back(simulation::AttackType::W);
-    selected_commands.push_back(simulation::AttackType::E);
-    selected_commands.push_back(simulation::AttackType::AA);
+    selected_commands.push_back(attack::AttackType::Q);
+    selected_commands.push_back(attack::AttackType::W);
+    selected_commands.push_back(attack::AttackType::E);
+    selected_commands.push_back(attack::AttackType::AA);
 
     let hp_perc: f64 = 100.0;
     let level: u64 = 6;
     let _gold_cap: u64 = 20000;
-    let target_stats: DefensiveStats = DefensiveStats {
+    let target_stats: TargetStats = TargetStats {
         armor: 100.0,
         hp: 2600.0,
     };
@@ -330,17 +288,20 @@ fn run_single() {
         selected_items.push(found_item);
     }
 
-    let game_params: GameParams<'_> = GameParams {
+    let mut game_params: GameParams<'_> = GameParams {
         champion_stats: &static_data.base_champion_stats,
         level: level,
         items: &selected_items,
-        configs: &config,
+        initial_config: &config,
         abilities: &static_data.abilities,
-        def_stats: &target_stats,
+        target_stats: &target_stats,
         runes_data: &static_data.runes_data,
         runes: &runes,
-        hp_perc: hp_perc,
+        attacker_hp_perc: hp_perc,
+        passive_effects: Vec::new(),
     };
+
+    fill_passive_effects(&mut game_params);
 
     let (damage, time_ms) = simulation::run(selected_commands.clone(), &game_params);
     println!("damage: {:#?}", damage);

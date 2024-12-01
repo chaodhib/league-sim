@@ -5,9 +5,11 @@ use std::{
 };
 
 use crate::{
-    attack::{cast_time, simulate_spell},
-    data_input::common::{compute_source_champion_stats, GameParams, OffensiveStats},
-    Damage, SpellResult,
+    attack::{cast_time, simulate_spell, AttackType, Damage, SpellCategory, SpellResult},
+    data_input::{
+        abilities::{find_ability, SpellData},
+        common::{compute_attacker_stats, AttackerStats, GameParams, PassiveEffect},
+    },
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -17,34 +19,16 @@ pub enum EventCategory {
     // An aura is either a buff or a debuff
     AuraUpdateAttacker,
     AuraUpdateTarget,
-    // cooldown
     CooldownEnded,
-    // WAIT,
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
-pub enum AttackType {
-    AA,
-    Q,
-    W,
-    E,
-    R,
-    // add item active?
-}
-
-impl fmt::Display for AttackType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-        // or, alternatively:
-        // fmt::Debug::fmt(self, f)
-    }
+    PassiveTriggered,
 }
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct Event {
-    time_ms: u64,
-    category: EventCategory,
-    attack_type: AttackType,
+    pub time_ms: u64,
+    pub category: EventCategory,
+    pub attack_type: Option<AttackType>,
+    pub passive_effect: Option<PassiveEffect>,
 }
 
 impl Ord for Event {
@@ -60,10 +44,12 @@ impl PartialOrd for Event {
 }
 
 pub struct State<'a> {
-    damage: &'a mut Damage,
+    pub total_damage: &'a mut Damage,
     pub time_ms: u64,
-    cooldowns: &'a mut HashMap<AttackType, u64>,
-    last_attack_time_ms: u64,
+    pub cooldowns: &'a mut HashMap<AttackType, u64>,
+    pub effects_cooldowns: &'a mut HashMap<PassiveEffect, u64>,
+    pub last_attack_time_ms: u64,
+    pub config: &'a mut HashMap<String, String>,
 }
 
 pub fn run(mut selected_commands: VecDeque<AttackType>, game_params: &GameParams) -> (Damage, u64) {
@@ -71,7 +57,7 @@ pub fn run(mut selected_commands: VecDeque<AttackType>, game_params: &GameParams
     let mut events: BinaryHeap<Event> = BinaryHeap::new();
 
     let mut state: State = State {
-        damage: &mut Damage {
+        total_damage: &mut Damage {
             min: 0.0,
             max: 0.0,
             avg: 0.0,
@@ -79,6 +65,8 @@ pub fn run(mut selected_commands: VecDeque<AttackType>, game_params: &GameParams
         time_ms: 0,
         cooldowns: &mut HashMap::new(),
         last_attack_time_ms: 0,
+        effects_cooldowns: &mut HashMap::new(),
+        config: &mut HashMap::new(),
     };
 
     // add first attack event
@@ -96,7 +84,7 @@ fn execute_commands(
 ) -> (Damage, u64) {
     loop {
         match events.pop() {
-            None => return (state.damage.clone(), state.last_attack_time_ms),
+            None => return (state.total_damage.clone(), state.last_attack_time_ms),
             Some(next_event) => {
                 on_event(&next_event, events, remaining_commands, game_params, state)
             }
@@ -117,13 +105,17 @@ fn on_event(
 
     match event.category {
         EventCategory::AttackCastStart => {
-            let off_stats: OffensiveStats = compute_source_champion_stats(game_params, state);
+            handle_stealth_exit_if_applicable(
+                event.attack_type.unwrap(),
+                game_params.initial_config,
+                game_params.abilities,
+            );
+            let attacker_stats: AttackerStats = compute_attacker_stats(game_params, state);
 
             let cast_time = cast_time(
-                game_params.champion_stats,
-                &off_stats,
-                event.attack_type,
-                game_params.configs,
+                &attacker_stats,
+                event.attack_type.unwrap(),
+                game_params.initial_config,
                 game_params.abilities,
             );
             // println!("cooldown: {:#?}", cooldown);
@@ -132,31 +124,85 @@ fn on_event(
             insert_attack_cast_end_event(event, events, event.time_ms + cast_time);
         }
         EventCategory::AttackCastEnd => {
-            let off_stats: OffensiveStats = compute_source_champion_stats(game_params, state);
+            handle_dash_if_applicable(
+                event.attack_type.unwrap(),
+                game_params.initial_config,
+                game_params.abilities,
+            );
+            handle_stealth_exit_if_applicable(
+                event.attack_type.unwrap(),
+                game_params.initial_config,
+                game_params.abilities,
+            );
+
+            let attacker_stats: AttackerStats = compute_attacker_stats(game_params, state);
 
             let spell_result: SpellResult = simulate_spell(
-                game_params.champion_stats,
-                &off_stats,
+                &attacker_stats,
                 game_params.level,
-                game_params.def_stats,
-                event.attack_type,
-                game_params.configs,
+                game_params.target_stats,
+                event.attack_type.unwrap(),
+                game_params.initial_config,
                 game_params.abilities,
             );
 
             // println!("spell_result: {:#?}", spell_result);
             on_damage_event(&spell_result.damage, state, event.time_ms);
+            on_post_damage_events(
+                &spell_result.damage,
+                &attacker_stats,
+                state,
+                game_params,
+                event,
+                events,
+            );
 
             if spell_result.cooldown.is_some() {
                 let cooldown_end_ms = spell_result.cooldown.unwrap() + event.time_ms;
                 insert_cooldown_ended_event(events, event, cooldown_end_ms);
-                add_cooldown_to_state(state, event.attack_type, cooldown_end_ms);
+                add_cooldown_to_state(state, event.attack_type.unwrap(), cooldown_end_ms);
             }
             insert_next_attack_event(events, remaining_commands, state, event.time_ms);
         }
         EventCategory::AuraUpdateAttacker => todo!(),
         EventCategory::AuraUpdateTarget => todo!(),
         EventCategory::CooldownEnded => on_cooldown_ended(event),
+        EventCategory::PassiveTriggered => on_passive_triggered(event),
+    }
+}
+
+fn handle_dash_if_applicable(
+    spell_name: AttackType,
+    initial_config: &HashMap<String, String>,
+    abilities: &Vec<SpellData>,
+) {
+    let mut ability: Option<&SpellData> = None;
+    if spell_name != AttackType::AA {
+        ability = Some(find_ability(abilities, spell_name, initial_config));
+    }
+
+    if ability.is_some()
+        && ability
+            .unwrap()
+            .category
+            .clone()
+            .is_some_and(|cat| cat == SpellCategory::Dash)
+    {
+        // println!("handling dash: {:#?}", ability);
+        // game_params.passive_effects.iter().for_each(|effect| {
+        //     effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events)
+        // });
+    }
+}
+
+fn handle_stealth_exit_if_applicable(
+    spell_name: AttackType,
+    initial_config: &HashMap<String, String>,
+    abilities: &Vec<SpellData>,
+) {
+    let mut ability: Option<&SpellData> = None;
+    if spell_name != AttackType::AA {
+        ability = Some(find_ability(abilities, spell_name, initial_config));
     }
 }
 
@@ -165,7 +211,7 @@ fn add_cooldown_to_state(state: &mut State<'_>, attack_type: AttackType, cooldow
 }
 
 fn on_damage_event(damage: &Damage, state: &mut State, time_ms: u64) {
-    state.damage.add(damage);
+    state.total_damage.add(damage);
     state.last_attack_time_ms = time_ms;
 }
 
@@ -178,6 +224,7 @@ fn insert_attack_cast_end_event(
         attack_type: attack_cast_start_event.attack_type,
         category: EventCategory::AttackCastEnd,
         time_ms,
+        passive_effect: None,
     };
 
     events.push(event);
@@ -201,9 +248,10 @@ fn insert_next_attack_event(
         };
 
         let event = Event {
-            attack_type,
+            attack_type: Some(attack_type),
             category: EventCategory::AttackCastStart,
             time_ms,
+            passive_effect: None,
         };
 
         events.push(event);
@@ -215,6 +263,22 @@ fn insert_cooldown_ended_event(events: &mut BinaryHeap<Event>, event: &Event, ti
         attack_type: event.attack_type,
         category: EventCategory::CooldownEnded,
         time_ms,
+        passive_effect: None,
+    };
+
+    events.push(event);
+}
+
+pub fn insert_passive_triggered_event(
+    events: &mut BinaryHeap<Event>,
+    time_ms: u64,
+    passive_effect: PassiveEffect,
+) {
+    let event = Event {
+        attack_type: None,
+        category: EventCategory::PassiveTriggered,
+        time_ms,
+        passive_effect: Some(passive_effect),
     };
 
     events.push(event);
@@ -225,4 +289,76 @@ fn on_cooldown_ended(event: &Event) {
         "cooldown ended for {:#?} at {:#?}",
         event.attack_type, event.time_ms
     );
+}
+
+fn on_passive_triggered(event: &Event) {
+    println!(
+        "passive triggered for {:#?} at {:#?}",
+        event.passive_effect.unwrap(),
+        event.time_ms
+    );
+}
+
+fn on_post_damage_events(
+    damage: &Damage,
+    attacker_stats: &AttackerStats,
+    state: &mut State,
+    game_params: &GameParams,
+    event: &Event,
+    events: &mut BinaryHeap<Event>,
+) {
+    println!("game_params: {:#?}", game_params.passive_effects);
+    game_params.passive_effects.iter().for_each(|effect| {
+        effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events)
+    });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::collections::BinaryHeap;
+
+    #[test]
+    fn it_works() {
+        let mut events: BinaryHeap<&Event> = BinaryHeap::new();
+
+        let event_1 = Event {
+            attack_type: Some(super::AttackType::Q),
+            category: super::EventCategory::AttackCastStart,
+            time_ms: 1000,
+            passive_effect: None,
+        };
+
+        let event_2 = Event {
+            attack_type: Some(super::AttackType::Q),
+            category: super::EventCategory::AttackCastStart,
+            time_ms: 1000,
+            passive_effect: None,
+        };
+
+        let event_3 = Event {
+            attack_type: Some(super::AttackType::Q),
+            category: super::EventCategory::AttackCastStart,
+            time_ms: 5000,
+            passive_effect: None,
+        };
+
+        let event_0 = Event {
+            attack_type: Some(super::AttackType::Q),
+            category: super::EventCategory::AttackCastStart,
+            time_ms: 0,
+            passive_effect: None,
+        };
+
+        events.push(&event_1);
+        events.push(&event_2);
+        events.push(&event_3);
+        events.push(&event_0);
+
+        assert_eq!(events.pop(), Some(&event_0));
+        assert_eq!(events.pop(), Some(&event_1));
+        assert_eq!(events.pop(), Some(&event_2));
+        assert_eq!(events.pop(), Some(&event_3));
+    }
 }
