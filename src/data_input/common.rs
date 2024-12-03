@@ -19,6 +19,8 @@ use super::{
 pub struct AttackerStats {
     pub level: u64,
     pub ability_haste: f64,
+    pub basic_ability_haste: f64,
+    pub ultimate_haste: f64,
     pub ability_power: f64,
     pub ad_base: f64,
     pub ad_bonus: f64,
@@ -83,7 +85,7 @@ pub struct GameParams<'a> {
     pub runes: &'a HashSet<Rune>,
     pub attacker_hp_perc: f64,
     pub runes_data: &'a RunesData,
-    pub passive_effects: Vec<PassiveEffect>,
+    pub passive_effects: &'a mut Vec<PassiveEffect>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -114,6 +116,7 @@ pub enum PassiveEffect {
     // Runes
     DarkHarvest,
     SuddenImpact,
+    SuddenImpactReady,
 }
 
 impl PassiveEffect {
@@ -172,6 +175,9 @@ impl PassiveEffect {
             // runes
             PassiveEffect::DarkHarvest => "",
             PassiveEffect::SuddenImpact => "",
+
+            // auras
+            PassiveEffect::SuddenImpactReady => "",
         }
     }
 
@@ -215,7 +221,8 @@ impl PassiveEffect {
                 events,
             ),
 
-            PassiveEffect::SuddenImpact => Rune::SuddenImpact.handle_on_post_damage(
+            PassiveEffect::SuddenImpact => (),
+            PassiveEffect::SuddenImpactReady => Aura::SuddenImpactReady.handle_on_post_damage(
                 damage,
                 attacker_stats,
                 state,
@@ -225,12 +232,88 @@ impl PassiveEffect {
             ),
         }
     }
+
+    pub(crate) fn handle_dash_event(
+        &self,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+        game_params: &GameParams<'_>,
+        state: &mut State<'_>,
+    ) {
+        match self {
+            PassiveEffect::Haunt => todo!(),
+            PassiveEffect::BitterCold => todo!(),
+            PassiveEffect::Eminence => todo!(),
+            PassiveEffect::IgnorePain => todo!(),
+            PassiveEffect::Defy => todo!(),
+            PassiveEffect::Hackshorn => todo!(),
+            PassiveEffect::Ichorshield => todo!(),
+            PassiveEffect::Lifeline => todo!(),
+            PassiveEffect::Preparation => todo!(),
+            PassiveEffect::Extraction => todo!(),
+            PassiveEffect::EverRisingMoon => todo!(),
+            PassiveEffect::Blackout => todo!(),
+            PassiveEffect::Extinguish => todo!(),
+            PassiveEffect::Cleave => todo!(),
+            PassiveEffect::GrievousWounds => todo!(),
+            PassiveEffect::Carve => todo!(),
+            PassiveEffect::Fervor => todo!(),
+            PassiveEffect::Death => todo!(),
+            PassiveEffect::Taxes => todo!(),
+            PassiveEffect::Annul => todo!(),
+            PassiveEffect::IonianInsight => (),
+            PassiveEffect::DarkHarvest => (),
+
+            PassiveEffect::SuddenImpact => {
+                Rune::SuddenImpact.handle_dash_event(event, events, state, game_params)
+            }
+            PassiveEffect::SuddenImpactReady => (),
+        }
+    }
 }
 
 pub enum DamageType {
     Physical,
     Magical,
     True,
+}
+
+#[derive(Clone, Eq, Hash, PartialEq)]
+pub enum Aura {
+    SuddenImpactReady,
+}
+
+impl Aura {
+    pub fn passive_effects(&self) -> Vec<PassiveEffect> {
+        match self {
+            Aura::SuddenImpactReady => vec![PassiveEffect::SuddenImpactReady],
+        }
+    }
+
+    fn handle_on_post_damage(
+        &self,
+        damage: &crate::attack::Damage,
+        attacker_stats: &AttackerStats,
+        state: &mut State<'_>,
+        game_params: &GameParams<'_>,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+    ) {
+        match self {
+            Aura::SuddenImpactReady => {
+                game_params.runes_data.sudden_impact.handle_buff_triggered(
+                    damage,
+                    attacker_stats,
+                    state,
+                    game_params,
+                    event,
+                    events,
+                );
+            }
+
+            _ => (),
+        }
+    }
 }
 
 pub fn compute_attacker_stats(game_params: &GameParams, state: &State) -> AttackerStats {
@@ -273,6 +356,9 @@ pub fn compute_attacker_stats(game_params: &GameParams, state: &State) -> Attack
         attack_delay_offset: champion_stats.attack_delay_offset,
         attack_cast_time: champion_stats.attack_cast_time,
         attack_total_time: champion_stats.attack_total_time,
+        // todo
+        basic_ability_haste: 0.0,
+        ultimate_haste: 0.0,
     };
     offensive_stats += collect_runes_stats(state, game_params);
 
@@ -317,7 +403,7 @@ pub fn apply_adaptive_damage(adaptive_damage: f64, offensive_stats: &AttackerSta
     }
 }
 
-pub fn fill_passive_effects(game_params: &mut GameParams<'_>) {
+pub fn compile_passive_effects(game_params: &mut GameParams<'_>) {
     // iterate over effects from: items, runes and champions abilities
     let item_effects = game_params
         .items
@@ -336,11 +422,11 @@ pub fn fill_passive_effects(game_params: &mut GameParams<'_>) {
         .iter()
         .map(|spell_data| spell_data.passive_effects.clone());
 
-    let passive_effects = item_effects
+    let mut passive_effects = item_effects
         .chain(rune_effects)
         .chain(champion_passives)
         .flat_map(|effects| effects)
         .collect_vec();
 
-    game_params.passive_effects = passive_effects;
+    game_params.passive_effects.append(&mut passive_effects);
 }

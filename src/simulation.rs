@@ -8,7 +8,10 @@ use crate::{
     attack::{cast_time, simulate_spell, AttackType, Damage, SpellCategory, SpellResult},
     data_input::{
         abilities::{find_ability, SpellData},
-        common::{compute_attacker_stats, AttackerStats, GameParams, PassiveEffect},
+        common::{
+            compile_passive_effects, compute_attacker_stats, AttackerStats, Aura, GameParams,
+            PassiveEffect,
+        },
     },
 };
 
@@ -50,6 +53,21 @@ pub struct State<'a> {
     pub effects_cooldowns: &'a mut HashMap<PassiveEffect, u64>,
     pub last_attack_time_ms: u64,
     pub config: &'a mut HashMap<String, String>,
+    pub attacker_auras: &'a mut HashMap<Aura, u64>,
+    pub target_auras: &'a mut HashMap<Aura, u64>,
+}
+
+impl State<'_> {
+    // fn refresh_cds_and_auras(state: &mut State<'_>) {
+    fn refresh_cds_and_auras(&mut self) {
+        self.effects_cooldowns
+            .retain(|_, end_at| *end_at < self.time_ms);
+
+        self.cooldowns.retain(|_, end_at| *end_at < self.time_ms);
+
+        self.attacker_auras
+            .retain(|_, end_at| *end_at < self.time_ms);
+    }
 }
 
 pub fn run(mut selected_commands: VecDeque<AttackType>, game_params: &GameParams) -> (Damage, u64) {
@@ -67,6 +85,8 @@ pub fn run(mut selected_commands: VecDeque<AttackType>, game_params: &GameParams
         last_attack_time_ms: 0,
         effects_cooldowns: &mut HashMap::new(),
         config: &mut HashMap::new(),
+        attacker_auras: &mut HashMap::new(),
+        target_auras: &mut HashMap::new(),
     };
 
     // add first attack event
@@ -102,14 +122,11 @@ fn on_event(
     println!("on_event: {:#?}", event);
     // advance time
     state.time_ms = event.time_ms;
+    state.refresh_cds_and_auras();
 
     match event.category {
         EventCategory::AttackCastStart => {
-            handle_stealth_exit_if_applicable(
-                event.attack_type.unwrap(),
-                game_params.initial_config,
-                game_params.abilities,
-            );
+            handle_stealth_exit_if_applicable(event, events, game_params, state);
             let attacker_stats: AttackerStats = compute_attacker_stats(game_params, state);
 
             let cast_time = cast_time(
@@ -124,16 +141,8 @@ fn on_event(
             insert_attack_cast_end_event(event, events, event.time_ms + cast_time);
         }
         EventCategory::AttackCastEnd => {
-            handle_dash_if_applicable(
-                event.attack_type.unwrap(),
-                game_params.initial_config,
-                game_params.abilities,
-            );
-            handle_stealth_exit_if_applicable(
-                event.attack_type.unwrap(),
-                game_params.initial_config,
-                game_params.abilities,
-            );
+            handle_dash_if_applicable(event, events, game_params, state);
+            handle_stealth_exit_if_applicable(event, events, game_params, state);
 
             let attacker_stats: AttackerStats = compute_attacker_stats(game_params, state);
 
@@ -172,38 +181,52 @@ fn on_event(
 }
 
 fn handle_dash_if_applicable(
-    spell_name: AttackType,
-    initial_config: &HashMap<String, String>,
-    abilities: &Vec<SpellData>,
+    event: &Event,
+    events: &mut BinaryHeap<Event>,
+    game_params: &GameParams,
+    state: &mut State,
 ) {
+    let attack_type = event.attack_type.unwrap();
     let mut ability: Option<&SpellData> = None;
-    if spell_name != AttackType::AA {
-        ability = Some(find_ability(abilities, spell_name, initial_config));
+    if attack_type != AttackType::AA {
+        ability = Some(find_ability(
+            game_params.abilities,
+            attack_type,
+            game_params.initial_config,
+        ));
     }
 
     if ability.is_some()
         && ability
             .unwrap()
             .category
-            .clone()
-            .is_some_and(|cat| cat == SpellCategory::Dash)
+            .as_ref()
+            .is_some_and(|cat| cat == &SpellCategory::Dash)
     {
-        // println!("handling dash: {:#?}", ability);
-        // game_params.passive_effects.iter().for_each(|effect| {
-        //     effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events)
-        // });
+        println!("handle_dash_if_applicable dash: {:#?}", attack_type);
+
+        for effect in game_params.passive_effects.iter() {
+            effect.handle_dash_event(event, events, game_params, state)
+        }
+
+        for effect in state
+            .attacker_auras
+            .clone()
+            .iter()
+            .flat_map(|aura| aura.0.passive_effects())
+        {
+            effect.handle_dash_event(event, events, game_params, state)
+        }
     }
 }
 
 fn handle_stealth_exit_if_applicable(
-    spell_name: AttackType,
-    initial_config: &HashMap<String, String>,
-    abilities: &Vec<SpellData>,
+    event: &Event,
+    events: &mut BinaryHeap<Event>,
+    game_params: &GameParams,
+    state: &mut State,
 ) {
-    let mut ability: Option<&SpellData> = None;
-    if spell_name != AttackType::AA {
-        ability = Some(find_ability(abilities, spell_name, initial_config));
-    }
+    // todo!();
 }
 
 fn add_cooldown_to_state(state: &mut State<'_>, attack_type: AttackType, cooldown_end_ms: u64) {
@@ -307,10 +330,10 @@ fn on_post_damage_events(
     event: &Event,
     events: &mut BinaryHeap<Event>,
 ) {
-    println!("game_params: {:#?}", game_params.passive_effects);
-    game_params.passive_effects.iter().for_each(|effect| {
+    println!("on_post_damage_events: {:#?}", game_params.passive_effects);
+    for effect in game_params.passive_effects.iter() {
         effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events)
-    });
+    }
 }
 
 #[cfg(test)]

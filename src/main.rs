@@ -15,7 +15,7 @@ mod simulation;
 use attack::Damage;
 use crossbeam::queue::ArrayQueue;
 use data_input::{
-    common::{fill_passive_effects, GameParams, TargetStats},
+    common::{compile_passive_effects, GameParams, TargetStats},
     items::{above_gold_cap, has_item_group_duplicates, Item},
     runes::Rune,
 };
@@ -139,10 +139,10 @@ fn run_multiple() {
             runes: &runes,
             attacker_hp_perc: hp_perc,
             runes_data: &static_data.runes_data,
-            passive_effects: Vec::new(),
+            passive_effects: &mut Vec::new(),
         };
 
-        fill_passive_effects(&mut game_params);
+        compile_passive_effects(&mut game_params);
 
         let (damage, time_ms) = simulation::run(selected_commands.clone(), &game_params);
 
@@ -298,10 +298,10 @@ fn run_single() {
         runes_data: &static_data.runes_data,
         runes: &runes,
         attacker_hp_perc: hp_perc,
-        passive_effects: Vec::new(),
+        passive_effects: &mut Vec::new(),
     };
 
-    fill_passive_effects(&mut game_params);
+    compile_passive_effects(&mut game_params);
 
     let (damage, time_ms) = simulation::run(selected_commands.clone(), &game_params);
     println!("damage: {:#?}", damage);

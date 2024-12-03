@@ -1,4 +1,4 @@
-use super::common::{self, AttackerStats, GameParams, PassiveEffect};
+use super::common::{self, AttackerStats, Aura, GameParams, PassiveEffect};
 use crate::{
     attack::Damage,
     simulation::{self, State},
@@ -101,14 +101,36 @@ impl Rune {
                     events,
                 );
             }
+
             Rune::SuddenImpact => {
-                game_params.runes_data.sudden_impact.handle_on_post_damage(
+                game_params.runes_data.sudden_impact.handle_buff_triggered(
                     damage,
                     attacker_stats,
                     state,
                     game_params,
                     event,
                     events,
+                );
+            }
+
+            _ => (),
+        }
+    }
+
+    pub(crate) fn handle_dash_event(
+        &self,
+        event: &simulation::Event,
+        events: &mut std::collections::BinaryHeap<simulation::Event>,
+        state: &mut State<'_>,
+        game_params: &GameParams<'_>,
+    ) {
+        match self {
+            Rune::SuddenImpact => {
+                game_params.runes_data.sudden_impact.handle_dash_event(
+                    event,
+                    events,
+                    state,
+                    game_params,
                 );
             }
 
@@ -191,28 +213,78 @@ impl DarkHarvest {
     }
 }
 
-struct SuddenImpact {
-    low_damage: f64,
-    high_damage: f64,
+pub struct SuddenImpact {
+    min_damage: f64,
+    max_damage: f64,
+    buff_duration: u64,
+    cooldown: u64,
 }
 impl SuddenImpact {
-    fn handle_on_post_damage(
+    fn handle_dash_event(
         &self,
-        damage: &Damage,
-        attacker_stats: &AttackerStats,
-        state: &mut State<'_>,
-        game_params: &GameParams<'_>,
         event: &simulation::Event,
         events: &mut std::collections::BinaryHeap<simulation::Event>,
+        state: &mut State<'_>,
+        game_params: &GameParams<'_>,
     ) {
-        // check if it is in cooldown & hp requirement
+        // check if it is in cooldown
         if state
             .effects_cooldowns
             .get(&PassiveEffect::SuddenImpact)
-            .is_some()
+            .is_some_and(|cooldown_end| event.time_ms < *cooldown_end)
         {
             return;
         }
+
+        simulation::insert_passive_triggered_event(
+            events,
+            event.time_ms,
+            PassiveEffect::SuddenImpact,
+        );
+
+        // apply buff
+        state
+            .attacker_auras
+            .insert(Aura::SuddenImpactReady, event.time_ms + self.buff_duration);
+    }
+
+    pub fn handle_buff_triggered(
+        &self,
+        _damage: &Damage,
+        _attacker_stats: &AttackerStats,
+        state: &mut State<'_>,
+        game_params: &GameParams<'_>,
+        _event: &simulation::Event,
+        events: &mut std::collections::BinaryHeap<simulation::Event>,
+    ) {
+        if !state
+            .attacker_auras
+            .get(&Aura::SuddenImpactReady)
+            .is_some_and(|end| state.time_ms < *end)
+        {
+            panic!();
+        }
+
+        simulation::insert_passive_triggered_event(
+            events,
+            state.time_ms,
+            PassiveEffect::SuddenImpactReady,
+        );
+
+        // trigger the damage
+        let true_damage: f64 = self.min_damage
+            + (self.max_damage - self.min_damage) / 17.0 * (game_params.level as f64 - 1.0);
+
+        state.total_damage.add(&Damage {
+            avg: true_damage,
+            min: true_damage,
+            max: true_damage,
+        });
+
+        // set cooldown
+        state
+            .effects_cooldowns
+            .insert(PassiveEffect::SuddenImpact, state.time_ms + self.cooldown);
     }
 }
 
@@ -279,11 +351,11 @@ impl GatheringStorm {
 }
 
 pub struct RunesData {
-    dark_harvest: DarkHarvest,
-    sudden_impact: SuddenImpact,
-    eyeball_collection: EyeballCollection,
-    absolute_focus: AbsoluteFocus,
-    gathering_storm: GatheringStorm,
+    pub dark_harvest: DarkHarvest,
+    pub sudden_impact: SuddenImpact,
+    pub eyeball_collection: EyeballCollection,
+    pub absolute_focus: AbsoluteFocus,
+    pub gathering_storm: GatheringStorm,
 }
 
 pub fn pull_runes() -> RunesData {
@@ -317,8 +389,10 @@ pub fn pull_runes() -> RunesData {
     };
 
     let sudden_impact = SuddenImpact {
-        low_damage: 20.0,
-        high_damage: 80.0,
+        min_damage: 20.0,
+        max_damage: 80.0,
+        buff_duration: 4000,
+        cooldown: 10_000,
     };
 
     let eyeball_collection = EyeballCollection {
