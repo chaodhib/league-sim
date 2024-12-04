@@ -15,7 +15,7 @@ mod simulation;
 use attack::Damage;
 use crossbeam::queue::ArrayQueue;
 use data_input::{
-    common::{compile_passive_effects, GameParams, TargetStats},
+    common::{compile_passive_effects, Champion, GameParams, TargetStats},
     items::{above_gold_cap, has_item_group_duplicates, Item},
     runes::Rune,
 };
@@ -131,6 +131,7 @@ fn run_multiple() {
 
         let mut game_params: GameParams<'_> = GameParams {
             champion_stats: &static_data.base_champion_stats,
+            champion: Champion::Khazix,
             level: level,
             items: &selected_items,
             initial_config: &config,
@@ -289,6 +290,7 @@ fn run_single() {
     }
 
     let mut game_params: GameParams<'_> = GameParams {
+        champion: Champion::Khazix,
         champion_stats: &static_data.base_champion_stats,
         level: level,
         items: &selected_items,

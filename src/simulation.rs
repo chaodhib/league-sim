@@ -9,8 +9,8 @@ use crate::{
     data_input::{
         abilities::{find_ability, SpellData},
         common::{
-            compile_passive_effects, compute_attacker_stats, AttackerStats, Aura, GameParams,
-            PassiveEffect,
+            compile_passive_effects, compute_attacker_stats, AttackerStats, Aura, Champion,
+            GameParams, PassiveEffect,
         },
     },
 };
@@ -126,7 +126,7 @@ fn on_event(
 
     match event.category {
         EventCategory::AttackCastStart => {
-            handle_stealth_exit_if_applicable(event, events, game_params, state);
+            trigger_stealth_exit_if_applicable(event, events, game_params, state);
             let attacker_stats: AttackerStats = compute_attacker_stats(game_params, state);
 
             let cast_time = cast_time(
@@ -142,7 +142,7 @@ fn on_event(
         }
         EventCategory::AttackCastEnd => {
             handle_dash_if_applicable(event, events, game_params, state);
-            handle_stealth_exit_if_applicable(event, events, game_params, state);
+            trigger_stealth_exit_if_applicable(event, events, game_params, state);
 
             let attacker_stats: AttackerStats = compute_attacker_stats(game_params, state);
 
@@ -220,13 +220,63 @@ fn handle_dash_if_applicable(
     }
 }
 
-fn handle_stealth_exit_if_applicable(
+fn trigger_stealth_exit_if_applicable(
     event: &Event,
     events: &mut BinaryHeap<Event>,
     game_params: &GameParams,
     state: &mut State,
 ) {
-    // todo!();
+    if !state
+        .attacker_auras
+        .get(&Aura::Stealth)
+        .is_some_and(|&time_end| state.time_ms < time_end)
+    {
+        return;
+    }
+
+    // kha'zix is an exception in the sense that its stealth is broken only at the end
+    // of the AA windup. Regarding abilities, it's the same as other champs
+    if game_params.champion == Champion::Khazix {
+        if event
+            .attack_type
+            .is_some_and(|attack_type| attack_type == AttackType::AA)
+            && event.category == EventCategory::AttackCastEnd
+        {
+            trigger_stealth_exit(event, events, game_params, state);
+        } else if event
+            .attack_type
+            .is_some_and(|attack_type| attack_type != AttackType::AA)
+            && event.category == EventCategory::AttackCastStart
+        {
+            trigger_stealth_exit(event, events, game_params, state);
+        }
+    } else {
+        if event.category == EventCategory::AttackCastStart {
+            trigger_stealth_exit(event, events, game_params, state);
+        }
+    }
+}
+
+fn trigger_stealth_exit(
+    event: &Event,
+    events: &mut BinaryHeap<Event>,
+    game_params: &GameParams<'_>,
+    state: &mut State<'_>,
+) {
+    state.attacker_auras.remove(&Aura::Stealth);
+
+    for effect in game_params.passive_effects.iter() {
+        effect.handle_stealth_exit_event(event, events, game_params, state)
+    }
+
+    for effect in state
+        .attacker_auras
+        .clone()
+        .iter()
+        .flat_map(|aura| aura.0.passive_effects())
+    {
+        effect.handle_stealth_exit_event(event, events, game_params, state)
+    }
 }
 
 fn add_cooldown_to_state(state: &mut State<'_>, attack_type: AttackType, cooldown_end_ms: u64) {
@@ -330,10 +380,22 @@ fn on_post_damage_events(
     event: &Event,
     events: &mut BinaryHeap<Event>,
 ) {
-    println!("on_post_damage_events: {:#?}", game_params.passive_effects);
+    println!("on_post_damage_events");
     for effect in game_params.passive_effects.iter() {
-        effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events)
+        effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events);
+        println!("{:#?}", effect);
     }
+
+    for effect in state
+        .attacker_auras
+        .clone()
+        .iter()
+        .flat_map(|aura| aura.0.passive_effects())
+    {
+        effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events);
+        println!("{:#?}", effect);
+    }
+    println!("on_post_damage_events-----------------------");
 }
 
 #[cfg(test)]

@@ -14,6 +14,11 @@ use super::{
     runes::{collect_runes_stats, Rune, RunesData},
 };
 
+#[derive(PartialEq)]
+pub enum Champion {
+    Khazix,
+}
+
 // see https://leagueoflegends.fandom.com/wiki/Champion_statistic?so=search#Offensive
 #[derive(Debug, Default)]
 pub struct AttackerStats {
@@ -76,6 +81,7 @@ pub struct TargetStats {
 
 // this is a container for data that is constant throughout the duration of each simulation
 pub struct GameParams<'a> {
+    pub champion: Champion,
     pub champion_stats: &'a ChampionStats,
     pub level: u64,
     pub items: &'a Vec<&'a Item>,
@@ -90,7 +96,7 @@ pub struct GameParams<'a> {
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum PassiveEffect {
-    // items
+    // Items
     Haunt,
     BitterCold,
     Eminence,
@@ -116,7 +122,10 @@ pub enum PassiveEffect {
     // Runes
     DarkHarvest,
     SuddenImpact,
+
+    // Auras
     SuddenImpactReady,
+    Stealth,
 }
 
 impl PassiveEffect {
@@ -178,6 +187,7 @@ impl PassiveEffect {
 
             // auras
             PassiveEffect::SuddenImpactReady => "",
+            PassiveEffect::Stealth => "",
         }
     }
 
@@ -230,6 +240,7 @@ impl PassiveEffect {
                 event,
                 events,
             ),
+            PassiveEffect::Stealth => (),
         }
     }
 
@@ -268,6 +279,48 @@ impl PassiveEffect {
                 Rune::SuddenImpact.handle_dash_event(event, events, state, game_params)
             }
             PassiveEffect::SuddenImpactReady => (),
+
+            PassiveEffect::Stealth => (),
+        }
+    }
+
+    pub(crate) fn handle_stealth_exit_event(
+        &self,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+        game_params: &GameParams<'_>,
+        state: &mut State<'_>,
+    ) {
+        match self {
+            PassiveEffect::Haunt => todo!(),
+            PassiveEffect::BitterCold => todo!(),
+            PassiveEffect::Eminence => todo!(),
+            PassiveEffect::IgnorePain => todo!(),
+            PassiveEffect::Defy => todo!(),
+            PassiveEffect::Hackshorn => todo!(),
+            PassiveEffect::Ichorshield => todo!(),
+            PassiveEffect::Lifeline => todo!(),
+            PassiveEffect::Preparation => todo!(),
+            PassiveEffect::Extraction => todo!(),
+            PassiveEffect::EverRisingMoon => todo!(),
+            PassiveEffect::Blackout => todo!(),
+            PassiveEffect::Extinguish => todo!(),
+            PassiveEffect::Cleave => todo!(),
+            PassiveEffect::GrievousWounds => todo!(),
+            PassiveEffect::Carve => todo!(),
+            PassiveEffect::Fervor => todo!(),
+            PassiveEffect::Death => todo!(),
+            PassiveEffect::Taxes => todo!(),
+            PassiveEffect::Annul => todo!(),
+            PassiveEffect::IonianInsight => (),
+            PassiveEffect::DarkHarvest => (),
+
+            PassiveEffect::SuddenImpact => {
+                Rune::SuddenImpact.handle_stealth_exit_event(event, events, state, game_params)
+            }
+            PassiveEffect::SuddenImpactReady => (),
+
+            PassiveEffect::Stealth => (),
         }
     }
 }
@@ -281,12 +334,14 @@ pub enum DamageType {
 #[derive(Clone, Eq, Hash, PartialEq)]
 pub enum Aura {
     SuddenImpactReady,
+    Stealth, // includes Camouflage & Invisibility
 }
 
 impl Aura {
     pub fn passive_effects(&self) -> Vec<PassiveEffect> {
         match self {
             Aura::SuddenImpactReady => vec![PassiveEffect::SuddenImpactReady],
+            Aura::Stealth => vec![],
         }
     }
 

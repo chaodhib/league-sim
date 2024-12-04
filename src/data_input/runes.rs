@@ -137,6 +137,25 @@ impl Rune {
             _ => (),
         }
     }
+
+    pub(crate) fn handle_stealth_exit_event(
+        &self,
+        event: &simulation::Event,
+        events: &mut std::collections::BinaryHeap<simulation::Event>,
+        state: &mut State<'_>,
+        game_params: &GameParams<'_>,
+    ) {
+        match self {
+            Rune::SuddenImpact => {
+                game_params
+                    .runes_data
+                    .sudden_impact
+                    .handle_stealth_exit_event(event, events, state, game_params);
+            }
+
+            _ => (),
+        }
+    }
 }
 
 struct DarkHarvest {
@@ -246,6 +265,16 @@ impl SuddenImpact {
         state
             .attacker_auras
             .insert(Aura::SuddenImpactReady, event.time_ms + self.buff_duration);
+    }
+
+    pub fn handle_stealth_exit_event(
+        &self,
+        event: &simulation::Event,
+        events: &mut std::collections::BinaryHeap<simulation::Event>,
+        state: &mut State<'_>,
+        game_params: &GameParams<'_>,
+    ) {
+        self.handle_dash_event(event, events, state, game_params);
     }
 
     pub fn handle_buff_triggered(
