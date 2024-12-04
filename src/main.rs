@@ -12,10 +12,9 @@ mod attack;
 mod data_input;
 mod simulation;
 
-use attack::Damage;
 use crossbeam::queue::ArrayQueue;
 use data_input::{
-    common::{compile_passive_effects, Champion, GameParams, TargetStats},
+    common::{compile_passive_effects, Champion, CritHandlingChoice, GameParams, TargetStats},
     items::{above_gold_cap, has_item_group_duplicates, Item},
     runes::Rune,
 };
@@ -23,20 +22,16 @@ use itertools::Itertools;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 
 struct Build {
-    damage: Damage,
-    dps: Damage,
+    damage: f64,
+    dps: f64,
     item_ids: Vec<u64>,
     time_ms: u64,
 }
 
 #[derive(Debug)]
 struct TopResult {
-    damage_min: f64,
-    damage_max: f64,
-    damage_avg: f64,
-    dps_min: f64,
-    dps_max: f64,
-    dps_avg: f64,
+    damage: f64,
+    dps: f64,
     item_names: Vec<String>,
     cost: u64,
     time_ms: u64,
@@ -141,6 +136,7 @@ fn run_multiple() {
             attacker_hp_perc: hp_perc,
             runes_data: &static_data.runes_data,
             passive_effects: &mut Vec::new(),
+            crit_handling: CritHandlingChoice::Min,
         };
 
         compile_passive_effects(&mut game_params);
@@ -171,7 +167,7 @@ fn run_multiple() {
 
     let results = best_builds
         .into_iter()
-        .sorted_by(|a, b| b.dps.min.partial_cmp(&a.dps.min).unwrap())
+        .sorted_by(|a, b| b.dps.partial_cmp(&a.dps).unwrap())
         .take(3)
         .map(|build| {
             let item_names = build
@@ -187,12 +183,8 @@ fn run_multiple() {
                 .fold(0, |acc, item| acc + item.total_cost);
 
             TopResult {
-                damage_min: build.damage.min,
-                damage_max: build.damage.max,
-                damage_avg: build.damage.avg,
-                dps_min: build.dps.min,
-                dps_max: build.dps.max,
-                dps_avg: build.dps.avg,
+                damage: build.damage,
+                dps: build.dps,
                 item_names,
                 cost,
                 time_ms: build.time_ms,
@@ -301,6 +293,7 @@ fn run_single() {
         runes: &runes,
         attacker_hp_perc: hp_perc,
         passive_effects: &mut Vec::new(),
+        crit_handling: CritHandlingChoice::Min,
     };
 
     compile_passive_effects(&mut game_params);

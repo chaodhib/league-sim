@@ -6,51 +6,12 @@ use std::{
 
 use crate::data_input::{
     abilities::{find_ability, SpellData},
-    common::{AttackerStats, TargetStats},
+    common::{AttackerStats, CritHandlingChoice, GameParams, TargetStats},
 };
-
-#[derive(Debug, Clone)]
-pub struct Damage {
-    pub min: f64,
-    pub max: f64,
-    pub avg: f64,
-}
-
-impl Add for Damage {
-    type Output = Self;
-
-    fn add(self, other: Damage) -> Damage {
-        Damage {
-            min: self.min + other.min,
-            max: self.max + other.max,
-            avg: self.avg + other.avg,
-        }
-    }
-}
-
-impl Mul<f64> for Damage {
-    type Output = Self;
-
-    fn mul(self, other: f64) -> Damage {
-        Damage {
-            min: self.min * other,
-            max: self.max * other,
-            avg: self.avg * other,
-        }
-    }
-}
-
-impl Damage {
-    pub fn add(&mut self, other: &Damage) {
-        self.min += other.min;
-        self.max += other.max;
-        self.avg += other.avg;
-    }
-}
 
 #[derive(Debug)]
 pub struct SpellResult {
-    pub damage: Damage,
+    pub damage: f64,
     pub cooldown: Option<u64>,
 }
 
@@ -80,22 +41,27 @@ impl fmt::Display for AttackType {
 
 pub fn simulate_spell(
     attacker_stats: &AttackerStats,
-    level: u64,
-    target_stats: &TargetStats,
+    game_params: &GameParams,
     spell_name: AttackType,
-    config: &HashMap<String, String>,
-    abilities: &Vec<SpellData>,
 ) -> SpellResult {
     let mut ability: Option<&SpellData> = None;
     if spell_name != AttackType::AA {
-        ability = Some(find_ability(abilities, spell_name, config));
+        ability = Some(find_ability(
+            game_params.abilities,
+            spell_name,
+            game_params.initial_config,
+        ));
     }
 
     let spell_result: SpellResult = match spell_name {
-        AttackType::AA => simulate_aa(attacker_stats, target_stats),
-        AttackType::Q => simulate_q(attacker_stats, target_stats, ability.unwrap()),
-        AttackType::W => simulate_w(attacker_stats, target_stats, ability.unwrap()),
-        AttackType::E => simulate_e(attacker_stats, target_stats, ability.unwrap()),
+        AttackType::AA => simulate_aa(
+            attacker_stats,
+            game_params.target_stats,
+            game_params.crit_handling,
+        ),
+        AttackType::Q => simulate_q(attacker_stats, game_params.target_stats, ability.unwrap()),
+        AttackType::W => simulate_w(attacker_stats, game_params.target_stats, ability.unwrap()),
+        AttackType::E => simulate_e(attacker_stats, game_params.target_stats, ability.unwrap()),
         AttackType::R => todo!(),
         // &_ => todo!(),
     };
@@ -144,7 +110,7 @@ fn compute_ability_damage(
     ability: &SpellData,
     // config: &HashMap<String, String>,
     spell_rank: u64,
-) -> Damage {
+) -> f64 {
     let base_damage: &f64 = ability.ad_damage.get(&spell_rank).unwrap();
     // println!("1 base_damage: {:#?}", base_damage);
 
@@ -159,14 +125,14 @@ fn compute_ability_damage(
 
     // println!("5 total_damage post mitigation: {:#?}", dmg);
 
-    return Damage {
-        min: dmg,
-        max: dmg,
-        avg: dmg,
-    };
+    dmg
 }
 
-fn simulate_aa(attacker_stats: &AttackerStats, target_stats: &TargetStats) -> SpellResult {
+fn simulate_aa(
+    attacker_stats: &AttackerStats,
+    target_stats: &TargetStats,
+    crit_handling: CritHandlingChoice,
+) -> SpellResult {
     let base_damage: f64 = attacker_stats.ad_base + attacker_stats.ad_bonus;
     let crit_damage: f64 = if attacker_stats.crit_chance > 0.0 {
         base_damage * 1.75
@@ -183,12 +149,20 @@ fn simulate_aa(attacker_stats: &AttackerStats, target_stats: &TargetStats) -> Sp
 
     let cooldown = (1000.0_f64 / total_attack_speed(attacker_stats)).round() as u64;
 
+    let damage = match crit_handling {
+        CritHandlingChoice::Min => {
+            compute_mitigated_damage(attacker_stats, target_stats, base_damage)
+        }
+        CritHandlingChoice::Max => {
+            compute_mitigated_damage(attacker_stats, target_stats, crit_damage)
+        }
+        CritHandlingChoice::Avg => {
+            compute_mitigated_damage(attacker_stats, target_stats, avg_damage)
+        }
+    };
+
     SpellResult {
-        damage: Damage {
-            min: compute_mitigated_damage(attacker_stats, target_stats, base_damage),
-            max: compute_mitigated_damage(attacker_stats, target_stats, crit_damage),
-            avg: compute_mitigated_damage(attacker_stats, target_stats, avg_damage),
-        },
+        damage,
         cooldown: Some(cooldown),
     }
 }

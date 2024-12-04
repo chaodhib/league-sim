@@ -19,6 +19,13 @@ pub enum Champion {
     Khazix,
 }
 
+#[derive(PartialEq, Clone, Copy)]
+pub enum CritHandlingChoice {
+    Min,
+    Max,
+    Avg,
+}
+
 // see https://leagueoflegends.fandom.com/wiki/Champion_statistic?so=search#Offensive
 #[derive(Debug, Default)]
 pub struct AttackerStats {
@@ -92,6 +99,7 @@ pub struct GameParams<'a> {
     pub attacker_hp_perc: f64,
     pub runes_data: &'a RunesData,
     pub passive_effects: &'a mut Vec<PassiveEffect>,
+    pub crit_handling: CritHandlingChoice,
 }
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -193,7 +201,7 @@ impl PassiveEffect {
 
     pub fn handle_on_post_damage(
         &self,
-        damage: &crate::attack::Damage,
+        damage: f64,
         attacker_stats: &AttackerStats,
         state: &mut State<'_>,
         game_params: &GameParams<'_>,
@@ -347,7 +355,7 @@ impl Aura {
 
     fn handle_on_post_damage(
         &self,
-        damage: &crate::attack::Damage,
+        damage: f64,
         attacker_stats: &AttackerStats,
         state: &mut State<'_>,
         game_params: &GameParams<'_>,

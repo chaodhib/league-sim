@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    attack::{cast_time, simulate_spell, AttackType, Damage, SpellCategory, SpellResult},
+    attack::{cast_time, simulate_spell, AttackType, SpellCategory, SpellResult},
     data_input::{
         abilities::{find_ability, SpellData},
         common::{
@@ -47,7 +47,7 @@ impl PartialOrd for Event {
 }
 
 pub struct State<'a> {
-    pub total_damage: &'a mut Damage,
+    pub total_damage: f64,
     pub time_ms: u64,
     pub cooldowns: &'a mut HashMap<AttackType, u64>,
     pub effects_cooldowns: &'a mut HashMap<PassiveEffect, u64>,
@@ -70,16 +70,12 @@ impl State<'_> {
     }
 }
 
-pub fn run(mut selected_commands: VecDeque<AttackType>, game_params: &GameParams) -> (Damage, u64) {
+pub fn run(mut selected_commands: VecDeque<AttackType>, game_params: &GameParams) -> (f64, u64) {
     // use a priority queue to manage the events
     let mut events: BinaryHeap<Event> = BinaryHeap::new();
 
     let mut state: State = State {
-        total_damage: &mut Damage {
-            min: 0.0,
-            max: 0.0,
-            avg: 0.0,
-        },
+        total_damage: 0.0,
         time_ms: 0,
         cooldowns: &mut HashMap::new(),
         last_attack_time_ms: 0,
@@ -101,7 +97,7 @@ fn execute_commands(
     remaining_commands: &mut VecDeque<AttackType>,
     state: &mut State,
     game_params: &GameParams,
-) -> (Damage, u64) {
+) -> (f64, u64) {
     loop {
         match events.pop() {
             None => return (state.total_damage.clone(), state.last_attack_time_ms),
@@ -146,19 +142,13 @@ fn on_event(
 
             let attacker_stats: AttackerStats = compute_attacker_stats(game_params, state);
 
-            let spell_result: SpellResult = simulate_spell(
-                &attacker_stats,
-                game_params.level,
-                game_params.target_stats,
-                event.attack_type.unwrap(),
-                game_params.initial_config,
-                game_params.abilities,
-            );
+            let spell_result: SpellResult =
+                simulate_spell(&attacker_stats, game_params, event.attack_type.unwrap());
 
             // println!("spell_result: {:#?}", spell_result);
             on_damage_event(&spell_result.damage, state, event.time_ms);
             on_post_damage_events(
-                &spell_result.damage,
+                spell_result.damage,
                 &attacker_stats,
                 state,
                 game_params,
@@ -283,8 +273,8 @@ fn add_cooldown_to_state(state: &mut State<'_>, attack_type: AttackType, cooldow
     state.cooldowns.insert(attack_type, cooldown_end_ms);
 }
 
-fn on_damage_event(damage: &Damage, state: &mut State, time_ms: u64) {
-    state.total_damage.add(damage);
+fn on_damage_event(damage: &f64, state: &mut State, time_ms: u64) {
+    state.total_damage += damage;
     state.last_attack_time_ms = time_ms;
 }
 
@@ -373,7 +363,7 @@ fn on_passive_triggered(event: &Event) {
 }
 
 fn on_post_damage_events(
-    damage: &Damage,
+    damage: f64,
     attacker_stats: &AttackerStats,
     state: &mut State,
     game_params: &GameParams,
