@@ -10,8 +10,10 @@ use crate::{
         abilities::{find_ability, SpellData},
         common::{
             compile_passive_effects, compute_attacker_stats, AttackerStats, Aura, Champion,
-            GameParams, PassiveEffect,
+            GameParams, PassiveEffect, TargetStats,
         },
+        items::Item,
+        runes::Rune,
     },
 };
 
@@ -45,9 +47,27 @@ impl PartialOrd for Event {
         Some(self.cmp(other))
     }
 }
+#[derive(Clone, Debug)]
+enum DamageSource {
+    Ability,
+    // Passive,
+    Rune,
+    Item,
+}
+
+#[derive(Clone, Debug)]
+pub struct Damage {
+    amount: f64,
+    time_ms: u64,
+    source: DamageSource,
+    source_ability: Option<AttackType>,
+    source_rune: Option<Rune>,
+    source_item: Option<String>,
+}
 
 pub struct State<'a> {
     pub total_damage: f64,
+    pub damage_history: &'a mut Vec<Damage>,
     pub time_ms: u64,
     pub cooldowns: &'a mut HashMap<AttackType, u64>,
     pub effects_cooldowns: &'a mut HashMap<PassiveEffect, u64>,
@@ -60,17 +80,22 @@ pub struct State<'a> {
 impl State<'_> {
     // fn refresh_cds_and_auras(state: &mut State<'_>) {
     fn refresh_cds_and_auras(&mut self) {
-        self.effects_cooldowns
-            .retain(|_, end_at| *end_at < self.time_ms);
+        // println!("self.effects_cooldowns: {:#?}", self.effects_cooldowns);
 
-        self.cooldowns.retain(|_, end_at| *end_at < self.time_ms);
+        self.effects_cooldowns
+            .retain(|_, end_at| *end_at > self.time_ms);
+
+        self.cooldowns.retain(|_, end_at| *end_at > self.time_ms);
 
         self.attacker_auras
-            .retain(|_, end_at| *end_at < self.time_ms);
+            .retain(|_, end_at| *end_at > self.time_ms);
     }
 }
 
-pub fn run(mut selected_commands: VecDeque<AttackType>, game_params: &GameParams) -> (f64, u64) {
+pub fn run(
+    mut selected_commands: VecDeque<AttackType>,
+    game_params: &GameParams,
+) -> (f64, Vec<Damage>, u64) {
     // use a priority queue to manage the events
     let mut events: BinaryHeap<Event> = BinaryHeap::new();
 
@@ -83,6 +108,7 @@ pub fn run(mut selected_commands: VecDeque<AttackType>, game_params: &GameParams
         config: &mut HashMap::new(),
         attacker_auras: &mut HashMap::new(),
         target_auras: &mut HashMap::new(),
+        damage_history: &mut Vec::new(),
     };
 
     // add first attack event
@@ -97,10 +123,16 @@ fn execute_commands(
     remaining_commands: &mut VecDeque<AttackType>,
     state: &mut State,
     game_params: &GameParams,
-) -> (f64, u64) {
+) -> (f64, Vec<Damage>, u64) {
     loop {
         match events.pop() {
-            None => return (state.total_damage.clone(), state.last_attack_time_ms),
+            None => {
+                return (
+                    state.total_damage.clone(),
+                    state.damage_history.clone(),
+                    state.last_attack_time_ms,
+                )
+            }
             Some(next_event) => {
                 on_event(&next_event, events, remaining_commands, game_params, state)
             }
@@ -146,7 +178,7 @@ fn on_event(
                 simulate_spell(&attacker_stats, game_params, event.attack_type.unwrap());
 
             // println!("spell_result: {:#?}", spell_result);
-            on_damage_event(&spell_result.damage, state, event.time_ms);
+            on_damage_from_ability(&spell_result.damage, state, event);
             on_post_damage_events(
                 spell_result.damage,
                 &attacker_stats,
@@ -273,9 +305,30 @@ fn add_cooldown_to_state(state: &mut State<'_>, attack_type: AttackType, cooldow
     state.cooldowns.insert(attack_type, cooldown_end_ms);
 }
 
-fn on_damage_event(damage: &f64, state: &mut State, time_ms: u64) {
+fn on_damage_from_ability(damage: &f64, state: &mut State, event: &Event) {
     state.total_damage += damage;
-    state.last_attack_time_ms = time_ms;
+    state.damage_history.push(Damage {
+        amount: *damage,
+        time_ms: event.time_ms,
+        source: DamageSource::Ability,
+        source_ability: event.attack_type,
+        source_rune: None,
+        source_item: None,
+    });
+    state.last_attack_time_ms = event.time_ms;
+}
+
+pub fn on_damage_from_rune(damage: &f64, state: &mut State, event: &Event, rune: Rune) {
+    state.total_damage += damage;
+    state.damage_history.push(Damage {
+        amount: *damage,
+        time_ms: event.time_ms,
+        source: DamageSource::Rune,
+        source_ability: None,
+        source_rune: Some(rune),
+        source_item: None,
+    });
+    state.last_attack_time_ms = event.time_ms;
 }
 
 fn insert_attack_cast_end_event(

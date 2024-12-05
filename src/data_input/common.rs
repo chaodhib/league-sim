@@ -80,10 +80,11 @@ impl Add for AttackerStats {
 }
 
 // see https://leagueoflegends.fandom.com/wiki/Champion_statistic?so=search#Defensive
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TargetStats {
     pub armor: f64,
-    pub hp: f64,
+    pub max_health: f64,
+    pub current_health: f64,
 }
 
 // this is a container for data that is constant throughout the duration of each simulation
@@ -429,6 +430,14 @@ pub fn compute_attacker_stats(game_params: &GameParams, state: &State) -> Attack
     apply_adaptive_force(&mut offensive_stats);
 
     offensive_stats
+}
+
+pub fn compute_target_stats(game_params: &GameParams, state: &State) -> TargetStats {
+    return TargetStats {
+        armor: game_params.target_stats.armor,
+        max_health: game_params.target_stats.max_health,
+        current_health: game_params.target_stats.current_health - state.total_damage,
+    };
 }
 
 fn apply_passives(offensive_stats: &mut AttackerStats, items: &Vec<&Item>) {

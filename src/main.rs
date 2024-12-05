@@ -58,7 +58,8 @@ fn run_multiple() {
     let gold_cap: u64 = 20000;
     let target_stats: TargetStats = TargetStats {
         armor: 100.0,
-        hp: 2600.0,
+        max_health: 2600.0,
+        current_health: 2600.0,
     };
 
     // list of configs provided by the user. Static once the simulation is running
@@ -141,7 +142,8 @@ fn run_multiple() {
 
         compile_passive_effects(&mut game_params);
 
-        let (damage, time_ms) = simulation::run(selected_commands.clone(), &game_params);
+        let (damage, _damage_history, time_ms) =
+            simulation::run(selected_commands.clone(), &game_params);
 
         // println!("DPS:: {:#?}", damage * (1000_f64 / time_ms as f64));
         let build = Build {
@@ -217,7 +219,8 @@ fn run_single() {
     let _gold_cap: u64 = 20000;
     let target_stats: TargetStats = TargetStats {
         armor: 100.0,
-        hp: 2600.0,
+        max_health: 2600.0,
+        current_health: 1300.0,
     };
 
     // list of configs provided by the user. Static once the simulation is running
@@ -298,10 +301,12 @@ fn run_single() {
 
     compile_passive_effects(&mut game_params);
 
-    let (damage, time_ms) = simulation::run(selected_commands.clone(), &game_params);
+    let (damage, damage_history, time_ms) =
+        simulation::run(selected_commands.clone(), &game_params);
     println!("damage: {:#?}", damage);
     println!("time_ms: {:#?}", time_ms);
-    println!("DPS:: {:#?}", damage * (1000_f64 / time_ms as f64));
+    println!("DPS: {:#?}", damage * (1000_f64 / time_ms as f64));
+    println!("damage_history: {:#?}", damage_history);
 
     let global_elapsed = global_start.elapsed();
     println!("Elapsed: {:.2?}", global_elapsed);

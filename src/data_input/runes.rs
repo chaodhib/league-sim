@@ -1,7 +1,7 @@
 use super::common::{self, AttackerStats, Aura, GameParams, PassiveEffect};
 use crate::simulation::{self, State};
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Rune {
     DarkHarvest,
     SuddenImpact,
@@ -174,8 +174,9 @@ impl DarkHarvest {
         event: &crate::simulation::Event,
         events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
     ) {
+        let target_stats = common::compute_target_stats(game_params, state);
         // check if it is in cooldown & hp requirement
-        let current_hp = state.total_damage / game_params.target_stats.hp * 100.0;
+        let current_hp = target_stats.current_health / target_stats.max_health * 100.0;
         if current_hp >= self.hp_perc_threshold
             || state
                 .effects_cooldowns
@@ -210,7 +211,8 @@ impl DarkHarvest {
             + self.bonus_ad * attacker_stats.ad_bonus
             + self.bonus_ap * attacker_stats.ability_power;
 
-        state.total_damage += common::apply_adaptive_damage(adaptive_damage, attacker_stats);
+        let damage = common::apply_adaptive_damage(adaptive_damage, attacker_stats);
+        simulation::on_damage_from_rune(&damage, state, event, Rune::DarkHarvest);
 
         // set new stacks value
         state.config.insert(
@@ -276,7 +278,7 @@ impl SuddenImpact {
         _attacker_stats: &AttackerStats,
         state: &mut State<'_>,
         game_params: &GameParams<'_>,
-        _event: &simulation::Event,
+        event: &simulation::Event,
         events: &mut std::collections::BinaryHeap<simulation::Event>,
     ) {
         if !state
@@ -297,7 +299,10 @@ impl SuddenImpact {
         let true_damage: f64 = self.min_damage
             + (self.max_damage - self.min_damage) / 17.0 * (game_params.level as f64 - 1.0);
 
-        state.total_damage += true_damage;
+        simulation::on_damage_from_rune(&true_damage, state, event, Rune::SuddenImpact);
+
+        // remove buff
+        state.attacker_auras.remove(&Aura::SuddenImpactReady);
 
         // set cooldown
         state
