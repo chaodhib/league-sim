@@ -103,7 +103,7 @@ fn run_multiple() {
     runes.insert(Rune::AdaptiveForce1);
     runes.insert(Rune::AdaptiveForce2);
 
-    let static_data = data_input::parse_files(&item_ids);
+    let static_data = data_input::parse_files(&item_ids, &config);
 
     // return;
 
@@ -260,7 +260,7 @@ fn run_single() {
         3072, // Bloodthirster
     ];
 
-    let static_data = data_input::parse_files(&item_ids);
+    let static_data = data_input::parse_files(&item_ids, &config);
 
     let mut selected_items: Vec<&Item> = Vec::new();
 

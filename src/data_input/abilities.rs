@@ -113,7 +113,9 @@ pub struct AbilitiesExtraData {
 //     return false;
 // }
 
-pub fn pull_abilities_data() -> (Vec<SpellData>, AbilitiesExtraData) {
+pub fn pull_abilities_data(
+    config: &HashMap<String, String>,
+) -> (Vec<SpellData>, AbilitiesExtraData) {
     let file = File::open("/home/chaodhib/git/lolstaticdata/champions/Khazix.json").unwrap();
     let reader: BufReader<File> = BufReader::new(file);
     let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
@@ -147,6 +149,17 @@ pub fn pull_abilities_data() -> (Vec<SpellData>, AbilitiesExtraData) {
                 .unwrap()
                 * 1000u64,
         );
+    }
+
+    if config.get("CHAMPION_KHAZIX_ISOLATED_TARGET").unwrap() == "TRUE"
+        && config
+            .get("CHAMPION_KHAZIX_Q_EVOLVED")
+            .unwrap_or(&"TRUE".to_string())
+            == "TRUE"
+    {
+        for cooldown in cooldown_ms.values_mut() {
+            *cooldown = (*cooldown as f64 * (1.0 - 0.45)) as u64;
+        }
     }
 
     let ap_damage: HashMap<u64, f64> = HashMap::new();

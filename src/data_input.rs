@@ -19,10 +19,10 @@ pub struct StaticData {
     pub runes_data: RunesData,
 }
 
-pub fn parse_files(item_ids: &[u64]) -> StaticData {
+pub fn parse_files(item_ids: &[u64], config: &HashMap<String, String>) -> StaticData {
     let base_champion_stats = get_base_champion_stats();
     let items_map = pull_items_data(item_ids);
-    let (abilities, abilities_extra_data) = pull_abilities_data();
+    let (abilities, abilities_extra_data) = pull_abilities_data(config);
     let runes_data = pull_runes();
 
     // println!("base_champion_stats: {:#?}", base_champion_stats);
