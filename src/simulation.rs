@@ -114,8 +114,20 @@ pub fn run(
     // add first attack event
     insert_next_attack_event(&mut events, &mut selected_commands, &mut state, 0);
 
+    add_initial_auras(game_params, &mut state);
+
     // and launch
     return execute_commands(&mut events, &mut selected_commands, &mut state, game_params);
+}
+
+fn add_initial_auras(game_params: &GameParams<'_>, state: &mut State<'_>) {
+    for aura in game_params.initial_attacker_auras.iter() {
+        state.attacker_auras.insert(aura.clone(), 5_000);
+    }
+
+    for aura in game_params.initial_target_auras.iter() {
+        state.target_auras.insert(aura.clone(), 5_000);
+    }
 }
 
 fn execute_commands(
@@ -178,7 +190,12 @@ fn on_event(
                 simulate_spell(&attacker_stats, game_params, event.attack_type.unwrap());
 
             // println!("spell_result: {:#?}", spell_result);
-            on_damage_from_ability(&spell_result.damage, state, event);
+            on_damage_from_ability(
+                &spell_result.damage,
+                state,
+                event.time_ms,
+                event.attack_type.unwrap(),
+            );
             on_post_damage_events(
                 spell_result.damage,
                 &attacker_stats,
@@ -305,17 +322,22 @@ fn add_cooldown_to_state(state: &mut State<'_>, attack_type: AttackType, cooldow
     state.cooldowns.insert(attack_type, cooldown_end_ms);
 }
 
-fn on_damage_from_ability(damage: &f64, state: &mut State, event: &Event) {
+pub fn on_damage_from_ability(
+    damage: &f64,
+    state: &mut State,
+    time_ms: u64,
+    attack_type: AttackType,
+) {
     state.total_damage += damage;
     state.damage_history.push(Damage {
         amount: *damage,
-        time_ms: event.time_ms,
+        time_ms: time_ms,
         source: DamageSource::Ability,
-        source_ability: event.attack_type,
+        source_ability: Some(attack_type),
         source_rune: None,
         source_item: None,
     });
-    state.last_attack_time_ms = event.time_ms;
+    state.last_attack_time_ms = time_ms;
 }
 
 pub fn on_damage_from_rune(damage: &f64, state: &mut State, event: &Event, rune: Rune) {
@@ -424,19 +446,21 @@ fn on_post_damage_events(
     events: &mut BinaryHeap<Event>,
 ) {
     println!("on_post_damage_events");
+    println!("passive_effects:");
     for effect in game_params.passive_effects.iter() {
-        effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events);
         println!("{:#?}", effect);
+        effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events);
     }
 
+    println!("aura passive_effects:");
     for effect in state
         .attacker_auras
         .clone()
         .iter()
         .flat_map(|aura| aura.0.passive_effects())
     {
-        effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events);
         println!("{:#?}", effect);
+        effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events);
     }
     println!("on_post_damage_events-----------------------");
 }

@@ -2,9 +2,14 @@ use std::{collections::HashMap, fs::File, io::BufReader};
 
 use serde_json::Value;
 
-use crate::attack::{AttackType, SpellCategory};
+use crate::{
+    attack::{compute_mitigated_damage, AttackType, SpellCategory},
+    simulation,
+};
 
-use super::common::PassiveEffect;
+use super::common::{
+    compute_attacker_stats, compute_target_stats, DamageType, Effect, PassiveEffect,
+};
 
 #[derive(Debug)]
 pub struct SpellData {
@@ -16,8 +21,69 @@ pub struct SpellData {
     pub variation_name: Option<String>,
     pub cast_time_ms: Option<u64>,
     pub cooldown_ms: Option<HashMap<u64, u64>>,
-    pub passive_effects: Vec<PassiveEffect>,
+    // pub passive_effects: Vec<&'static dyn Effect>,
     pub category: Option<SpellCategory>,
+    pub damage_type: Option<DamageType>,
+}
+
+pub struct UnseenThreat {
+    base_damage: f64,
+    per_level_bonus: f64,
+    bonus_ad_ratio: f64,
+}
+
+impl Effect for UnseenThreat {
+    fn handle_on_post_damage(
+        &self,
+        damage: f64,
+        attacker_stats: &super::common::AttackerStats,
+        state: &mut crate::simulation::State<'_>,
+        game_params: &super::common::GameParams<'_>,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+    ) {
+        if !state
+            .attacker_auras
+            .contains_key(&super::common::Aura::UnseenThreat)
+        {
+            panic!();
+        }
+
+        if event.attack_type.is_some_and(|x| x != AttackType::AA) {
+            return;
+        }
+
+        simulation::insert_passive_triggered_event(
+            events,
+            state.time_ms,
+            PassiveEffect::UnseenThreat,
+        );
+
+        let attacker_stats = compute_attacker_stats(game_params, state);
+        let target_stats = compute_target_stats(game_params, state);
+
+        let magic_damage: f64 = self.base_damage
+            + self.per_level_bonus * game_params.level as f64
+            + self.bonus_ad_ratio * attacker_stats.ad_bonus;
+
+        let mitigated_dmg = compute_mitigated_damage(
+            &attacker_stats,
+            &target_stats,
+            magic_damage,
+            DamageType::Magical,
+        );
+
+        simulation::on_damage_from_ability(&mitigated_dmg, state, event.time_ms, AttackType::P);
+
+        // remove buff
+        state
+            .attacker_auras
+            .remove(&super::common::Aura::UnseenThreat);
+    }
+}
+
+pub struct AbilitiesExtraData {
+    pub unseen_threat: UnseenThreat,
 }
 
 // fn has_desireable_stats(item: &Value) -> bool {
@@ -47,7 +113,7 @@ pub struct SpellData {
 //     return false;
 // }
 
-pub fn pull_abilities_data() -> Vec<SpellData> {
+pub fn pull_abilities_data() -> (Vec<SpellData>, AbilitiesExtraData) {
     let file = File::open("/home/chaodhib/git/lolstaticdata/champions/Khazix.json").unwrap();
     let reader: BufReader<File> = BufReader::new(file);
     let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
@@ -96,8 +162,9 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         variation_name: Some("Physical Damage".to_string()),
         cast_time_ms: Some((cast_time_s * 1000f64) as u64),
         cooldown_ms: Some(cooldown_ms.clone()),
-        passive_effects: Vec::new(),
+        // passive_effects: Vec::new(),
         category: None,
+        damage_type: Some(DamageType::Physical),
     });
 
     // Q (variation 2)
@@ -124,8 +191,9 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         variation_name: Some("Increased Damage".to_string()),
         cast_time_ms: Some((cast_time_s * 1000f64) as u64),
         cooldown_ms: Some(cooldown_ms.clone()),
-        passive_effects: Vec::new(),
+        // passive_effects: Vec::new(),
         category: None,
+        damage_type: Some(DamageType::Physical),
     });
 
     // W
@@ -169,8 +237,9 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         variation_name: None,
         cast_time_ms: Some((cast_time_s * 1000f64) as u64),
         cooldown_ms: Some(cooldown_ms.clone()),
-        passive_effects: Vec::new(),
+        // passive_effects: Vec::new(),
         category: None,
+        damage_type: Some(DamageType::Physical),
     });
 
     // E
@@ -208,8 +277,9 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         variation_name: None,
         cast_time_ms: None,
         cooldown_ms: Some(cooldown_ms.clone()),
-        passive_effects: Vec::new(),
+        // passive_effects: Vec::new(),
         category: Some(SpellCategory::Dash),
+        damage_type: Some(DamageType::Physical),
     });
 
     // R
@@ -233,13 +303,23 @@ pub fn pull_abilities_data() -> Vec<SpellData> {
         variation_name: None,
         cast_time_ms: None,
         cooldown_ms: Some(cooldown_ms.clone()),
-        passive_effects: Vec::new(),
+        // passive_effects: Vec::new(),
         category: Some(SpellCategory::Stealth),
+        damage_type: None,
     });
 
     // println!("abilities_data {:#?}", abilities_data);
 
-    abilities_data
+    (
+        abilities_data,
+        AbilitiesExtraData {
+            unseen_threat: UnseenThreat {
+                base_damage: 8.0,
+                per_level_bonus: 6.0,
+                bonus_ad_ratio: 0.4,
+            },
+        },
+    )
 }
 
 pub fn find_ability<'a>(

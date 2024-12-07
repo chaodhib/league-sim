@@ -8,7 +8,7 @@ use itertools::Itertools;
 use crate::simulation::State;
 
 use super::{
-    abilities::SpellData,
+    abilities::{self, AbilitiesExtraData, SpellData},
     champions::{stat_increase, ChampionStats},
     items::Item,
     runes::{collect_runes_stats, Rune, RunesData},
@@ -83,6 +83,7 @@ impl Add for AttackerStats {
 #[derive(Debug, Clone)]
 pub struct TargetStats {
     pub armor: f64,
+    pub magic_resistance: f64,
     pub max_health: f64,
     pub current_health: f64,
 }
@@ -95,12 +96,15 @@ pub struct GameParams<'a> {
     pub items: &'a Vec<&'a Item>,
     pub initial_config: &'a HashMap<String, String>,
     pub abilities: &'a Vec<SpellData>,
+    pub abilities_extra_data: &'a AbilitiesExtraData,
     pub target_stats: &'a TargetStats,
     pub runes: &'a HashSet<Rune>,
     pub attacker_hp_perc: f64,
     pub runes_data: &'a RunesData,
     pub passive_effects: &'a mut Vec<PassiveEffect>,
     pub crit_handling: CritHandlingChoice,
+    pub initial_attacker_auras: &'a Vec<Aura>,
+    pub initial_target_auras: &'a Vec<Aura>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -135,6 +139,7 @@ pub enum PassiveEffect {
     // Auras
     SuddenImpactReady,
     Stealth,
+    UnseenThreat,
 }
 
 impl PassiveEffect {
@@ -197,6 +202,7 @@ impl PassiveEffect {
             // auras
             PassiveEffect::SuddenImpactReady => "",
             PassiveEffect::Stealth => "",
+            PassiveEffect::UnseenThreat => "",
         }
     }
 
@@ -250,6 +256,14 @@ impl PassiveEffect {
                 events,
             ),
             PassiveEffect::Stealth => (),
+            PassiveEffect::UnseenThreat => Aura::UnseenThreat.handle_on_post_damage(
+                damage,
+                attacker_stats,
+                state,
+                game_params,
+                event,
+                events,
+            ),
         }
     }
 
@@ -290,6 +304,7 @@ impl PassiveEffect {
             PassiveEffect::SuddenImpactReady => (),
 
             PassiveEffect::Stealth => (),
+            PassiveEffect::UnseenThreat => (),
         }
     }
 
@@ -330,10 +345,12 @@ impl PassiveEffect {
             PassiveEffect::SuddenImpactReady => (),
 
             PassiveEffect::Stealth => (),
+            PassiveEffect::UnseenThreat => (),
         }
     }
 }
 
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum DamageType {
     Physical,
     Magical,
@@ -344,6 +361,7 @@ pub enum DamageType {
 pub enum Aura {
     SuddenImpactReady,
     Stealth, // includes Camouflage & Invisibility
+    UnseenThreat,
 }
 
 impl Aura {
@@ -351,6 +369,7 @@ impl Aura {
         match self {
             Aura::SuddenImpactReady => vec![PassiveEffect::SuddenImpactReady],
             Aura::Stealth => vec![],
+            Aura::UnseenThreat => vec![PassiveEffect::UnseenThreat],
         }
     }
 
@@ -365,7 +384,7 @@ impl Aura {
     ) {
         match self {
             Aura::SuddenImpactReady => {
-                game_params.runes_data.sudden_impact.handle_buff_triggered(
+                game_params.runes_data.sudden_impact.handle_on_post_damage(
                     damage,
                     attacker_stats,
                     state,
@@ -375,8 +394,35 @@ impl Aura {
                 );
             }
 
+            Aura::UnseenThreat => {
+                game_params
+                    .abilities_extra_data
+                    .unseen_threat
+                    .handle_on_post_damage(
+                        damage,
+                        attacker_stats,
+                        state,
+                        game_params,
+                        event,
+                        events,
+                    );
+            }
+
             _ => (),
         }
+    }
+}
+
+pub trait Effect {
+    fn handle_on_post_damage(
+        &self,
+        damage: f64,
+        attacker_stats: &AttackerStats,
+        state: &mut State<'_>,
+        game_params: &GameParams<'_>,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+    ) {
     }
 }
 
@@ -437,6 +483,7 @@ pub fn compute_target_stats(game_params: &GameParams, state: &State) -> TargetSt
         armor: game_params.target_stats.armor,
         max_health: game_params.target_stats.max_health,
         current_health: game_params.target_stats.current_health - state.total_damage,
+        magic_resistance: game_params.target_stats.magic_resistance,
     };
 }
 
@@ -489,14 +536,14 @@ pub fn compile_passive_effects(game_params: &mut GameParams<'_>) {
         .filter(|passive_effect| passive_effect.is_some())
         .map(|passive_effect| vec![passive_effect.unwrap()]);
 
-    let champion_passives = game_params
-        .abilities
-        .iter()
-        .map(|spell_data| spell_data.passive_effects.clone());
+    // let champion_passives = game_params
+    //     .abilities
+    //     .iter()
+    //     .map(|spell_data| spell_data.passive_effects.clone());
 
     let mut passive_effects = item_effects
         .chain(rune_effects)
-        .chain(champion_passives)
+        // .chain(champion_passives)
         .flat_map(|effects| effects)
         .collect_vec();
 

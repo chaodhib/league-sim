@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use abilities::{pull_abilities_data, SpellData};
+use abilities::{pull_abilities_data, AbilitiesExtraData, SpellData};
 use champions::{get_base_champion_stats, ChampionStats};
 use items::{pull_items_data, Item};
 use runes::{pull_runes, RunesData};
@@ -15,13 +15,14 @@ pub struct StaticData {
     pub items_map: HashMap<u64, Item>,
     pub base_champion_stats: ChampionStats,
     pub abilities: Vec<SpellData>,
+    pub abilities_extra_data: AbilitiesExtraData,
     pub runes_data: RunesData,
 }
 
 pub fn parse_files(item_ids: &[u64]) -> StaticData {
     let base_champion_stats = get_base_champion_stats();
     let items_map = pull_items_data(item_ids);
-    let abilities = pull_abilities_data();
+    let (abilities, abilities_extra_data) = pull_abilities_data();
     let runes_data = pull_runes();
 
     // println!("base_champion_stats: {:#?}", base_champion_stats);
@@ -32,6 +33,7 @@ pub fn parse_files(item_ids: &[u64]) -> StaticData {
         items_map,
         base_champion_stats,
         abilities,
+        abilities_extra_data,
         runes_data,
     }
 }

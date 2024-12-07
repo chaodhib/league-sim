@@ -6,7 +6,7 @@ use std::{
 
 use crate::data_input::{
     abilities::{find_ability, SpellData},
-    common::{AttackerStats, CritHandlingChoice, GameParams, TargetStats},
+    common::{AttackerStats, CritHandlingChoice, DamageType, GameParams, TargetStats},
 };
 
 #[derive(Debug)]
@@ -22,6 +22,7 @@ pub enum AttackType {
     W,
     E,
     R,
+    P,
     // add item active?
 }
 
@@ -63,6 +64,7 @@ pub fn simulate_spell(
         AttackType::W => simulate_w(attacker_stats, game_params.target_stats, ability.unwrap()),
         AttackType::E => simulate_e(attacker_stats, game_params.target_stats, ability.unwrap()),
         AttackType::R => todo!(),
+        AttackType::P => panic!(),
         // &_ => todo!(),
     };
 
@@ -121,7 +123,12 @@ fn compute_ability_damage(
     let total_damage: f64 = base_damage + bonus_damage;
     // println!("3 total_damage: {:#?}", total_damage);
 
-    let dmg = compute_mitigated_damage(attacker_stats, target_stats, total_damage);
+    let dmg = compute_mitigated_damage(
+        attacker_stats,
+        target_stats,
+        total_damage,
+        ability.damage_type.unwrap(),
+    );
 
     // println!("5 total_damage post mitigation: {:#?}", dmg);
 
@@ -150,15 +157,24 @@ fn simulate_aa(
     let cooldown = (1000.0_f64 / total_attack_speed(attacker_stats)).round() as u64;
 
     let damage = match crit_handling {
-        CritHandlingChoice::Min => {
-            compute_mitigated_damage(attacker_stats, target_stats, base_damage)
-        }
-        CritHandlingChoice::Max => {
-            compute_mitigated_damage(attacker_stats, target_stats, crit_damage)
-        }
-        CritHandlingChoice::Avg => {
-            compute_mitigated_damage(attacker_stats, target_stats, avg_damage)
-        }
+        CritHandlingChoice::Min => compute_mitigated_damage(
+            attacker_stats,
+            target_stats,
+            base_damage,
+            DamageType::Physical,
+        ),
+        CritHandlingChoice::Max => compute_mitigated_damage(
+            attacker_stats,
+            target_stats,
+            crit_damage,
+            DamageType::Physical,
+        ),
+        CritHandlingChoice::Avg => compute_mitigated_damage(
+            attacker_stats,
+            target_stats,
+            avg_damage,
+            DamageType::Physical,
+        ),
     };
 
     SpellResult {
@@ -229,28 +245,49 @@ fn simulate_e(
     }
 }
 
-fn compute_mitigated_damage(
+pub fn compute_mitigated_damage(
     attacker_stats: &AttackerStats,
     target_stats: &TargetStats,
     base_damage: f64,
+    damage_type: DamageType,
 ) -> f64 {
-    let mut armor = target_stats.armor;
+    if damage_type == DamageType::True {
+        return base_damage;
+    }
+
+    let mut damage_resistance = match damage_type {
+        DamageType::Physical => target_stats.armor,
+        DamageType::Magical => target_stats.magic_resistance,
+        DamageType::True => panic!(),
+    };
 
     // println!("3 armor: {:#?}", armor);
 
-    // todo: add armor reduction
+    // todo: 1) reduction, flat
+    // todo: 2) reduction, %
 
-    // include armor penetration %
-    armor *= 1.0 - attacker_stats.armor_penetration_perc;
+    // 3) penetration, %
+    let penetration_perc = match damage_type {
+        DamageType::Physical => attacker_stats.armor_penetration_perc,
+        // todo
+        DamageType::Magical => 0.0,
+        DamageType::True => panic!(),
+    };
 
-    // println!("4 armor: {:#?}", armor);
+    damage_resistance *= 1.0 - penetration_perc;
 
-    // include lethality
-    armor = (armor - attacker_stats.lethality).max(0.0);
+    // 4) penetration, flat
+    let penetration_flat = match damage_type {
+        DamageType::Physical => attacker_stats.lethality,
+        // todo
+        DamageType::Magical => 0.0,
+        DamageType::True => panic!(),
+    };
+    damage_resistance = (damage_resistance - penetration_flat).max(0.0);
 
     // println!("5 armor: {:#?}", armor);
 
-    base_damage * 100.0 / (100.0 + armor)
+    base_damage * 100.0 / (100.0 + damage_resistance)
 }
 
 fn cooldown(ability: &SpellData, spell_rank: u64, attacker_stats: &AttackerStats) -> Option<u64> {

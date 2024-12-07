@@ -1,5 +1,8 @@
 use super::common::{self, AttackerStats, Aura, GameParams, PassiveEffect};
-use crate::simulation::{self, State};
+use crate::{
+    attack::AttackType,
+    simulation::{self, State},
+};
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Rune {
@@ -100,7 +103,7 @@ impl Rune {
             }
 
             Rune::SuddenImpact => {
-                game_params.runes_data.sudden_impact.handle_buff_triggered(
+                game_params.runes_data.sudden_impact.handle_on_post_damage(
                     damage,
                     attacker_stats,
                     state,
@@ -272,7 +275,7 @@ impl SuddenImpact {
         self.handle_dash_event(event, events, state, game_params);
     }
 
-    pub fn handle_buff_triggered(
+    pub fn handle_on_post_damage(
         &self,
         _damage: f64,
         _attacker_stats: &AttackerStats,

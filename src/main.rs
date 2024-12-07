@@ -14,7 +14,9 @@ mod simulation;
 
 use crossbeam::queue::ArrayQueue;
 use data_input::{
-    common::{compile_passive_effects, Champion, CritHandlingChoice, GameParams, TargetStats},
+    common::{
+        compile_passive_effects, Aura, Champion, CritHandlingChoice, GameParams, TargetStats,
+    },
     items::{above_gold_cap, has_item_group_duplicates, Item},
     runes::Rune,
 };
@@ -57,9 +59,11 @@ fn run_multiple() {
     let level: u64 = 6;
     let gold_cap: u64 = 20000;
     let target_stats: TargetStats = TargetStats {
-        armor: 100.0,
-        max_health: 2600.0,
-        current_health: 2600.0,
+        // mid hp ashe at level 18
+        armor: 104.2,
+        max_health: 2327.0,
+        current_health: 2327.0 * 0.5,
+        magic_resistance: 52.1,
     };
 
     // list of configs provided by the user. Static once the simulation is running
@@ -138,6 +142,9 @@ fn run_multiple() {
             runes_data: &static_data.runes_data,
             passive_effects: &mut Vec::new(),
             crit_handling: CritHandlingChoice::Min,
+            initial_attacker_auras: &vec![Aura::UnseenThreat],
+            initial_target_auras: &Vec::new(),
+            abilities_extra_data: &static_data.abilities_extra_data,
         };
 
         compile_passive_effects(&mut game_params);
@@ -218,9 +225,11 @@ fn run_single() {
     let level: u64 = 6;
     let _gold_cap: u64 = 20000;
     let target_stats: TargetStats = TargetStats {
-        armor: 100.0,
-        max_health: 2600.0,
-        current_health: 1300.0,
+        // mid hp ashe at level 18
+        armor: 104.2,
+        max_health: 2327.0,
+        current_health: 2327.0 * 0.5,
+        magic_resistance: 52.1,
     };
 
     // list of configs provided by the user. Static once the simulation is running
@@ -297,6 +306,9 @@ fn run_single() {
         attacker_hp_perc: hp_perc,
         passive_effects: &mut Vec::new(),
         crit_handling: CritHandlingChoice::Min,
+        initial_attacker_auras: &vec![Aura::UnseenThreat],
+        initial_target_auras: &Vec::new(),
+        abilities_extra_data: &static_data.abilities_extra_data,
     };
 
     compile_passive_effects(&mut game_params);
