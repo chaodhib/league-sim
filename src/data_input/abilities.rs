@@ -8,10 +8,10 @@ use crate::{
 };
 
 use super::common::{
-    compute_attacker_stats, compute_target_stats, DamageType, Effect, PassiveEffect,
+    compute_attacker_stats, compute_target_stats, DamageType, PassiveEffect, PassiveEffectScript,
 };
 
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct SpellData {
     pub key: String,
     pub coefficient_ad: f64,
@@ -24,6 +24,7 @@ pub struct SpellData {
     // pub passive_effects: Vec<&'static dyn Effect>,
     pub category: Option<SpellCategory>,
     pub damage_type: Option<DamageType>,
+    pub active_effect: Option<&'static dyn ScriptedEffect>,
 }
 
 pub struct UnseenThreat {
@@ -32,7 +33,7 @@ pub struct UnseenThreat {
     bonus_ad_ratio: f64,
 }
 
-impl Effect for UnseenThreat {
+impl PassiveEffectScript for UnseenThreat {
     fn handle_on_post_damage(
         &self,
         damage: f64,
@@ -84,6 +85,52 @@ impl Effect for UnseenThreat {
 
 pub struct AbilitiesExtraData {
     pub unseen_threat: UnseenThreat,
+}
+
+pub trait ScriptedEffect {
+    fn on_effect(
+        &self,
+        attacker_stats: &super::common::AttackerStats,
+        state: &mut crate::simulation::State<'_>,
+        game_params: &super::common::GameParams<'_>,
+        // event: &crate::simulation::Event,
+        // events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+    );
+}
+
+struct KhazixR {
+    base_duration: u64,
+    evolved_duration: u64,
+}
+
+impl ScriptedEffect for KhazixR {
+    fn on_effect(
+        &self,
+        attacker_stats: &super::common::AttackerStats,
+        state: &mut crate::simulation::State<'_>,
+        game_params: &super::common::GameParams<'_>,
+        // event: &crate::simulation::Event,
+        // events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+    ) {
+        state
+            .attacker_auras
+            .insert(super::common::Aura::UnseenThreat, u64::MAX);
+
+        let stealth_duration = if game_params
+            .initial_config
+            .get("CHAMPION_KHAZIX_R_EVOLVED")
+            .unwrap()
+            == "TRUE"
+        {
+            self.evolved_duration
+        } else {
+            self.base_duration
+        };
+
+        state
+            .attacker_auras
+            .insert(super::common::Aura::Stealth, stealth_duration);
+    }
 }
 
 // fn has_desireable_stats(item: &Value) -> bool {
@@ -178,6 +225,7 @@ pub fn pull_abilities_data(
         // passive_effects: Vec::new(),
         category: None,
         damage_type: Some(DamageType::Physical),
+        active_effect: None,
     });
 
     // Q (variation 2)
@@ -207,6 +255,7 @@ pub fn pull_abilities_data(
         // passive_effects: Vec::new(),
         category: None,
         damage_type: Some(DamageType::Physical),
+        active_effect: None,
     });
 
     // W
@@ -253,6 +302,7 @@ pub fn pull_abilities_data(
         // passive_effects: Vec::new(),
         category: None,
         damage_type: Some(DamageType::Physical),
+        active_effect: None,
     });
 
     // E
@@ -293,6 +343,7 @@ pub fn pull_abilities_data(
         // passive_effects: Vec::new(),
         category: Some(SpellCategory::Dash),
         damage_type: Some(DamageType::Physical),
+        active_effect: None,
     });
 
     // R
@@ -319,6 +370,10 @@ pub fn pull_abilities_data(
         // passive_effects: Vec::new(),
         category: Some(SpellCategory::Stealth),
         damage_type: None,
+        active_effect: Some(&KhazixR {
+            base_duration: 1250,
+            evolved_duration: 2000,
+        }),
     });
 
     // println!("abilities_data {:#?}", abilities_data);

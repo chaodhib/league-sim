@@ -216,6 +216,8 @@ fn run_single() {
     let global_start = Instant::now();
 
     let mut selected_commands = VecDeque::new();
+    selected_commands.push_back(attack::AttackType::R);
+    selected_commands.push_back(attack::AttackType::AA);
     selected_commands.push_back(attack::AttackType::Q);
     selected_commands.push_back(attack::AttackType::W);
     selected_commands.push_back(attack::AttackType::E);
@@ -238,6 +240,8 @@ fn run_single() {
         "CHAMPION_KHAZIX_ISOLATED_TARGET".to_string(),
         "TRUE".to_string(),
     );
+
+    config.insert("CHAMPION_KHAZIX_R_EVOLVED".to_string(), "FALSE".to_string());
 
     let item_ids: Vec<u64> = vec![
         3158, // Ionian Boots of Lucidity

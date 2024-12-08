@@ -413,7 +413,7 @@ impl Aura {
     }
 }
 
-pub trait Effect {
+pub trait PassiveEffectScript {
     fn handle_on_post_damage(
         &self,
         damage: f64,

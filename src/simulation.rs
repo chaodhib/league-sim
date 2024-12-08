@@ -186,24 +186,30 @@ fn on_event(
 
             let attacker_stats: AttackerStats = compute_attacker_stats(game_params, state);
 
-            let spell_result: SpellResult =
-                simulate_spell(&attacker_stats, game_params, event.attack_type.unwrap());
-
-            // println!("spell_result: {:#?}", spell_result);
-            on_damage_from_ability(
-                &spell_result.damage,
+            let spell_result: SpellResult = simulate_spell(
+                &attacker_stats,
+                game_params,
                 state,
-                event.time_ms,
                 event.attack_type.unwrap(),
             );
-            on_post_damage_events(
-                spell_result.damage,
-                &attacker_stats,
-                state,
-                game_params,
-                event,
-                events,
-            );
+
+            // println!("spell_result: {:#?}", spell_result);
+            if spell_result.damage.is_some() {
+                on_damage_from_ability(
+                    &spell_result.damage.unwrap(),
+                    state,
+                    event.time_ms,
+                    event.attack_type.unwrap(),
+                );
+                on_post_damage_events(
+                    spell_result.damage.unwrap(),
+                    &attacker_stats,
+                    state,
+                    game_params,
+                    event,
+                    events,
+                );
+            }
 
             if spell_result.cooldown.is_some() {
                 let cooldown_end_ms = spell_result.cooldown.unwrap() + event.time_ms;

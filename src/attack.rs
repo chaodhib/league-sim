@@ -4,14 +4,17 @@ use std::{
     ops::{Add, Mul},
 };
 
-use crate::data_input::{
-    abilities::{find_ability, SpellData},
-    common::{AttackerStats, CritHandlingChoice, DamageType, GameParams, TargetStats},
+use crate::{
+    data_input::{
+        abilities::{find_ability, SpellData},
+        common::{AttackerStats, CritHandlingChoice, DamageType, GameParams, TargetStats},
+    },
+    simulation::State,
 };
 
 #[derive(Debug)]
 pub struct SpellResult {
-    pub damage: f64,
+    pub damage: Option<f64>,
     pub cooldown: Option<u64>,
 }
 
@@ -43,6 +46,7 @@ impl fmt::Display for AttackType {
 pub fn simulate_spell(
     attacker_stats: &AttackerStats,
     game_params: &GameParams,
+    state: &mut State,
     spell_name: AttackType,
 ) -> SpellResult {
     let mut ability: Option<&SpellData> = None;
@@ -63,10 +67,18 @@ pub fn simulate_spell(
         AttackType::Q => simulate_q(attacker_stats, game_params.target_stats, ability.unwrap()),
         AttackType::W => simulate_w(attacker_stats, game_params.target_stats, ability.unwrap()),
         AttackType::E => simulate_e(attacker_stats, game_params.target_stats, ability.unwrap()),
-        AttackType::R => todo!(),
+        AttackType::R => simulate_r(attacker_stats, ability.unwrap()),
         AttackType::P => panic!(),
         // &_ => todo!(),
     };
+
+    if ability.is_some() && ability.unwrap().active_effect.is_some() {
+        ability
+            .unwrap()
+            .active_effect
+            .unwrap()
+            .on_effect(attacker_stats, state, game_params);
+    }
 
     // println!("damage: {:#?}", damage);
 
@@ -178,7 +190,7 @@ fn simulate_aa(
     };
 
     SpellResult {
-        damage,
+        damage: Some(damage),
         cooldown: Some(cooldown),
     }
 }
@@ -198,7 +210,12 @@ fn simulate_q(
     };
 
     return SpellResult {
-        damage: compute_ability_damage(attacker_stats, target_stats, ability, spell_rank),
+        damage: Some(compute_ability_damage(
+            attacker_stats,
+            target_stats,
+            ability,
+            spell_rank,
+        )),
         cooldown: cooldown(ability, spell_rank, attacker_stats),
     };
 }
@@ -219,7 +236,12 @@ fn simulate_w(
     };
 
     SpellResult {
-        damage: compute_ability_damage(attacker_stats, target_stats, ability, spell_rank),
+        damage: Some(compute_ability_damage(
+            attacker_stats,
+            target_stats,
+            ability,
+            spell_rank,
+        )),
         cooldown: cooldown(ability, spell_rank, attacker_stats),
     }
 }
@@ -240,7 +262,26 @@ fn simulate_e(
     };
 
     SpellResult {
-        damage: compute_ability_damage(attacker_stats, target_stats, ability, spell_rank),
+        damage: Some(compute_ability_damage(
+            attacker_stats,
+            target_stats,
+            ability,
+            spell_rank,
+        )),
+        cooldown: cooldown(ability, spell_rank, attacker_stats),
+    }
+}
+fn simulate_r(attacker_stats: &AttackerStats, ability: &SpellData) -> SpellResult {
+    let spell_rank = match attacker_stats.level {
+        1..=5 => 0,
+        6..=10 => 1,
+        11..=15 => 2,
+        16..=18 => 3,
+        0_u64 | 19_u64..=u64::MAX => panic!(),
+    };
+
+    SpellResult {
+        damage: None,
         cooldown: cooldown(ability, spell_rank, attacker_stats),
     }
 }
