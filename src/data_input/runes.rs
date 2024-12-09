@@ -260,9 +260,13 @@ impl SuddenImpact {
         );
 
         // apply buff
-        state
-            .attacker_auras
-            .insert(Aura::SuddenImpactReady, event.time_ms + self.buff_duration);
+        state.add_attacker_aura(
+            Aura::SuddenImpactReady,
+            event.time_ms + self.buff_duration,
+            game_params,
+            event,
+            events,
+        );
     }
 
     pub fn handle_stealth_exit_event(
@@ -292,12 +296,6 @@ impl SuddenImpact {
             panic!();
         }
 
-        simulation::insert_passive_triggered_event(
-            events,
-            state.time_ms,
-            PassiveEffect::SuddenImpactReady,
-        );
-
         // trigger the damage
         let true_damage: f64 = self.min_damage
             + (self.max_damage - self.min_damage) / 17.0 * (game_params.level as f64 - 1.0);
@@ -305,7 +303,7 @@ impl SuddenImpact {
         simulation::on_damage_from_rune(&true_damage, state, event, Rune::SuddenImpact);
 
         // remove buff
-        state.attacker_auras.remove(&Aura::SuddenImpactReady);
+        state.remove_attacker_aura(&Aura::SuddenImpactReady, game_params, event, events);
 
         // set cooldown
         state

@@ -8,7 +8,7 @@ use crate::{
 };
 
 use super::common::{
-    compute_attacker_stats, compute_target_stats, DamageType, PassiveEffect, PassiveEffectScript,
+    compute_attacker_stats, compute_target_stats, DamageType, EffectWithCallbacks, PassiveEffect,
 };
 
 // #[derive(Debug)]
@@ -33,8 +33,8 @@ pub struct UnseenThreat {
     bonus_ad_ratio: f64,
 }
 
-impl PassiveEffectScript for UnseenThreat {
-    fn handle_on_post_damage(
+impl EffectWithCallbacks for UnseenThreat {
+    fn on_post_damage(
         &self,
         damage: f64,
         attacker_stats: &super::common::AttackerStats,
@@ -54,12 +54,6 @@ impl PassiveEffectScript for UnseenThreat {
             return;
         }
 
-        simulation::insert_passive_triggered_event(
-            events,
-            state.time_ms,
-            PassiveEffect::UnseenThreat,
-        );
-
         let attacker_stats = compute_attacker_stats(game_params, state);
         let target_stats = compute_target_stats(game_params, state);
 
@@ -77,9 +71,12 @@ impl PassiveEffectScript for UnseenThreat {
         simulation::on_damage_from_ability(&mitigated_dmg, state, event.time_ms, AttackType::P);
 
         // remove buff
-        state
-            .attacker_auras
-            .remove(&super::common::Aura::UnseenThreat);
+        state.remove_attacker_aura(
+            &super::common::Aura::UnseenThreat,
+            game_params,
+            event,
+            events,
+        );
     }
 }
 
@@ -93,8 +90,8 @@ pub trait ScriptedEffect {
         attacker_stats: &super::common::AttackerStats,
         state: &mut crate::simulation::State<'_>,
         game_params: &super::common::GameParams<'_>,
-        // event: &crate::simulation::Event,
-        // events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
     );
 }
 
@@ -109,12 +106,16 @@ impl ScriptedEffect for KhazixR {
         attacker_stats: &super::common::AttackerStats,
         state: &mut crate::simulation::State<'_>,
         game_params: &super::common::GameParams<'_>,
-        // event: &crate::simulation::Event,
-        // events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
     ) {
-        state
-            .attacker_auras
-            .insert(super::common::Aura::UnseenThreat, u64::MAX);
+        state.add_attacker_aura(
+            super::common::Aura::UnseenThreat,
+            u64::MAX,
+            game_params,
+            event,
+            events,
+        );
 
         let stealth_duration = if game_params
             .initial_config
@@ -127,9 +128,13 @@ impl ScriptedEffect for KhazixR {
             self.base_duration
         };
 
-        state
-            .attacker_auras
-            .insert(super::common::Aura::Stealth, stealth_duration);
+        state.add_attacker_aura(
+            super::common::Aura::Invisibility,
+            stealth_duration,
+            game_params,
+            event,
+            events,
+        );
     }
 }
 

@@ -22,8 +22,9 @@ pub enum EventCategory {
     AttackCastStart,
     AttackCastEnd,
     // An aura is either a buff or a debuff
-    AuraUpdateAttacker,
-    AuraUpdateTarget,
+    AuraAttackerStart,
+    AuraAttackerEnd,
+    // AuraUpdateTarget,
     CooldownEnded,
     PassiveTriggered,
 }
@@ -34,6 +35,7 @@ pub struct Event {
     pub category: EventCategory,
     pub attack_type: Option<AttackType>,
     pub passive_effect: Option<PassiveEffect>,
+    pub aura: Option<Aura>,
 }
 
 impl Ord for Event {
@@ -89,6 +91,31 @@ impl State<'_> {
 
         self.attacker_auras
             .retain(|_, end_at| *end_at > self.time_ms);
+    }
+
+    pub fn add_attacker_aura(
+        &mut self,
+        aura: Aura,
+        duration: u64,
+        game_params: &GameParams<'_>,
+        event: &Event,
+        events: &mut BinaryHeap<Event>,
+    ) {
+        insert_aura_attacker_start_event(events, self.time_ms, aura.clone());
+        aura.on_start(self, game_params, event, events);
+        self.attacker_auras.insert(aura, duration);
+    }
+
+    pub fn remove_attacker_aura(
+        &mut self,
+        aura: &Aura,
+        game_params: &GameParams<'_>,
+        event: &Event,
+        events: &mut BinaryHeap<Event>,
+    ) {
+        insert_aura_attacker_end_event(events, self.time_ms, aura.clone());
+        aura.on_end(self, game_params, event, events);
+        self.attacker_auras.remove(aura);
     }
 }
 
@@ -191,6 +218,8 @@ fn on_event(
                 game_params,
                 state,
                 event.attack_type.unwrap(),
+                event,
+                events,
             );
 
             // println!("spell_result: {:#?}", spell_result);
@@ -218,10 +247,12 @@ fn on_event(
             }
             insert_next_attack_event(events, remaining_commands, state, event.time_ms);
         }
-        EventCategory::AuraUpdateAttacker => todo!(),
-        EventCategory::AuraUpdateTarget => todo!(),
-        EventCategory::CooldownEnded => on_cooldown_ended(event),
-        EventCategory::PassiveTriggered => on_passive_triggered(event),
+        // EventCategory::CooldownEnded => on_cooldown_ended(event),
+        // EventCategory::PassiveTriggered => on_passive_triggered(event),
+        EventCategory::CooldownEnded => (),
+        EventCategory::PassiveTriggered => (),
+        EventCategory::AuraAttackerStart => (),
+        EventCategory::AuraAttackerEnd => (),
     }
 }
 
@@ -248,20 +279,20 @@ fn handle_dash_if_applicable(
             .as_ref()
             .is_some_and(|cat| cat == &SpellCategory::Dash)
     {
-        println!("handle_dash_if_applicable dash: {:#?}", attack_type);
+        // println!("handle_dash_if_applicable dash: {:#?}", attack_type);
 
         for effect in game_params.passive_effects.iter() {
             effect.handle_dash_event(event, events, game_params, state)
         }
 
-        for effect in state
-            .attacker_auras
-            .clone()
-            .iter()
-            .flat_map(|aura| aura.0.passive_effects())
-        {
-            effect.handle_dash_event(event, events, game_params, state)
-        }
+        // for effect in state
+        //     .attacker_auras
+        //     .clone()
+        //     .iter()
+        //     .flat_map(|aura| aura.0.passive_effects())
+        // {
+        //     effect.handle_dash_event(event, events, game_params, state)
+        // }
     }
 }
 
@@ -273,7 +304,7 @@ fn trigger_stealth_exit_if_applicable(
 ) {
     if !state
         .attacker_auras
-        .get(&Aura::Stealth)
+        .get(&Aura::Invisibility)
         .is_some_and(|&time_end| state.time_ms < time_end)
     {
         return;
@@ -308,20 +339,20 @@ fn trigger_stealth_exit(
     game_params: &GameParams<'_>,
     state: &mut State<'_>,
 ) {
-    state.attacker_auras.remove(&Aura::Stealth);
+    state.remove_attacker_aura(&Aura::Invisibility, game_params, event, events);
 
     for effect in game_params.passive_effects.iter() {
         effect.handle_stealth_exit_event(event, events, game_params, state)
     }
 
-    for effect in state
-        .attacker_auras
-        .clone()
-        .iter()
-        .flat_map(|aura| aura.0.passive_effects())
-    {
-        effect.handle_stealth_exit_event(event, events, game_params, state)
-    }
+    // for effect in state
+    //     .attacker_auras
+    //     .clone()
+    //     .iter()
+    //     .flat_map(|aura| aura.0.passive_effects())
+    // {
+    //     effect.handle_stealth_exit_event(event, events, game_params, state)
+    // }
 }
 
 fn add_cooldown_to_state(state: &mut State<'_>, attack_type: AttackType, cooldown_end_ms: u64) {
@@ -369,6 +400,7 @@ fn insert_attack_cast_end_event(
         category: EventCategory::AttackCastEnd,
         time_ms,
         passive_effect: None,
+        aura: None,
     };
 
     events.push(event);
@@ -396,6 +428,7 @@ fn insert_next_attack_event(
             category: EventCategory::AttackCastStart,
             time_ms,
             passive_effect: None,
+            aura: None,
         };
 
         events.push(event);
@@ -408,6 +441,7 @@ fn insert_cooldown_ended_event(events: &mut BinaryHeap<Event>, event: &Event, ti
         category: EventCategory::CooldownEnded,
         time_ms,
         passive_effect: None,
+        aura: None,
     };
 
     events.push(event);
@@ -423,25 +457,50 @@ pub fn insert_passive_triggered_event(
         category: EventCategory::PassiveTriggered,
         time_ms,
         passive_effect: Some(passive_effect),
+        aura: None,
     };
 
     events.push(event);
 }
 
-fn on_cooldown_ended(event: &Event) {
-    println!(
-        "cooldown ended for {:#?} at {:#?}",
-        event.attack_type, event.time_ms
-    );
+pub fn insert_aura_attacker_start_event(events: &mut BinaryHeap<Event>, time_ms: u64, aura: Aura) {
+    let event = Event {
+        attack_type: None,
+        category: EventCategory::AuraAttackerStart,
+        time_ms,
+        passive_effect: None,
+        aura: Some(aura),
+    };
+
+    events.push(event);
 }
 
-fn on_passive_triggered(event: &Event) {
-    println!(
-        "passive triggered for {:#?} at {:#?}",
-        event.passive_effect.unwrap(),
-        event.time_ms
-    );
+pub fn insert_aura_attacker_end_event(events: &mut BinaryHeap<Event>, time_ms: u64, aura: Aura) {
+    let event = Event {
+        attack_type: None,
+        category: EventCategory::AuraAttackerEnd,
+        time_ms,
+        passive_effect: None,
+        aura: Some(aura),
+    };
+
+    events.push(event);
 }
+
+// fn on_cooldown_ended(event: &Event) {
+//     println!(
+//         "cooldown ended for {:#?} at {:#?}",
+//         event.attack_type, event.time_ms
+//     );
+// }
+
+// fn on_passive_triggered(event: &Event) {
+//     println!(
+//         "passive triggered for {:#?} at {:#?}",
+//         event.passive_effect.unwrap(),
+//         event.time_ms
+//     );
+// }
 
 fn on_post_damage_events(
     damage: f64,
@@ -451,24 +510,19 @@ fn on_post_damage_events(
     event: &Event,
     events: &mut BinaryHeap<Event>,
 ) {
-    println!("on_post_damage_events");
-    println!("passive_effects:");
+    // println!("on_post_damage_events");
+    // println!("passive_effects:");
     for effect in game_params.passive_effects.iter() {
-        println!("{:#?}", effect);
+        // println!("{:#?}", effect);
         effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events);
     }
 
-    println!("aura passive_effects:");
-    for effect in state
-        .attacker_auras
-        .clone()
-        .iter()
-        .flat_map(|aura| aura.0.passive_effects())
-    {
-        println!("{:#?}", effect);
-        effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events);
+    // println!("aura effects:");
+    for (aura, _) in state.attacker_auras.clone().iter() {
+        // println!("{:#?}", aura);
+        aura.on_post_damage(damage, attacker_stats, state, game_params, event, events);
     }
-    println!("on_post_damage_events-----------------------");
+    // println!("on_post_damage_events-----------------------");
 }
 
 #[cfg(test)]
@@ -486,6 +540,7 @@ mod tests {
             category: super::EventCategory::AttackCastStart,
             time_ms: 1000,
             passive_effect: None,
+            aura: None,
         };
 
         let event_2 = Event {
@@ -493,6 +548,7 @@ mod tests {
             category: super::EventCategory::AttackCastStart,
             time_ms: 1000,
             passive_effect: None,
+            aura: None,
         };
 
         let event_3 = Event {
@@ -500,6 +556,7 @@ mod tests {
             category: super::EventCategory::AttackCastStart,
             time_ms: 5000,
             passive_effect: None,
+            aura: None,
         };
 
         let event_0 = Event {
@@ -507,6 +564,7 @@ mod tests {
             category: super::EventCategory::AttackCastStart,
             time_ms: 0,
             passive_effect: None,
+            aura: None,
         };
 
         events.push(&event_1);

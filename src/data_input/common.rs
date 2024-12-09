@@ -135,11 +135,6 @@ pub enum PassiveEffect {
     // Runes
     DarkHarvest,
     SuddenImpact,
-
-    // Auras
-    SuddenImpactReady,
-    Stealth,
-    UnseenThreat,
 }
 
 impl PassiveEffect {
@@ -198,11 +193,6 @@ impl PassiveEffect {
             // runes
             PassiveEffect::DarkHarvest => "",
             PassiveEffect::SuddenImpact => "",
-
-            // auras
-            PassiveEffect::SuddenImpactReady => "",
-            PassiveEffect::Stealth => "",
-            PassiveEffect::UnseenThreat => "",
         }
     }
 
@@ -247,23 +237,6 @@ impl PassiveEffect {
             ),
 
             PassiveEffect::SuddenImpact => (),
-            PassiveEffect::SuddenImpactReady => Aura::SuddenImpactReady.handle_on_post_damage(
-                damage,
-                attacker_stats,
-                state,
-                game_params,
-                event,
-                events,
-            ),
-            PassiveEffect::Stealth => (),
-            PassiveEffect::UnseenThreat => Aura::UnseenThreat.handle_on_post_damage(
-                damage,
-                attacker_stats,
-                state,
-                game_params,
-                event,
-                events,
-            ),
         }
     }
 
@@ -301,10 +274,6 @@ impl PassiveEffect {
             PassiveEffect::SuddenImpact => {
                 Rune::SuddenImpact.handle_dash_event(event, events, state, game_params)
             }
-            PassiveEffect::SuddenImpactReady => (),
-
-            PassiveEffect::Stealth => (),
-            PassiveEffect::UnseenThreat => (),
         }
     }
 
@@ -342,10 +311,6 @@ impl PassiveEffect {
             PassiveEffect::SuddenImpact => {
                 Rune::SuddenImpact.handle_stealth_exit_event(event, events, state, game_params)
             }
-            PassiveEffect::SuddenImpactReady => (),
-
-            PassiveEffect::Stealth => (),
-            PassiveEffect::UnseenThreat => (),
         }
     }
 }
@@ -357,23 +322,39 @@ pub enum DamageType {
     True,
 }
 
-#[derive(Clone, Eq, Hash, PartialEq)]
+#[derive(Clone, Eq, Hash, PartialEq, Debug)]
 pub enum Aura {
     SuddenImpactReady,
-    Stealth, // includes Camouflage & Invisibility
+    Invisibility, // Stealth includes Camouflage & Invisibility
     UnseenThreat,
 }
 
 impl Aura {
-    pub fn passive_effects(&self) -> Vec<PassiveEffect> {
+    pub fn on_start(
+        &self,
+        state: &mut State<'_>,
+        game_params: &GameParams<'_>,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+    ) {
         match self {
-            Aura::SuddenImpactReady => vec![PassiveEffect::SuddenImpactReady],
-            Aura::Stealth => vec![],
-            Aura::UnseenThreat => vec![PassiveEffect::UnseenThreat],
+            _ => (),
         }
     }
 
-    fn handle_on_post_damage(
+    pub fn on_end(
+        &self,
+        state: &mut State<'_>,
+        game_params: &GameParams<'_>,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+    ) {
+        match self {
+            _ => (),
+        }
+    }
+
+    pub fn on_post_damage(
         &self,
         damage: f64,
         attacker_stats: &AttackerStats,
@@ -398,14 +379,7 @@ impl Aura {
                 game_params
                     .abilities_extra_data
                     .unseen_threat
-                    .handle_on_post_damage(
-                        damage,
-                        attacker_stats,
-                        state,
-                        game_params,
-                        event,
-                        events,
-                    );
+                    .on_post_damage(damage, attacker_stats, state, game_params, event, events);
             }
 
             _ => (),
@@ -413,8 +387,8 @@ impl Aura {
     }
 }
 
-pub trait PassiveEffectScript {
-    fn handle_on_post_damage(
+pub trait EffectWithCallbacks {
+    fn on_post_damage(
         &self,
         damage: f64,
         attacker_stats: &AttackerStats,

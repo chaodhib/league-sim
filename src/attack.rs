@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{BinaryHeap, HashMap},
     fmt,
     ops::{Add, Mul},
 };
@@ -9,7 +9,7 @@ use crate::{
         abilities::{find_ability, SpellData},
         common::{AttackerStats, CritHandlingChoice, DamageType, GameParams, TargetStats},
     },
-    simulation::State,
+    simulation::{Event, State},
 };
 
 #[derive(Debug)]
@@ -48,6 +48,8 @@ pub fn simulate_spell(
     game_params: &GameParams,
     state: &mut State,
     spell_name: AttackType,
+    event: &Event,
+    events: &mut BinaryHeap<Event>,
 ) -> SpellResult {
     let mut ability: Option<&SpellData> = None;
     if spell_name != AttackType::AA {
@@ -73,11 +75,13 @@ pub fn simulate_spell(
     };
 
     if ability.is_some() && ability.unwrap().active_effect.is_some() {
-        ability
-            .unwrap()
-            .active_effect
-            .unwrap()
-            .on_effect(attacker_stats, state, game_params);
+        ability.unwrap().active_effect.unwrap().on_effect(
+            attacker_stats,
+            state,
+            game_params,
+            event,
+            events,
+        );
     }
 
     // println!("damage: {:#?}", damage);
@@ -343,8 +347,8 @@ fn cooldown(ability: &SpellData, spell_rank: u64, attacker_stats: &AttackerStats
         let reduced_cd: u64 =
             (base_cd as f64 * 100.0 / (100.0 + attacker_stats.ability_haste)) as u64;
 
-        println!("base_cd: {:#?}", base_cd);
-        println!("reduced_cd: {:#?}", reduced_cd);
+        // println!("base_cd: {:#?}", base_cd);
+        // println!("reduced_cd: {:#?}", reduced_cd);
 
         Some(reduced_cd)
     } else {
