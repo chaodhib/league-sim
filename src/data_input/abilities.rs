@@ -25,6 +25,9 @@ pub struct SpellData {
     pub category: Option<SpellCategory>,
     pub damage_type: Option<DamageType>,
     pub active_effect: Option<&'static dyn ScriptedEffect>,
+    pub recast_gap_duration: Option<u64>,
+    pub recast_charges: Option<u64>,
+    pub recast_window: Option<u64>,
 }
 
 pub struct UnseenThreat {
@@ -71,7 +74,7 @@ impl EffectWithCallbacks for UnseenThreat {
         simulation::on_damage_from_ability(&mitigated_dmg, state, event.time_ms, AttackType::P);
 
         // remove buff
-        state.remove_attacker_aura(
+        state.end_early_attacker_aura(
             &super::common::Aura::UnseenThreat,
             game_params,
             event,
@@ -109,6 +112,44 @@ impl ScriptedEffect for KhazixR {
         event: &crate::simulation::Event,
         events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
     ) {
+        let r_evolved: bool = game_params
+            .initial_config
+            .get("CHAMPION_KHAZIX_R_EVOLVED")
+            .unwrap()
+            == "TRUE";
+
+        // first cast scenario
+        if !state.cooldowns.contains_key(&AttackType::R)
+        //&& !state.recast_ready.contains(&AttackType::R)
+        {
+            state.recast_charges.retain(|&x| x != AttackType::R);
+
+            if r_evolved {
+                state.recast_charges.push(AttackType::R);
+                state.recast_charges.push(AttackType::R);
+            } else {
+                state.recast_charges.push(AttackType::R);
+            }
+        } else if state.recast_ready.contains(&AttackType::R) {
+            // recast scenario
+            state.end_early_attacker_aura(
+                &super::common::Aura::VoidAssaultRecastReady,
+                game_params,
+                event,
+                events,
+            );
+
+            // remove one recast charge
+            let index = state
+                .recast_charges
+                .iter()
+                .position(|value| *value == crate::attack::AttackType::R)
+                .unwrap();
+            state.recast_charges.remove(index);
+        } else {
+            panic!()
+        }
+
         state.add_attacker_aura(
             super::common::Aura::UnseenThreat,
             u64::MAX,
@@ -117,12 +158,7 @@ impl ScriptedEffect for KhazixR {
             events,
         );
 
-        let stealth_duration = if game_params
-            .initial_config
-            .get("CHAMPION_KHAZIX_R_EVOLVED")
-            .unwrap()
-            == "TRUE"
-        {
+        let stealth_duration = if r_evolved {
             self.evolved_duration
         } else {
             self.base_duration
@@ -231,6 +267,9 @@ pub fn pull_abilities_data(
         category: None,
         damage_type: Some(DamageType::Physical),
         active_effect: None,
+        recast_gap_duration: None,
+        recast_charges: None,
+        recast_window: None,
     });
 
     // Q (variation 2)
@@ -261,6 +300,9 @@ pub fn pull_abilities_data(
         category: None,
         damage_type: Some(DamageType::Physical),
         active_effect: None,
+        recast_gap_duration: None,
+        recast_charges: None,
+        recast_window: None,
     });
 
     // W
@@ -308,6 +350,9 @@ pub fn pull_abilities_data(
         category: None,
         damage_type: Some(DamageType::Physical),
         active_effect: None,
+        recast_gap_duration: None,
+        recast_charges: None,
+        recast_window: None,
     });
 
     // E
@@ -349,6 +394,9 @@ pub fn pull_abilities_data(
         category: Some(SpellCategory::Dash),
         damage_type: Some(DamageType::Physical),
         active_effect: None,
+        recast_gap_duration: None,
+        recast_charges: None,
+        recast_window: None,
     });
 
     // R
@@ -362,6 +410,16 @@ pub fn pull_abilities_data(
                 * 1000u64,
         );
     }
+
+    let recast_charges = if config
+        .get("CHAMPION_KHAZIX_R_EVOLVED")
+        .unwrap_or(&"FALSE".to_string())
+        == "TRUE"
+    {
+        2
+    } else {
+        1
+    };
 
     abilities_data.push(SpellData {
         ad_damage: HashMap::new(),
@@ -379,6 +437,9 @@ pub fn pull_abilities_data(
             base_duration: 1250,
             evolved_duration: 2000,
         }),
+        recast_gap_duration: Some(2000),
+        recast_charges: Some(recast_charges),
+        recast_window: Some(12_000),
     });
 
     // println!("abilities_data {:#?}", abilities_data);

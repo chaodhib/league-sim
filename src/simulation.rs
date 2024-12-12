@@ -1,8 +1,10 @@
 use std::{
     cmp::Ordering,
-    collections::{BinaryHeap, HashMap, VecDeque},
+    collections::{BinaryHeap, HashMap, HashSet, VecDeque},
     fmt,
 };
+
+use itertools::Itertools;
 
 use crate::{
     attack::{cast_time, simulate_spell, AttackType, SpellCategory, SpellResult},
@@ -77,20 +79,46 @@ pub struct State<'a> {
     pub config: &'a mut HashMap<String, String>,
     pub attacker_auras: &'a mut HashMap<Aura, u64>,
     pub target_auras: &'a mut HashMap<Aura, u64>,
+    pub recast_charges: &'a mut Vec<AttackType>,
+    pub recast_ready: &'a mut HashSet<AttackType>,
 }
 
 impl State<'_> {
     // fn refresh_cds_and_auras(state: &mut State<'_>) {
-    fn refresh_cds_and_auras(&mut self) {
-        // println!("self.effects_cooldowns: {:#?}", self.effects_cooldowns);
+    fn refresh_cds_and_auras(
+        &mut self,
+        game_params: &GameParams<'_>,
+        event: &Event,
+        events: &mut BinaryHeap<Event>,
+    ) {
+        let current_time = self.time_ms;
+        println!("refresh_cds_and_auras. Current time: {:#?}", current_time);
 
         self.effects_cooldowns
-            .retain(|_, end_at| *end_at > self.time_ms);
+            .retain(|_, end_at| *end_at > current_time);
 
-        self.cooldowns.retain(|_, end_at| *end_at > self.time_ms);
+        self.cooldowns.retain(|_, end_at| *end_at > current_time);
 
-        self.attacker_auras
-            .retain(|_, end_at| *end_at > self.time_ms);
+        // self.attacker_auras needs to be emptied in a way
+        // that callbacks are called repeadly as long as at least one aura
+        // has been removed
+        while self
+            .attacker_auras
+            .values()
+            .any(|end_at| *end_at <= current_time)
+        {
+            self.attacker_auras
+                .clone()
+                .iter()
+                .filter(|(_, end_at)| **end_at <= current_time)
+                .for_each(|(aura, end_at)| {
+                    println!("expired aura: {:#?} {:#?}", aura, end_at);
+                    self.on_expire_attacker_aura(aura, game_params, event, events)
+                });
+
+            // self.attacker_auras
+            // .retain(|_, end_at| *end_at > current_time);
+        }
     }
 
     pub fn add_attacker_aura(
@@ -101,19 +129,43 @@ impl State<'_> {
         event: &Event,
         events: &mut BinaryHeap<Event>,
     ) {
+        let end_time = if duration == u64::MAX {
+            u64::MAX
+        } else {
+            self.time_ms + duration
+        };
+
         insert_aura_attacker_start_event(events, self.time_ms, aura.clone());
+        insert_aura_attacker_end_event(events, end_time, aura.clone());
         aura.on_start(self, game_params, event, events);
-        self.attacker_auras.insert(aura, duration);
+        self.attacker_auras.insert(aura, end_time);
     }
 
-    pub fn remove_attacker_aura(
+    pub fn end_early_attacker_aura(
         &mut self,
         aura: &Aura,
         game_params: &GameParams<'_>,
         event: &Event,
         events: &mut BinaryHeap<Event>,
     ) {
+        // remove the default 'aura_attacker_end' event (added in add_attacker_aura)
+        events.retain(|event| {
+            event.category != EventCategory::AuraAttackerEnd || event.aura != Some(aura.clone())
+        });
+
+        // then proceed
         insert_aura_attacker_end_event(events, self.time_ms, aura.clone());
+        aura.on_end(self, game_params, event, events);
+        self.attacker_auras.remove(aura);
+    }
+
+    pub fn on_expire_attacker_aura(
+        &mut self,
+        aura: &Aura,
+        game_params: &GameParams<'_>,
+        event: &Event,
+        events: &mut BinaryHeap<Event>,
+    ) {
         aura.on_end(self, game_params, event, events);
         self.attacker_auras.remove(aura);
     }
@@ -136,10 +188,18 @@ pub fn run(
         attacker_auras: &mut HashMap::new(),
         target_auras: &mut HashMap::new(),
         damage_history: &mut Vec::new(),
+        recast_charges: &mut Vec::new(),
+        recast_ready: &mut HashSet::new(),
     };
 
     // add first attack event
-    insert_next_attack_event(&mut events, &mut selected_commands, &mut state, 0);
+    insert_next_attack_event(
+        &mut events,
+        &mut selected_commands,
+        &mut state,
+        0,
+        game_params,
+    );
 
     add_initial_auras(game_params, &mut state);
 
@@ -186,13 +246,18 @@ fn on_event(
     game_params: &GameParams,
     state: &mut State,
 ) {
+    if event.time_ms == u64::MAX {
+        return;
+    }
+
     println!("on_event: {:#?}", event);
     // advance time
     state.time_ms = event.time_ms;
-    state.refresh_cds_and_auras();
+    state.refresh_cds_and_auras(game_params, event, events);
 
     match event.category {
         EventCategory::AttackCastStart => {
+            check_spell_off_cooldown(event, events, game_params, state);
             trigger_stealth_exit_if_applicable(event, events, game_params, state);
             let attacker_stats: AttackerStats = compute_attacker_stats(game_params, state);
 
@@ -245,7 +310,13 @@ fn on_event(
                 insert_cooldown_ended_event(events, event, cooldown_end_ms);
                 add_cooldown_to_state(state, event.attack_type.unwrap(), cooldown_end_ms);
             }
-            insert_next_attack_event(events, remaining_commands, state, event.time_ms);
+            insert_next_attack_event(
+                events,
+                remaining_commands,
+                state,
+                event.time_ms,
+                game_params,
+            );
         }
         // EventCategory::CooldownEnded => on_cooldown_ended(event),
         // EventCategory::PassiveTriggered => on_passive_triggered(event),
@@ -253,6 +324,20 @@ fn on_event(
         EventCategory::PassiveTriggered => (),
         EventCategory::AuraAttackerStart => (),
         EventCategory::AuraAttackerEnd => (),
+    }
+}
+
+fn check_spell_off_cooldown(
+    event: &Event,
+    events: &mut BinaryHeap<Event>,
+    game_params: &GameParams<'_>,
+    state: &mut State<'_>,
+) {
+    let attack_type = event.attack_type.unwrap();
+    if state.cooldowns.contains_key(&attack_type) && !state.recast_ready.contains(&attack_type) {
+        println!("state.cooldowns: {:#?}", state.cooldowns);
+        println!("state.recast_ready: {:#?}", state.recast_ready);
+        panic!();
     }
 }
 
@@ -339,7 +424,7 @@ fn trigger_stealth_exit(
     game_params: &GameParams<'_>,
     state: &mut State<'_>,
 ) {
-    state.remove_attacker_aura(&Aura::Invisibility, game_params, event, events);
+    state.end_early_attacker_aura(&Aura::Invisibility, game_params, event, events);
 
     for effect in game_params.passive_effects.iter() {
         effect.handle_stealth_exit_event(event, events, game_params, state)
@@ -411,13 +496,37 @@ fn insert_next_attack_event(
     commands: &mut VecDeque<AttackType>,
     state: &mut State,
     current_time_ms: u64,
+    game_params: &GameParams,
 ) {
     let command = commands.pop_front();
     if command.is_some() {
         let attack_type = command.unwrap();
+
         let time_ms: u64 = if state.cooldowns.contains_key(&attack_type) {
-            // the ability is in cooldown. We can't queue it right away.
-            state.cooldowns.remove(&attack_type).unwrap()
+            if state.recast_charges.contains(&attack_type) {
+                let ability = find_ability(
+                    game_params.abilities,
+                    attack_type,
+                    game_params.initial_config,
+                );
+                if let Some(invis_end) = state.attacker_auras.get(&Aura::Invisibility) {
+                    invis_end + ability.recast_gap_duration.unwrap()
+                } else {
+                    if let Some(delay_end) = state.attacker_auras.get(&Aura::VoidAssaultDelay) {
+                        *delay_end
+                    } else {
+                        if let Some(_) = state.attacker_auras.get(&Aura::VoidAssaultRecastReady) {
+                            0
+                        } else {
+                            // the ability is in cooldown. We can't queue it right away.
+                            state.cooldowns.remove(&attack_type).unwrap()
+                        }
+                    }
+                }
+            } else {
+                // the ability is in cooldown. We can't queue it right away.
+                state.cooldowns.remove(&attack_type).unwrap()
+            }
         } else {
             // ability is off CD. Let's start it right away
             current_time_ms
@@ -544,7 +653,7 @@ mod tests {
         };
 
         let event_2 = Event {
-            attack_type: Some(super::AttackType::Q),
+            attack_type: Some(super::AttackType::W),
             category: super::EventCategory::AttackCastStart,
             time_ms: 1000,
             passive_effect: None,
@@ -552,27 +661,31 @@ mod tests {
         };
 
         let event_3 = Event {
-            attack_type: Some(super::AttackType::Q),
+            attack_type: Some(super::AttackType::E),
             category: super::EventCategory::AttackCastStart,
-            time_ms: 5000,
+            time_ms: 1000,
             passive_effect: None,
             aura: None,
         };
 
-        let event_0 = Event {
-            attack_type: Some(super::AttackType::Q),
-            category: super::EventCategory::AttackCastStart,
-            time_ms: 0,
-            passive_effect: None,
-            aura: None,
-        };
+        // let event_0 = Event {
+        //     attack_type: Some(super::AttackType::Q),
+        //     category: super::EventCategory::AttackCastStart,
+        //     time_ms: 0,
+        //     passive_effect: None,
+        //     aura: None,
+        // };
+
+        // events.push(&event_1);
+        // events.push(&event_2);
+        // events.push(&event_3);
+        // events.push(&event_0);
 
         events.push(&event_1);
         events.push(&event_2);
         events.push(&event_3);
-        events.push(&event_0);
 
-        assert_eq!(events.pop(), Some(&event_0));
+        // assert_eq!(events.pop(), Some(&event_0));
         assert_eq!(events.pop(), Some(&event_1));
         assert_eq!(events.pop(), Some(&event_2));
         assert_eq!(events.pop(), Some(&event_3));

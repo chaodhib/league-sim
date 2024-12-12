@@ -303,7 +303,7 @@ impl SuddenImpact {
         simulation::on_damage_from_rune(&true_damage, state, event, Rune::SuddenImpact);
 
         // remove buff
-        state.remove_attacker_aura(&Aura::SuddenImpactReady, game_params, event, events);
+        state.end_early_attacker_aura(&Aura::SuddenImpactReady, game_params, event, events);
 
         // set cooldown
         state

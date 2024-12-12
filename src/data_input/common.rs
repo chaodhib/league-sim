@@ -5,10 +5,10 @@ use std::{
 
 use itertools::Itertools;
 
-use crate::simulation::State;
+use crate::{attack::AttackType, simulation::State};
 
 use super::{
-    abilities::{self, AbilitiesExtraData, SpellData},
+    abilities::{self, find_ability, AbilitiesExtraData, SpellData},
     champions::{stat_increase, ChampionStats},
     items::Item,
     runes::{collect_runes_stats, Rune, RunesData},
@@ -327,6 +327,8 @@ pub enum Aura {
     SuddenImpactReady,
     Invisibility, // Stealth includes Camouflage & Invisibility
     UnseenThreat,
+    VoidAssaultDelay,
+    VoidAssaultRecastReady,
 }
 
 impl Aura {
@@ -337,7 +339,11 @@ impl Aura {
         event: &crate::simulation::Event,
         events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
     ) {
+        println!("aura.on_start: {:#?} {:#?}", self, event.time_ms);
         match self {
+            Aura::VoidAssaultRecastReady => {
+                state.recast_ready.insert(AttackType::R);
+            }
             _ => (),
         }
     }
@@ -349,7 +355,43 @@ impl Aura {
         event: &crate::simulation::Event,
         events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
     ) {
+        println!("aura.on_end: {:#?} {:#?}", self, event.time_ms);
+
         match self {
+            Aura::Invisibility => {
+                if state.recast_charges.contains(&crate::attack::AttackType::R) {
+                    let r_ability = find_ability(
+                        game_params.abilities,
+                        crate::attack::AttackType::R,
+                        game_params.initial_config,
+                    );
+
+                    state.add_attacker_aura(
+                        Aura::VoidAssaultDelay,
+                        r_ability.recast_gap_duration.unwrap(),
+                        game_params,
+                        event,
+                        events,
+                    );
+                }
+            }
+            Aura::VoidAssaultDelay => {
+                let r_ability = find_ability(
+                    game_params.abilities,
+                    crate::attack::AttackType::R,
+                    game_params.initial_config,
+                );
+                state.add_attacker_aura(
+                    Aura::VoidAssaultRecastReady,
+                    r_ability.recast_window.unwrap(),
+                    game_params,
+                    event,
+                    events,
+                );
+            }
+            Aura::VoidAssaultRecastReady => {
+                state.recast_ready.remove(&AttackType::R);
+            }
             _ => (),
         }
     }

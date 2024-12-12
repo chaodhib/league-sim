@@ -60,7 +60,7 @@ pub fn simulate_spell(
         ));
     }
 
-    let spell_result: SpellResult = match spell_name {
+    let mut spell_result: SpellResult = match spell_name {
         AttackType::AA => simulate_aa(
             attacker_stats,
             game_params.target_stats,
@@ -73,6 +73,10 @@ pub fn simulate_spell(
         AttackType::P => panic!(),
         // &_ => todo!(),
     };
+
+    if state.recast_ready.contains(&AttackType::R) {
+        spell_result.cooldown = None;
+    }
 
     if ability.is_some() && ability.unwrap().active_effect.is_some() {
         ability.unwrap().active_effect.unwrap().on_effect(

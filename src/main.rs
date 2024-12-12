@@ -73,6 +73,8 @@ fn run_multiple() {
         "TRUE".to_string(),
     );
 
+    config.insert("CHAMPION_KHAZIX_R_EVOLVED".to_string(), "TRUE".to_string());
+
     let item_ids: Vec<u64> = vec![
         3158, // Ionian Boots of Lucidity
         3006, // Berserker's Greaves
@@ -218,10 +220,14 @@ fn run_single() {
     let mut selected_commands = VecDeque::new();
     selected_commands.push_back(attack::AttackType::R);
     selected_commands.push_back(attack::AttackType::AA);
-    selected_commands.push_back(attack::AttackType::Q);
-    selected_commands.push_back(attack::AttackType::W);
-    selected_commands.push_back(attack::AttackType::E);
+    selected_commands.push_back(attack::AttackType::R);
     selected_commands.push_back(attack::AttackType::AA);
+    selected_commands.push_back(attack::AttackType::R);
+    selected_commands.push_back(attack::AttackType::AA);
+    // selected_commands.push_back(attack::AttackType::Q);
+    // selected_commands.push_back(attack::AttackType::W);
+    // selected_commands.push_back(attack::AttackType::E);
+    // selected_commands.push_back(attack::AttackType::AA);
 
     let hp_perc: f64 = 100.0;
     let level: u64 = 6;
@@ -241,7 +247,7 @@ fn run_single() {
         "TRUE".to_string(),
     );
 
-    config.insert("CHAMPION_KHAZIX_R_EVOLVED".to_string(), "FALSE".to_string());
+    config.insert("CHAMPION_KHAZIX_R_EVOLVED".to_string(), "TRUE".to_string());
 
     let item_ids: Vec<u64> = vec![
         3158, // Ionian Boots of Lucidity
