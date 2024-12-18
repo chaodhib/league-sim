@@ -5,12 +5,15 @@ use std::{
 
 use itertools::Itertools;
 
-use crate::{attack::AttackType, simulation::State};
+use crate::{
+    attack::AttackType,
+    simulation::{DamageInfo, State},
+};
 
 use super::{
     abilities::{self, find_ability, AbilitiesExtraData, SpellData},
     champions::{stat_increase, ChampionStats},
-    items::Item,
+    items::{Item, ItemData},
     runes::{collect_runes_stats, Rune, RunesData},
 };
 
@@ -93,11 +96,11 @@ pub struct GameParams<'a> {
     pub champion: Champion,
     pub champion_stats: &'a ChampionStats,
     pub level: u64,
-    pub items: &'a Vec<&'a Item>,
+    pub items: &'a Vec<&'a ItemData>,
     pub initial_config: &'a HashMap<String, String>,
     pub abilities: &'a Vec<SpellData>,
     pub abilities_extra_data: &'a AbilitiesExtraData,
-    pub target_stats: &'a TargetStats,
+    pub initial_target_stats: &'a TargetStats,
     pub runes: &'a HashSet<Rune>,
     pub attacker_hp_perc: f64,
     pub runes_data: &'a RunesData,
@@ -105,32 +108,23 @@ pub struct GameParams<'a> {
     pub crit_handling: CritHandlingChoice,
     pub initial_attacker_auras: &'a Vec<Aura>,
     pub initial_target_auras: &'a Vec<Aura>,
+    pub start_time_ms: u64,
 }
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum PassiveEffect {
     // Items
-    Haunt,
-    BitterCold,
-    Eminence,
-    IgnorePain,
-    Defy,
-    Hackshorn,
-    Ichorshield,
-    Lifeline,
-    Preparation,
-    Extraction,
-    EverRisingMoon,
-    Blackout,
-    Extinguish,
-    Cleave,
-    GrievousWounds,
     Carve,
-    Fervor,
-    Death,
-    Taxes,
-    Annul,
+    EverRisingMoon,
+    Eminence,
     IonianInsight,
+    Preparation,
+    DragonForce,
+    FocusedWill,
+    LightshieldStrike,
+    Death,
+    Energized,
+    Firmament,
 
     // Runes
     DarkHarvest,
@@ -138,67 +132,69 @@ pub enum PassiveEffect {
 }
 
 impl PassiveEffect {
-    pub fn from_string(name: &str) -> PassiveEffect {
+    pub fn from_string(name: &str) -> Option<PassiveEffect> {
         match name {
-            "Haunt" => PassiveEffect::Haunt,
-            "Bitter Cold" => PassiveEffect::BitterCold,
-            "Eminence" => PassiveEffect::Eminence,
-            "Ignore Pain" => PassiveEffect::IgnorePain,
-            "Defy" => PassiveEffect::Defy,
-            "Hackshorn" => PassiveEffect::Hackshorn,
-            "Ichorshield" => PassiveEffect::Ichorshield,
-            "Lifeline" => PassiveEffect::Lifeline,
-            "Preparation" => PassiveEffect::Preparation,
-            "Extraction" => PassiveEffect::Extraction,
-            "Ever Rising Moon" => PassiveEffect::EverRisingMoon,
-            "Blackout" => PassiveEffect::Blackout,
-            "Extinguish" => PassiveEffect::Extinguish,
-            "Cleave" => PassiveEffect::Cleave,
-            "Grievous Wounds" => PassiveEffect::GrievousWounds,
-            "Carve" => PassiveEffect::Carve,
-            "Fervor" => PassiveEffect::Fervor,
-            "Death" => PassiveEffect::Death,
-            "Taxes" => PassiveEffect::Taxes,
-            "Annul" => PassiveEffect::Annul,
-            "Ionian Insight" => PassiveEffect::IonianInsight,
+            "Flux" => None,
+            "Carve" => Some(Self::Carve),
+            "Fervor" => None,
+            "Ichorshield" => None,
+            "Hackshorn" => None,
+            "Ignore Pain" => None,
+            "Defy" => None,
+            "Ever Rising Moon" => Some(Self::EverRisingMoon),
+            "Annul" => None,
+            "Winter's Caress" => None,
+            "Rebirth" => None,
+            "Eminence" => Some(Self::Eminence),
+            "Ionian Insight" => Some(Self::IonianInsight),
+            "Lifeline" => None,
+            "Grievous Wounds" => None,
+            "Preparation" => Some(Self::Preparation),
+            "Extraction" => None,
+            "Cleave" => None,
+            "Resilience" => None,
+            "Shield Reaver" => None,
+            "Bitter Cold" => None,
+            "Dragonforce" => Some(Self::DragonForce),
+            "Focused Will" => Some(Self::FocusedWill),
+            "Lightshield Strike" => Some(Self::LightshieldStrike),
+            "Death" => Some(Self::Death),
+            "Taxes" => None,
+            "Blackout" => None,
+            "Extinguish" => None,
+            "Energized" => Some(Self::Energized),
+            "Galvanize" => None,
+            "Firmament" => Some(Self::Firmament),
+            "Haunt" => None,
+
             &_ => todo!("missing {name}"),
         }
     }
 
-    pub fn to_string(effect: PassiveEffect) -> &'static str {
-        match effect {
-            // items
-            PassiveEffect::Haunt => "Haunt",
-            PassiveEffect::BitterCold => "Bitter Cold",
-            PassiveEffect::Eminence => "Eminence",
-            PassiveEffect::IgnorePain => "Ignore Pain",
-            PassiveEffect::Defy => "Defy",
-            PassiveEffect::Hackshorn => "Hackshorn",
-            PassiveEffect::Ichorshield => "Ichorshield",
-            PassiveEffect::Lifeline => "Lifeline",
-            PassiveEffect::Preparation => "Preparation",
-            PassiveEffect::Extraction => "Extraction",
-            PassiveEffect::EverRisingMoon => "Ever Rising Moon",
-            PassiveEffect::Blackout => "Blackout",
-            PassiveEffect::Extinguish => "Extinguish",
-            PassiveEffect::Cleave => "Cleave",
-            PassiveEffect::GrievousWounds => "Grievous Wounds",
-            PassiveEffect::Carve => "Carve",
-            PassiveEffect::Fervor => "Fervor",
-            PassiveEffect::Death => "Death",
-            PassiveEffect::Taxes => "Taxes",
-            PassiveEffect::Annul => "Annul",
-            PassiveEffect::IonianInsight => "Ionian Insight",
+    // pub fn to_string(effect: PassiveEffect) -> &'static str {
+    //     match effect {
+    //         // items
+    //         PassiveEffect::Eminence => "Eminence",
+    //         PassiveEffect::Preparation => "Preparation",
+    //         PassiveEffect::EverRisingMoon => "Ever Rising Moon",
+    //         PassiveEffect::Carve => "Carve",
+    //         PassiveEffect::Death => "Death",
+    //         PassiveEffect::IonianInsight => "Ionian Insight",
+    //         PassiveEffect::DragonForce => "DragonForce",
+    //         PassiveEffect::FocusedWill => "Focused Will",
+    //         PassiveEffect::LightshieldStrike => "Lightshield Strike",
+    //         PassiveEffect::Energized => "Energized",
+    //         PassiveEffect::Firmament => "Firmament",
 
-            // runes
-            PassiveEffect::DarkHarvest => "",
-            PassiveEffect::SuddenImpact => "",
-        }
-    }
+    //         // runes
+    //         PassiveEffect::DarkHarvest => "",
+    //         PassiveEffect::SuddenImpact => "",
+    //     }
+    // }
 
     pub fn handle_on_post_damage(
         &self,
-        damage: f64,
+        damage_info: &DamageInfo,
         attacker_stats: &AttackerStats,
         state: &mut State<'_>,
         game_params: &GameParams<'_>,
@@ -206,29 +202,17 @@ impl PassiveEffect {
         events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
     ) {
         match self {
-            PassiveEffect::Haunt => todo!(),
-            PassiveEffect::BitterCold => todo!(),
-            PassiveEffect::Eminence => todo!(),
-            PassiveEffect::IgnorePain => todo!(),
-            PassiveEffect::Defy => todo!(),
-            PassiveEffect::Hackshorn => todo!(),
-            PassiveEffect::Ichorshield => todo!(),
-            PassiveEffect::Lifeline => todo!(),
-            PassiveEffect::Preparation => todo!(),
-            PassiveEffect::Extraction => todo!(),
-            PassiveEffect::EverRisingMoon => todo!(),
-            PassiveEffect::Blackout => todo!(),
-            PassiveEffect::Extinguish => todo!(),
-            PassiveEffect::Cleave => todo!(),
-            PassiveEffect::GrievousWounds => todo!(),
-            PassiveEffect::Carve => todo!(),
-            PassiveEffect::Fervor => todo!(),
-            PassiveEffect::Death => todo!(),
-            PassiveEffect::Taxes => todo!(),
-            PassiveEffect::Annul => todo!(),
-            PassiveEffect::IonianInsight => (),
+            PassiveEffect::Carve => Item::BlackCleaver.handle_on_post_damage(
+                self,
+                damage_info,
+                attacker_stats,
+                state,
+                game_params,
+                event,
+                events,
+            ),
             PassiveEffect::DarkHarvest => Rune::DarkHarvest.handle_on_post_damage(
-                damage,
+                damage_info,
                 attacker_stats,
                 state,
                 game_params,
@@ -237,6 +221,16 @@ impl PassiveEffect {
             ),
 
             PassiveEffect::SuddenImpact => (),
+            PassiveEffect::EverRisingMoon => (),
+            PassiveEffect::Eminence => (),
+            PassiveEffect::IonianInsight => (),
+            PassiveEffect::Preparation => (),
+            PassiveEffect::DragonForce => (),
+            PassiveEffect::FocusedWill => (),
+            PassiveEffect::LightshieldStrike => (),
+            PassiveEffect::Death => (),
+            PassiveEffect::Energized => (),
+            PassiveEffect::Firmament => (),
         }
     }
 
@@ -248,32 +242,21 @@ impl PassiveEffect {
         state: &mut State<'_>,
     ) {
         match self {
-            PassiveEffect::Haunt => todo!(),
-            PassiveEffect::BitterCold => todo!(),
-            PassiveEffect::Eminence => todo!(),
-            PassiveEffect::IgnorePain => todo!(),
-            PassiveEffect::Defy => todo!(),
-            PassiveEffect::Hackshorn => todo!(),
-            PassiveEffect::Ichorshield => todo!(),
-            PassiveEffect::Lifeline => todo!(),
-            PassiveEffect::Preparation => todo!(),
-            PassiveEffect::Extraction => todo!(),
-            PassiveEffect::EverRisingMoon => todo!(),
-            PassiveEffect::Blackout => todo!(),
-            PassiveEffect::Extinguish => todo!(),
-            PassiveEffect::Cleave => todo!(),
-            PassiveEffect::GrievousWounds => todo!(),
-            PassiveEffect::Carve => todo!(),
-            PassiveEffect::Fervor => todo!(),
-            PassiveEffect::Death => todo!(),
-            PassiveEffect::Taxes => todo!(),
-            PassiveEffect::Annul => todo!(),
-            PassiveEffect::IonianInsight => (),
-            PassiveEffect::DarkHarvest => (),
-
             PassiveEffect::SuddenImpact => {
                 Rune::SuddenImpact.handle_dash_event(event, events, state, game_params)
             }
+            PassiveEffect::Carve => (),
+            PassiveEffect::EverRisingMoon => (),
+            PassiveEffect::Eminence => (),
+            PassiveEffect::IonianInsight => (),
+            PassiveEffect::Preparation => (),
+            PassiveEffect::DragonForce => (),
+            PassiveEffect::FocusedWill => (),
+            PassiveEffect::LightshieldStrike => (),
+            PassiveEffect::Death => (),
+            PassiveEffect::Energized => (),
+            PassiveEffect::Firmament => (),
+            PassiveEffect::DarkHarvest => (),
         }
     }
 
@@ -285,32 +268,21 @@ impl PassiveEffect {
         state: &mut State<'_>,
     ) {
         match self {
-            PassiveEffect::Haunt => todo!(),
-            PassiveEffect::BitterCold => todo!(),
-            PassiveEffect::Eminence => todo!(),
-            PassiveEffect::IgnorePain => todo!(),
-            PassiveEffect::Defy => todo!(),
-            PassiveEffect::Hackshorn => todo!(),
-            PassiveEffect::Ichorshield => todo!(),
-            PassiveEffect::Lifeline => todo!(),
-            PassiveEffect::Preparation => todo!(),
-            PassiveEffect::Extraction => todo!(),
-            PassiveEffect::EverRisingMoon => todo!(),
-            PassiveEffect::Blackout => todo!(),
-            PassiveEffect::Extinguish => todo!(),
-            PassiveEffect::Cleave => todo!(),
-            PassiveEffect::GrievousWounds => todo!(),
-            PassiveEffect::Carve => todo!(),
-            PassiveEffect::Fervor => todo!(),
-            PassiveEffect::Death => todo!(),
-            PassiveEffect::Taxes => todo!(),
-            PassiveEffect::Annul => todo!(),
-            PassiveEffect::IonianInsight => (),
-            PassiveEffect::DarkHarvest => (),
-
             PassiveEffect::SuddenImpact => {
                 Rune::SuddenImpact.handle_stealth_exit_event(event, events, state, game_params)
             }
+            PassiveEffect::Carve => (),
+            PassiveEffect::EverRisingMoon => (),
+            PassiveEffect::Eminence => (),
+            PassiveEffect::IonianInsight => (),
+            PassiveEffect::Preparation => (),
+            PassiveEffect::DragonForce => (),
+            PassiveEffect::FocusedWill => (),
+            PassiveEffect::LightshieldStrike => (),
+            PassiveEffect::Death => (),
+            PassiveEffect::Energized => (),
+            PassiveEffect::Firmament => (),
+            PassiveEffect::DarkHarvest => (),
         }
     }
 }
@@ -322,24 +294,32 @@ pub enum DamageType {
     True,
 }
 
-#[derive(Clone, Eq, Hash, PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub enum Unit {
+    Attacker,
+    Target,
+}
+
+#[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
 pub enum Aura {
     SuddenImpactReady,
     Invisibility, // Stealth includes Camouflage & Invisibility
     UnseenThreat,
     VoidAssaultDelay,
     VoidAssaultRecastReady,
+    Carve,
 }
 
 impl Aura {
     pub fn on_start(
         &self,
         state: &mut State<'_>,
-        game_params: &GameParams<'_>,
-        event: &crate::simulation::Event,
-        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+        affected_unit: Unit,
+        // game_params: &GameParams<'_>,
+        // event: &crate::simulation::Event,
+        // events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
     ) {
-        println!("aura.on_start: {:#?} {:#?}", self, event.time_ms);
+        // println!("aura.on_start: {:#?} {:#?}", self, event.time_ms);
         match self {
             Aura::VoidAssaultRecastReady => {
                 state.recast_ready.insert(AttackType::R);
@@ -354,8 +334,9 @@ impl Aura {
         game_params: &GameParams<'_>,
         event: &crate::simulation::Event,
         events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+        affected_unit: Unit,
     ) {
-        println!("aura.on_end: {:#?} {:#?}", self, event.time_ms);
+        // println!("aura.on_end: {:#?} {:#?}", self, event.time_ms);
 
         match self {
             Aura::Invisibility => {
@@ -368,9 +349,8 @@ impl Aura {
 
                     state.add_attacker_aura(
                         Aura::VoidAssaultDelay,
-                        r_ability.recast_gap_duration.unwrap(),
-                        game_params,
-                        event,
+                        r_ability.recast_gap_duration,
+                        None,
                         events,
                     );
                 }
@@ -383,9 +363,8 @@ impl Aura {
                 );
                 state.add_attacker_aura(
                     Aura::VoidAssaultRecastReady,
-                    r_ability.recast_window.unwrap(),
-                    game_params,
-                    event,
+                    r_ability.recast_window,
+                    None,
                     events,
                 );
             }
@@ -398,7 +377,7 @@ impl Aura {
 
     pub fn on_post_damage(
         &self,
-        damage: f64,
+        damage_info: &DamageInfo,
         attacker_stats: &AttackerStats,
         state: &mut State<'_>,
         game_params: &GameParams<'_>,
@@ -408,7 +387,7 @@ impl Aura {
         match self {
             Aura::SuddenImpactReady => {
                 game_params.runes_data.sudden_impact.handle_on_post_damage(
-                    damage,
+                    damage_info,
                     attacker_stats,
                     state,
                     game_params,
@@ -421,7 +400,14 @@ impl Aura {
                 game_params
                     .abilities_extra_data
                     .unseen_threat
-                    .on_post_damage(damage, attacker_stats, state, game_params, event, events);
+                    .on_post_damage(
+                        damage_info,
+                        attacker_stats,
+                        state,
+                        game_params,
+                        event,
+                        events,
+                    );
             }
 
             _ => (),
@@ -429,10 +415,18 @@ impl Aura {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct AuraApplication {
+    pub aura: Aura,
+    pub start_ms: u64,
+    pub end_ms: Option<u64>,
+    pub stacks: Option<u64>,
+}
+
 pub trait EffectWithCallbacks {
     fn on_post_damage(
         &self,
-        damage: f64,
+        damage_info: &DamageInfo,
         attacker_stats: &AttackerStats,
         state: &mut State<'_>,
         game_params: &GameParams<'_>,
@@ -491,19 +485,35 @@ pub fn compute_attacker_stats(game_params: &GameParams, state: &State) -> Attack
     apply_passives(&mut offensive_stats, items);
     apply_adaptive_force(&mut offensive_stats);
 
+    println!(
+        "compute_attacker_stats ad: {:#?}, time: {:#?}",
+        offensive_stats.ad_base + offensive_stats.ad_bonus,
+        state.time_ms
+    );
+
     offensive_stats
 }
 
 pub fn compute_target_stats(game_params: &GameParams, state: &State) -> TargetStats {
+    let mut armor = game_params.initial_target_stats.armor;
+    if let Some(carve_aura_app) = state.target_auras.get(&Aura::Carve) {
+        let stacks = carve_aura_app.stacks.unwrap();
+        armor *= 1.0 - (0.06 * stacks as f64);
+    }
+    println!(
+        "compute_target_stats armor: {:#?}, time: {:#?}",
+        armor, state.time_ms
+    );
+
     return TargetStats {
-        armor: game_params.target_stats.armor,
-        max_health: game_params.target_stats.max_health,
-        current_health: game_params.target_stats.current_health - state.total_damage,
-        magic_resistance: game_params.target_stats.magic_resistance,
+        armor,
+        max_health: game_params.initial_target_stats.max_health,
+        current_health: game_params.initial_target_stats.current_health - state.total_damage,
+        magic_resistance: game_params.initial_target_stats.magic_resistance,
     };
 }
 
-fn apply_passives(offensive_stats: &mut AttackerStats, items: &Vec<&Item>) {
+fn apply_passives(offensive_stats: &mut AttackerStats, items: &Vec<&ItemData>) {
     // todo: change this in a callback fashion
 }
 
@@ -543,7 +553,7 @@ pub fn compile_passive_effects(game_params: &mut GameParams<'_>) {
     let item_effects = game_params
         .items
         .iter()
-        .map(|item: &&Item| item.passives.clone());
+        .map(|item: &&ItemData| item.passives.clone());
 
     let rune_effects = game_params
         .runes

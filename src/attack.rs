@@ -15,6 +15,7 @@ use crate::{
 #[derive(Debug)]
 pub struct SpellResult {
     pub damage: Option<f64>,
+    pub damage_type: Option<DamageType>,
     pub cooldown: Option<u64>,
 }
 
@@ -45,6 +46,7 @@ impl fmt::Display for AttackType {
 
 pub fn simulate_spell(
     attacker_stats: &AttackerStats,
+    target_stats: &TargetStats,
     game_params: &GameParams,
     state: &mut State,
     spell_name: AttackType,
@@ -61,14 +63,10 @@ pub fn simulate_spell(
     }
 
     let mut spell_result: SpellResult = match spell_name {
-        AttackType::AA => simulate_aa(
-            attacker_stats,
-            game_params.target_stats,
-            game_params.crit_handling,
-        ),
-        AttackType::Q => simulate_q(attacker_stats, game_params.target_stats, ability.unwrap()),
-        AttackType::W => simulate_w(attacker_stats, game_params.target_stats, ability.unwrap()),
-        AttackType::E => simulate_e(attacker_stats, game_params.target_stats, ability.unwrap()),
+        AttackType::AA => simulate_aa(attacker_stats, target_stats, game_params.crit_handling),
+        AttackType::Q => simulate_q(attacker_stats, target_stats, ability.unwrap()),
+        AttackType::W => simulate_w(attacker_stats, target_stats, ability.unwrap()),
+        AttackType::E => simulate_e(attacker_stats, target_stats, ability.unwrap()),
         AttackType::R => simulate_r(attacker_stats, ability.unwrap()),
         AttackType::P => panic!(),
         // &_ => todo!(),
@@ -200,6 +198,7 @@ fn simulate_aa(
     SpellResult {
         damage: Some(damage),
         cooldown: Some(cooldown),
+        damage_type: Some(DamageType::Physical),
     }
 }
 
@@ -225,6 +224,7 @@ fn simulate_q(
             spell_rank,
         )),
         cooldown: cooldown(ability, spell_rank, attacker_stats),
+        damage_type: Some(DamageType::Physical),
     };
 }
 
@@ -251,6 +251,7 @@ fn simulate_w(
             spell_rank,
         )),
         cooldown: cooldown(ability, spell_rank, attacker_stats),
+        damage_type: Some(DamageType::Physical),
     }
 }
 
@@ -277,6 +278,7 @@ fn simulate_e(
             spell_rank,
         )),
         cooldown: cooldown(ability, spell_rank, attacker_stats),
+        damage_type: Some(DamageType::Physical),
     }
 }
 fn simulate_r(attacker_stats: &AttackerStats, ability: &SpellData) -> SpellResult {
@@ -291,6 +293,7 @@ fn simulate_r(attacker_stats: &AttackerStats, ability: &SpellData) -> SpellResul
     SpellResult {
         damage: None,
         cooldown: cooldown(ability, spell_rank, attacker_stats),
+        damage_type: None,
     }
 }
 

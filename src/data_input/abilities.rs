@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::{
     attack::{compute_mitigated_damage, AttackType, SpellCategory},
-    simulation,
+    simulation::{self, DamageInfo},
 };
 
 use super::common::{
@@ -39,7 +39,7 @@ pub struct UnseenThreat {
 impl EffectWithCallbacks for UnseenThreat {
     fn on_post_damage(
         &self,
-        damage: f64,
+        damage_info: &DamageInfo,
         attacker_stats: &super::common::AttackerStats,
         state: &mut crate::simulation::State<'_>,
         game_params: &super::common::GameParams<'_>,
@@ -71,7 +71,34 @@ impl EffectWithCallbacks for UnseenThreat {
             DamageType::Magical,
         );
 
-        simulation::on_damage_from_ability(&mitigated_dmg, state, event.time_ms, AttackType::P);
+        simulation::on_damage_from_ability(
+            &mitigated_dmg,
+            DamageType::Magical,
+            state,
+            AttackType::P,
+        );
+
+        // ----------------------------------------------
+        // looks like this passive is not triggering any event IG
+        // ----------------------------------------------
+        // let new_damage_info = DamageInfo {
+        //     amount: mitigated_dmg,
+        //     damage_type: DamageType::Magical,
+        //     time_ms: state.time_ms,
+        //     source: simulation::DamageSource::Ability,
+        //     source_ability: Some(AttackType::P),
+        //     source_rune: None,
+        //     source_item: None,
+        // };
+        //
+        // simulation::on_post_damage_events(
+        //     &new_damage_info,
+        //     &attacker_stats,
+        //     state,
+        //     game_params,
+        //     event,
+        //     events,
+        // );
 
         // remove buff
         state.end_early_attacker_aura(
@@ -150,13 +177,7 @@ impl ScriptedEffect for KhazixR {
             panic!()
         }
 
-        state.add_attacker_aura(
-            super::common::Aura::UnseenThreat,
-            u64::MAX,
-            game_params,
-            event,
-            events,
-        );
+        state.add_attacker_aura(super::common::Aura::UnseenThreat, None, None, events);
 
         let stealth_duration = if r_evolved {
             self.evolved_duration
@@ -166,9 +187,8 @@ impl ScriptedEffect for KhazixR {
 
         state.add_attacker_aura(
             super::common::Aura::Invisibility,
-            stealth_duration,
-            game_params,
-            event,
+            Some(stealth_duration),
+            None,
             events,
         );
     }
@@ -204,10 +224,11 @@ impl ScriptedEffect for KhazixR {
 pub fn pull_abilities_data(
     config: &HashMap<String, String>,
 ) -> (Vec<SpellData>, AbilitiesExtraData) {
-    let file = File::open("/home/chaodhib/git/lolstaticdata/champions/Khazix.json").unwrap();
+    let file = File::open("source_3/champions_formatted.json").unwrap();
     let reader: BufReader<File> = BufReader::new(file);
-    let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
-    let abilities = json_input.get("abilities").unwrap();
+    let json_input: HashMap<String, HashMap<String, Value>> =
+        serde_json::from_reader(reader).unwrap();
+    let abilities = json_input.get("Khazix").unwrap().get("abilities").unwrap();
 
     let mut abilities_data = Vec::new();
 

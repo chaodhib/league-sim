@@ -22,9 +22,11 @@ pub struct ChampionStats {
 }
 
 pub fn get_base_champion_stats() -> ChampionStats {
-    let file = File::open("/home/chaodhib/git/lolstaticdata/champions/Khazix.json").unwrap();
+    let file = File::open("source_3/champions_formatted.json").unwrap();
     let reader: BufReader<File> = BufReader::new(file);
-    let character: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
+    let characters: HashMap<String, HashMap<String, Value>> =
+        serde_json::from_reader(reader).unwrap();
+    let character = characters.get("Khazix").unwrap();
 
     ChampionStats {
         armor_flat: character["stats"]["armor"]["flat"].as_f64().unwrap(),

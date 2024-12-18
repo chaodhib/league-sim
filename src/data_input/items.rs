@@ -2,11 +2,152 @@ use std::{collections::HashMap, fs::File, io::BufReader};
 
 use serde_json::Value;
 
-use super::common::{AttackerStats, PassiveEffect};
+use crate::simulation::{DamageInfo, State};
+
+use super::common::{AttackerStats, DamageType, GameParams, PassiveEffect};
+
+#[derive(Debug, Clone, Copy)]
+pub enum Item {
+    Unknown,
+    IonianBootsofLucidity,
+    BerserkersGreaves,
+    YoumuusGhostblade,
+    Opportunity,
+    EdgeofNight,
+    SeryldasGrudge,
+    ProfaneHydra,
+    Eclipse,
+    MawofMalmortius,
+    UmbralGlaive,
+    Hubris,
+    DeathsDance,
+    LordDominiksRegards,
+    MortalReminder,
+    ChempunkChainsword,
+    BlackCleaver,
+    TheCollector,
+    Bloodthirster,
+    VoltaicCyclosword,
+    SerpentsFang,
+    GuardianAngel,
+    SpearofShojin,
+    AxiomArc,
+    SunderedSky,
+    RavenousHydra,
+    RanduinsOmen,
+    FrozenHeart,
+    Stridebreaker,
+}
+
+impl Item {
+    pub fn from_string(string: String) -> Self {
+        match string.as_str() {
+            "Ionian Boots of Lucidity" => Item::IonianBootsofLucidity,
+            "Berserker's Greaves" => Item::BerserkersGreaves,
+            "Youmuu's Ghostblade" => Item::YoumuusGhostblade,
+            "Opportunity" => Item::Opportunity,
+            "Edge of Night" => Item::EdgeofNight,
+            "Serylda's Grudge" => Item::SeryldasGrudge,
+            "Profane Hydra" => Item::ProfaneHydra,
+            "Eclipse" => Item::Eclipse,
+            "Maw of Malmortius" => Item::MawofMalmortius,
+            "Umbral Glaive" => Item::UmbralGlaive,
+            "Hubris" => Item::Hubris,
+            "Death's Dance" => Item::DeathsDance,
+            "Lord Dominik's Regards" => Item::LordDominiksRegards,
+            "Mortal Reminder" => Item::MortalReminder,
+            "Chempunk Chainsword" => Item::ChempunkChainsword,
+            "Black Cleaver" => Item::BlackCleaver,
+            "The Collector" => Item::TheCollector,
+            "Bloodthirster" => Item::Bloodthirster,
+            "Voltaic Cyclosword" => Item::VoltaicCyclosword,
+            "Serpent's Fang" => Item::SerpentsFang,
+            "Guardian Angel" => Item::GuardianAngel,
+            "Spear of Shojin" => Item::SpearofShojin,
+            "Axiom Arc" => Item::AxiomArc,
+            "Sundered Sky" => Item::SunderedSky,
+            "Ravenous Hydra" => Item::RavenousHydra,
+            "Randuin's Omen" => Item::RanduinsOmen,
+            "Frozen Heart" => Item::FrozenHeart,
+            "Stridebreaker" => Item::Stridebreaker,
+            &_ => todo!(),
+        }
+    }
+
+    pub fn to_string(self) -> String {
+        match self {
+            Item::Unknown => "".to_string(),
+            Item::IonianBootsofLucidity => "Ionian Boots of Lucidity".to_string(),
+            Item::BerserkersGreaves => "Berserker's Greaves".to_string(),
+            Item::YoumuusGhostblade => "Youmuu's Ghostblade".to_string(),
+            Item::Opportunity => "Opportunity".to_string(),
+            Item::EdgeofNight => "Edge of Night".to_string(),
+            Item::SeryldasGrudge => "Serylda's Grudge".to_string(),
+            Item::ProfaneHydra => "Profane Hydra".to_string(),
+            Item::Eclipse => "Eclipse".to_string(),
+            Item::MawofMalmortius => "Maw of Malmortius".to_string(),
+            Item::UmbralGlaive => "Umbral Glaive".to_string(),
+            Item::Hubris => "Hubris".to_string(),
+            Item::DeathsDance => "Death's Dance".to_string(),
+            Item::LordDominiksRegards => "Lord Dominik's Regards".to_string(),
+            Item::MortalReminder => "Mortal Reminder".to_string(),
+            Item::ChempunkChainsword => "Chempunk Chainsword".to_string(),
+            Item::BlackCleaver => "Black Cleaver".to_string(),
+            Item::TheCollector => "The Collector".to_string(),
+            Item::Bloodthirster => "Bloodthirster".to_string(),
+            Item::VoltaicCyclosword => "Voltaic Cyclosword".to_string(),
+            Item::SerpentsFang => "Serpent's Fang".to_string(),
+            Item::GuardianAngel => "Guardian Angel".to_string(),
+            Item::SpearofShojin => "Spear of Shojin".to_string(),
+            Item::AxiomArc => "Axiom Arc".to_string(),
+            Item::SunderedSky => "Sundered Sky".to_string(),
+            Item::RavenousHydra => "Ravenous Hydra".to_string(),
+            Item::RanduinsOmen => "Randuin's Omen".to_string(),
+            Item::FrozenHeart => "Frozen Heart".to_string(),
+            Item::Stridebreaker => "Stridebreaker".to_string(),
+        }
+    }
+
+    pub fn handle_on_post_damage(
+        &self,
+        passive_effect: &PassiveEffect,
+        damage_info: &DamageInfo,
+        attacker_stats: &AttackerStats,
+        state: &mut State<'_>,
+        game_params: &GameParams<'_>,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+    ) {
+        match self {
+            Item::BlackCleaver => match passive_effect {
+                PassiveEffect::Carve => {
+                    if damage_info.damage_type == DamageType::Physical {
+                        let stack = if let Some(aura_app) =
+                            state.target_auras.get(&super::common::Aura::Carve)
+                        {
+                            aura_app.stacks.unwrap() + 1
+                        } else {
+                            1
+                        };
+
+                        state.add_target_aura(
+                            super::common::Aura::Carve,
+                            Some(6_000),
+                            Some(stack),
+                            events,
+                        );
+                    }
+                }
+                _ => todo!(),
+            },
+            &_ => todo!(),
+        }
+    }
+}
 
 #[derive(Debug)]
-pub struct Item {
-    pub name: String,
+pub struct ItemData {
+    pub item: Item,
     pub id: u64,
     pub total_cost: u64,
     pub offensive_stats: AttackerStats,
@@ -14,7 +155,7 @@ pub struct Item {
     pub passives: Vec<PassiveEffect>,
 }
 
-pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, Item> {
+pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, ItemData> {
     let file = File::open("source_2/items_formatted.json").unwrap();
     let reader: BufReader<File> = BufReader::new(file);
     let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
@@ -55,9 +196,9 @@ pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, Item> {
             }
         }
 
-        let item = Item {
+        let item = ItemData {
             id: ele.1["itemID"].as_u64().unwrap(),
-            name: "".to_string(),
+            item: Item::Unknown,
             total_cost: 0,
             offensive_stats: stats,
             item_groups,
@@ -83,7 +224,7 @@ pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, Item> {
     map
 }
 
-pub fn has_item_group_duplicates(selected_items: &[&Item]) -> bool {
+pub fn has_item_group_duplicates(selected_items: &[&ItemData]) -> bool {
     let mut item_groups_present: Vec<String> = Vec::new();
 
     for selected_item in selected_items.iter() {
@@ -98,7 +239,7 @@ pub fn has_item_group_duplicates(selected_items: &[&Item]) -> bool {
     length_before_dedup != length_after_dedup
 }
 
-pub fn above_gold_cap(selected_items: &[&Item], gold_cap: &u64) -> bool {
+pub fn above_gold_cap(selected_items: &[&ItemData], gold_cap: &u64) -> bool {
     let build_cost: u64 = selected_items
         .iter()
         .fold(0, |acc, item| acc + item.total_cost);
@@ -106,7 +247,7 @@ pub fn above_gold_cap(selected_items: &[&Item], gold_cap: &u64) -> bool {
     build_cost > *gold_cap
 }
 
-fn enrich_items_data(items_map: &mut HashMap<u64, Item>) {
+fn enrich_items_data(items_map: &mut HashMap<u64, ItemData>) {
     let file = File::open("source_1/items_formatted.json").unwrap();
     let reader: BufReader<File> = BufReader::new(file);
     let json_input: Vec<Value> = serde_json::from_reader(reader).unwrap();
@@ -118,12 +259,12 @@ fn enrich_items_data(items_map: &mut HashMap<u64, Item>) {
             .find(|&x| &x["id"].as_u64().unwrap_or_default() == ele.0)
             .unwrap();
 
-        ele.1.name = item_data["name"].as_str().unwrap().to_string();
+        ele.1.item = Item::from_string(item_data["name"].as_str().unwrap().to_string());
         ele.1.total_cost = item_data["priceTotal"].as_u64().unwrap();
     }
 }
 
-fn enrich_with_item_effects(items_map: &mut HashMap<u64, Item>) {
+fn enrich_with_item_effects(items_map: &mut HashMap<u64, ItemData>) {
     let file = File::open("source_3/items_formatted.json").unwrap();
     let reader: BufReader<File> = BufReader::new(file);
     let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
@@ -131,11 +272,13 @@ fn enrich_with_item_effects(items_map: &mut HashMap<u64, Item>) {
     for ele in items_map.iter_mut() {
         let item_key = format!("{}", ele.0);
         let item_data = json_input.get(&item_key).unwrap();
+        // println!("{:#?}--------------", ele.1.name);
         for passive in item_data["passives"].as_array().unwrap().iter() {
             let passive_name = passive["name"].as_str().unwrap();
-            let passive_effect = PassiveEffect::from_string(passive_name);
-            // println!("{:#?} {:#?}", ele.1.name, passive_name.unwrap().to_string());
-            ele.1.passives.push(passive_effect);
+            if let Some(passive_effect) = PassiveEffect::from_string(passive_name) {
+                // println!("{:#?},{:#?}", ele.1.item, passive_name.to_string());
+                ele.1.passives.push(passive_effect);
+            }
         }
     }
 }

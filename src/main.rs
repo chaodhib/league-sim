@@ -17,7 +17,7 @@ use data_input::{
     common::{
         compile_passive_effects, Aura, Champion, CritHandlingChoice, GameParams, TargetStats,
     },
-    items::{above_gold_cap, has_item_group_duplicates, Item},
+    items::{above_gold_cap, has_item_group_duplicates, Item, ItemData},
     runes::Rune,
 };
 use itertools::Itertools;
@@ -40,40 +40,15 @@ struct TopResult {
 }
 
 fn main() -> std::io::Result<()> {
-    // run_multiple();
-    run_single();
-
-    Ok(())
-}
-
-fn run_multiple() {
-    let global_start = Instant::now();
-
-    let mut selected_commands = VecDeque::new();
-    selected_commands.push_back(attack::AttackType::Q);
-    selected_commands.push_back(attack::AttackType::W);
-    selected_commands.push_back(attack::AttackType::E);
-    selected_commands.push_back(attack::AttackType::AA);
-    selected_commands.push_back(attack::AttackType::Q);
-    let hp_perc = 100.0;
-    let level: u64 = 6;
-    let gold_cap: u64 = 20000;
-    let target_stats: TargetStats = TargetStats {
-        // mid hp ashe at level 18
-        armor: 104.2,
-        max_health: 2327.0,
-        current_health: 2327.0 * 0.5,
-        magic_resistance: 52.1,
-    };
-
     // list of configs provided by the user. Static once the simulation is running
     let mut config: HashMap<String, String> = HashMap::new();
     config.insert(
         "CHAMPION_KHAZIX_ISOLATED_TARGET".to_string(),
-        "TRUE".to_string(),
+        "FALSE".to_string(),
     );
 
     config.insert("CHAMPION_KHAZIX_R_EVOLVED".to_string(), "TRUE".to_string());
+    config.insert("RUNE_DARK_HARVEST_STACKS".to_string(), "2".to_string());
 
     let item_ids: Vec<u64> = vec![
         3158, // Ionian Boots of Lucidity
@@ -94,6 +69,17 @@ fn run_multiple() {
         3071, // Black Cleaver
         6676, // The Collector
         3072, // Bloodthirster
+        6699, // Voltaic Cyclosword
+        6695, // Serpent's Fang
+        3026, // Guardian Angel
+        3161, // Spear of Shojin
+        6696, // Axiom Arc
+        6610, // Sundered Sky
+        3074, // Ravenous Hydra
+        // 3004, // Manamune
+        3143, // Randuin's Omen
+        3110, // Frozen Heart
+        6631, // Stridebreaker
     ];
 
     let mut runes: HashSet<Rune> = HashSet::new();
@@ -104,6 +90,32 @@ fn run_multiple() {
     runes.insert(Rune::GatheringStorm);
     runes.insert(Rune::AdaptiveForce1);
     runes.insert(Rune::AdaptiveForce2);
+
+    // run_multiple(config, item_ids, runes);
+    run_single(config, item_ids, runes);
+
+    Ok(())
+}
+
+fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSet<Rune>) {
+    let global_start = Instant::now();
+
+    let mut selected_commands = VecDeque::new();
+    selected_commands.push_back(attack::AttackType::Q);
+    selected_commands.push_back(attack::AttackType::W);
+    selected_commands.push_back(attack::AttackType::E);
+    selected_commands.push_back(attack::AttackType::AA);
+    selected_commands.push_back(attack::AttackType::Q);
+    let hp_perc = 100.0;
+    let level: u64 = 6;
+    let gold_cap: u64 = 20000;
+    let target_stats: TargetStats = TargetStats {
+        // mid hp ashe at level 18
+        armor: 104.2,
+        max_health: 2327.0,
+        current_health: 2327.0 * 0.5,
+        magic_resistance: 52.1,
+    };
 
     let static_data = data_input::parse_files(&item_ids, &config);
 
@@ -118,7 +130,7 @@ fn run_multiple() {
     perms.for_each(|selected_item_ids| {
         let now = Instant::now();
         // let champ_stats: ChampionStats = base_champion_stats.clone();
-        let mut selected_items: Vec<&Item> = Vec::new();
+        let mut selected_items: Vec<&ItemData> = Vec::new();
         // println!("items:");
         for selected_item_id in selected_item_ids.iter() {
             let new_item = static_data.items_map.get(selected_item_id).unwrap();
@@ -138,7 +150,7 @@ fn run_multiple() {
             items: &selected_items,
             initial_config: &config,
             abilities: &static_data.abilities,
-            target_stats: &target_stats,
+            initial_target_stats: &target_stats,
             runes: &runes,
             attacker_hp_perc: hp_perc,
             runes_data: &static_data.runes_data,
@@ -147,6 +159,7 @@ fn run_multiple() {
             initial_attacker_auras: &vec![Aura::UnseenThreat],
             initial_target_auras: &Vec::new(),
             abilities_extra_data: &static_data.abilities_extra_data,
+            start_time_ms: 1_850_000,
         };
 
         compile_passive_effects(&mut game_params);
@@ -184,7 +197,8 @@ fn run_multiple() {
             let item_names = build
                 .item_ids
                 .iter()
-                .map(|item_id| static_data.items_map.get(item_id).unwrap().name.clone())
+                .map(|item_id| static_data.items_map.get(item_id).unwrap().item.clone())
+                .map(|item_name| Item::to_string(item_name))
                 .collect_vec();
 
             let cost = build
@@ -214,7 +228,7 @@ fn run_multiple() {
     println!("Elapsed: {:.2?}", global_elapsed);
 }
 
-fn run_single() {
+fn run_single(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSet<Rune>) {
     let global_start = Instant::now();
 
     let mut selected_commands = VecDeque::new();
@@ -234,45 +248,15 @@ fn run_single() {
     let _gold_cap: u64 = 20000;
     let target_stats: TargetStats = TargetStats {
         // mid hp ashe at level 18
-        armor: 104.2,
-        max_health: 2327.0,
-        current_health: 2327.0 * 0.5,
-        magic_resistance: 52.1,
+        armor: 100.0,
+        max_health: 2300.0,
+        current_health: 2300.0,
+        magic_resistance: 100.0,
     };
-
-    // list of configs provided by the user. Static once the simulation is running
-    let mut config: HashMap<String, String> = HashMap::new();
-    config.insert(
-        "CHAMPION_KHAZIX_ISOLATED_TARGET".to_string(),
-        "TRUE".to_string(),
-    );
-
-    config.insert("CHAMPION_KHAZIX_R_EVOLVED".to_string(), "TRUE".to_string());
-
-    let item_ids: Vec<u64> = vec![
-        3158, // Ionian Boots of Lucidity
-        3006, // Berserker's Greaves
-        3142, // Youmuu's Ghostblade
-        6701, // Opportunity
-        3814, // Edge of Night
-        6694, // Serylda's Grudge
-        6698, // Profane Hydra
-        6692, // Eclipse
-        3156, // Maw of Malmortius
-        3179, // Umbral Glaive
-        6697, // Hubris
-        6333, // Death's Dance
-        3036, // Lord Dominik's Regards
-        3033, // Mortal Reminder
-        6609, // Chempunk Chainsword
-        3071, // Black Cleaver
-        6676, // The Collector
-        3072, // Bloodthirster
-    ];
 
     let static_data = data_input::parse_files(&item_ids, &config);
 
-    let mut selected_items: Vec<&Item> = Vec::new();
+    let mut selected_items: Vec<&ItemData> = Vec::new();
 
     let selected_item_names: Vec<&str> = vec![
         "Ionian Boots of Lucidity",
@@ -281,24 +265,15 @@ fn run_single() {
         // "Profane Hydra",
         // "Bloodthirster",
         // "Opportunity",
-        // "Black Cleaver",
+        "Black Cleaver",
         // "Serylda's Grudge",
     ];
-
-    let mut runes: HashSet<Rune> = HashSet::new();
-    runes.insert(Rune::DarkHarvest);
-    runes.insert(Rune::SuddenImpact);
-    runes.insert(Rune::EyeballCollection);
-    runes.insert(Rune::AbsoluteFocus);
-    runes.insert(Rune::GatheringStorm);
-    runes.insert(Rune::AdaptiveForce1);
-    runes.insert(Rune::AdaptiveForce2);
 
     for ele in selected_item_names.iter() {
         let found_item = static_data
             .items_map
             .values()
-            .find(|&item| item.name == *ele.to_string())
+            .find(|&item| Item::to_string(item.item) == *ele.to_string())
             .unwrap();
         selected_items.push(found_item);
     }
@@ -310,7 +285,7 @@ fn run_single() {
         items: &selected_items,
         initial_config: &config,
         abilities: &static_data.abilities,
-        target_stats: &target_stats,
+        initial_target_stats: &target_stats,
         runes_data: &static_data.runes_data,
         runes: &runes,
         attacker_hp_perc: hp_perc,
@@ -319,6 +294,7 @@ fn run_single() {
         initial_attacker_auras: &vec![Aura::UnseenThreat],
         initial_target_auras: &Vec::new(),
         abilities_extra_data: &static_data.abilities_extra_data,
+        start_time_ms: 2400_000,
     };
 
     compile_passive_effects(&mut game_params);

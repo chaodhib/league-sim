@@ -1,7 +1,7 @@
-use super::common::{self, AttackerStats, Aura, GameParams, PassiveEffect};
+use super::common::{self, AttackerStats, Aura, Champion, DamageType, GameParams, PassiveEffect};
 use crate::{
     attack::AttackType,
-    simulation::{self, State},
+    simulation::{self, DamageInfo, State},
 };
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -83,7 +83,7 @@ impl Rune {
 
     pub fn handle_on_post_damage(
         &self,
-        damage: f64,
+        damage_info: &DamageInfo,
         attacker_stats: &AttackerStats,
         state: &mut State<'_>,
         game_params: &GameParams<'_>,
@@ -93,7 +93,7 @@ impl Rune {
         match self {
             Rune::DarkHarvest => {
                 game_params.runes_data.dark_harvest.handle_on_post_damage(
-                    damage,
+                    damage_info,
                     attacker_stats,
                     state,
                     game_params,
@@ -104,7 +104,7 @@ impl Rune {
 
             Rune::SuddenImpact => {
                 game_params.runes_data.sudden_impact.handle_on_post_damage(
-                    damage,
+                    damage_info,
                     attacker_stats,
                     state,
                     game_params,
@@ -170,7 +170,7 @@ struct DarkHarvest {
 impl DarkHarvest {
     fn handle_on_post_damage(
         &self,
-        _damage: f64,
+        _damage_info: &DamageInfo,
         attacker_stats: &AttackerStats,
         state: &mut State<'_>,
         game_params: &GameParams<'_>,
@@ -215,7 +215,14 @@ impl DarkHarvest {
             + self.bonus_ap * attacker_stats.ability_power;
 
         let damage = common::apply_adaptive_damage(adaptive_damage, attacker_stats);
-        simulation::on_damage_from_rune(&damage, state, event, Rune::DarkHarvest);
+        let damage_type = if game_params.champion == Champion::Khazix {
+            DamageType::Physical
+        } else {
+            // todo
+            panic!()
+        };
+
+        simulation::on_damage_from_rune(&damage, damage_type, state, Rune::DarkHarvest);
 
         // set new stacks value
         state.config.insert(
@@ -262,9 +269,8 @@ impl SuddenImpact {
         // apply buff
         state.add_attacker_aura(
             Aura::SuddenImpactReady,
-            event.time_ms + self.buff_duration,
-            game_params,
-            event,
+            Some(event.time_ms + self.buff_duration),
+            None,
             events,
         );
     }
@@ -281,18 +287,14 @@ impl SuddenImpact {
 
     pub fn handle_on_post_damage(
         &self,
-        _damage: f64,
+        _damage_info: &DamageInfo,
         _attacker_stats: &AttackerStats,
         state: &mut State<'_>,
         game_params: &GameParams<'_>,
         event: &simulation::Event,
         events: &mut std::collections::BinaryHeap<simulation::Event>,
     ) {
-        if !state
-            .attacker_auras
-            .get(&Aura::SuddenImpactReady)
-            .is_some_and(|end| state.time_ms < *end)
-        {
+        if state.attacker_auras.get(&Aura::SuddenImpactReady).is_none() {
             panic!();
         }
 
@@ -300,7 +302,12 @@ impl SuddenImpact {
         let true_damage: f64 = self.min_damage
             + (self.max_damage - self.min_damage) / 17.0 * (game_params.level as f64 - 1.0);
 
-        simulation::on_damage_from_rune(&true_damage, state, event, Rune::SuddenImpact);
+        simulation::on_damage_from_rune(
+            &true_damage,
+            common::DamageType::True,
+            state,
+            Rune::SuddenImpact,
+        );
 
         // remove buff
         state.end_early_attacker_aura(&Aura::SuddenImpactReady, game_params, event, events);
@@ -365,8 +372,8 @@ struct GatheringStorm {
 }
 
 impl GatheringStorm {
-    fn offensive_stats(&self, state: &State<'_>, _game_params: &GameParams<'_>) -> AttackerStats {
-        let x: u64 = 1 + state.time_ms / 600_000;
+    fn offensive_stats(&self, _state: &State<'_>, game_params: &GameParams<'_>) -> AttackerStats {
+        let x: u64 = 1 + game_params.start_time_ms / 600_000;
         return AttackerStats {
             adaptive_force: self.coefficient * ((x * (x - 1)) as f64),
             ..Default::default()

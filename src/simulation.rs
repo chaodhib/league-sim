@@ -1,7 +1,7 @@
 use std::{
     cmp::Ordering,
     collections::{BinaryHeap, HashMap, HashSet, VecDeque},
-    fmt,
+    fmt, u64,
 };
 
 use itertools::Itertools;
@@ -11,10 +11,11 @@ use crate::{
     data_input::{
         abilities::{find_ability, SpellData},
         common::{
-            compile_passive_effects, compute_attacker_stats, AttackerStats, Aura, Champion,
-            GameParams, PassiveEffect, TargetStats,
+            compile_passive_effects, compute_attacker_stats, compute_target_stats, AttackerStats,
+            Aura, AuraApplication, Champion, DamageType, GameParams, PassiveEffect, TargetStats,
+            Unit,
         },
-        items::Item,
+        items::{Item, ItemData},
         runes::Rune,
     },
 };
@@ -26,7 +27,8 @@ pub enum EventCategory {
     // An aura is either a buff or a debuff
     AuraAttackerStart,
     AuraAttackerEnd,
-    // AuraUpdateTarget,
+    AuraTargetStart,
+    AuraTargetEnd,
     CooldownEnded,
     PassiveTriggered,
 }
@@ -52,7 +54,7 @@ impl PartialOrd for Event {
     }
 }
 #[derive(Clone, Debug)]
-enum DamageSource {
+pub enum DamageSource {
     Ability,
     // Passive,
     Rune,
@@ -60,25 +62,26 @@ enum DamageSource {
 }
 
 #[derive(Clone, Debug)]
-pub struct Damage {
-    amount: f64,
-    time_ms: u64,
-    source: DamageSource,
-    source_ability: Option<AttackType>,
-    source_rune: Option<Rune>,
-    source_item: Option<String>,
+pub struct DamageInfo {
+    pub amount: f64,
+    pub damage_type: DamageType,
+    pub time_ms: u64,
+    pub source: DamageSource,
+    pub source_ability: Option<AttackType>,
+    pub source_rune: Option<Rune>,
+    pub source_item: Option<Item>,
 }
 
 pub struct State<'a> {
     pub total_damage: f64,
-    pub damage_history: &'a mut Vec<Damage>,
+    pub damage_history: &'a mut Vec<DamageInfo>,
     pub time_ms: u64,
     pub cooldowns: &'a mut HashMap<AttackType, u64>,
     pub effects_cooldowns: &'a mut HashMap<PassiveEffect, u64>,
     pub last_attack_time_ms: u64,
     pub config: &'a mut HashMap<String, String>,
-    pub attacker_auras: &'a mut HashMap<Aura, u64>,
-    pub target_auras: &'a mut HashMap<Aura, u64>,
+    pub attacker_auras: &'a mut HashMap<Aura, AuraApplication>,
+    pub target_auras: &'a mut HashMap<Aura, AuraApplication>,
     pub recast_charges: &'a mut Vec<AttackType>,
     pub recast_ready: &'a mut HashSet<AttackType>,
 }
@@ -92,7 +95,7 @@ impl State<'_> {
         events: &mut BinaryHeap<Event>,
     ) {
         let current_time = self.time_ms;
-        println!("refresh_cds_and_auras. Current time: {:#?}", current_time);
+        // println!("refresh_cds_and_auras. Current time: {:#?}", current_time);
 
         self.effects_cooldowns
             .retain(|_, end_at| *end_at > current_time);
@@ -105,40 +108,61 @@ impl State<'_> {
         while self
             .attacker_auras
             .values()
-            .any(|end_at| *end_at <= current_time)
+            .any(|aura_app| aura_app.end_ms.is_some_and(|x| x <= current_time))
         {
             self.attacker_auras
                 .clone()
                 .iter()
-                .filter(|(_, end_at)| **end_at <= current_time)
-                .for_each(|(aura, end_at)| {
-                    println!("expired aura: {:#?} {:#?}", aura, end_at);
+                .filter(|(_, aura_app)| aura_app.end_ms.is_some_and(|x| x <= current_time))
+                .for_each(|(aura, _aura_app)| {
+                    // println!("expired aura: {:#?} {:#?}", aura, end_at);
                     self.on_expire_attacker_aura(aura, game_params, event, events)
                 });
+        }
 
-            // self.attacker_auras
-            // .retain(|_, end_at| *end_at > current_time);
+        while self
+            .target_auras
+            .values()
+            .any(|aura_app| aura_app.end_ms.is_some_and(|x| x <= current_time))
+        {
+            self.target_auras
+                .clone()
+                .iter()
+                .filter(|(_, aura_app)| aura_app.end_ms.is_some_and(|x| x <= current_time))
+                .for_each(|(aura, _aura_app)| {
+                    // println!("expired aura: {:#?} {:#?}", aura, end_at);
+                    self.on_expire_target_aura(aura, game_params, event, events)
+                });
         }
     }
 
     pub fn add_attacker_aura(
         &mut self,
         aura: Aura,
-        duration: u64,
-        game_params: &GameParams<'_>,
-        event: &Event,
+        duration: Option<u64>,
+        stacks: Option<u64>,
         events: &mut BinaryHeap<Event>,
     ) {
-        let end_time = if duration == u64::MAX {
-            u64::MAX
+        let end_time = if duration.is_none() {
+            None
         } else {
-            self.time_ms + duration
+            Some(self.time_ms + duration.unwrap())
         };
 
         insert_aura_attacker_start_event(events, self.time_ms, aura.clone());
-        insert_aura_attacker_end_event(events, end_time, aura.clone());
-        aura.on_start(self, game_params, event, events);
-        self.attacker_auras.insert(aura, end_time);
+        if end_time.is_some() {
+            insert_aura_attacker_end_event(events, end_time.unwrap(), aura.clone());
+        }
+        self.attacker_auras.insert(
+            aura,
+            AuraApplication {
+                aura: aura,
+                start_ms: self.time_ms,
+                end_ms: end_time,
+                stacks: stacks,
+            },
+        );
+        aura.on_start(self, Unit::Attacker);
     }
 
     pub fn end_early_attacker_aura(
@@ -155,7 +179,7 @@ impl State<'_> {
 
         // then proceed
         insert_aura_attacker_end_event(events, self.time_ms, aura.clone());
-        aura.on_end(self, game_params, event, events);
+        aura.on_end(self, game_params, event, events, Unit::Attacker);
         self.attacker_auras.remove(aura);
     }
 
@@ -166,15 +190,55 @@ impl State<'_> {
         event: &Event,
         events: &mut BinaryHeap<Event>,
     ) {
-        aura.on_end(self, game_params, event, events);
+        aura.on_end(self, game_params, event, events, Unit::Attacker);
         self.attacker_auras.remove(aura);
+    }
+
+    pub fn add_target_aura(
+        &mut self,
+        aura: Aura,
+        duration: Option<u64>,
+        stacks: Option<u64>,
+        events: &mut BinaryHeap<Event>,
+    ) {
+        let end_time = if duration.is_none() {
+            None
+        } else {
+            Some(self.time_ms + duration.unwrap())
+        };
+
+        insert_aura_target_start_event(events, self.time_ms, aura.clone());
+        if end_time.is_some() {
+            insert_aura_target_end_event(events, end_time.unwrap(), aura.clone());
+        }
+        self.target_auras.insert(
+            aura,
+            AuraApplication {
+                aura: aura,
+                start_ms: self.time_ms,
+                end_ms: end_time,
+                stacks: stacks,
+            },
+        );
+        aura.on_start(self, Unit::Target);
+    }
+
+    pub fn on_expire_target_aura(
+        &mut self,
+        aura: &Aura,
+        game_params: &GameParams<'_>,
+        event: &Event,
+        events: &mut BinaryHeap<Event>,
+    ) {
+        aura.on_end(self, game_params, event, events, Unit::Target);
+        self.target_auras.remove(aura);
     }
 }
 
 pub fn run(
     mut selected_commands: VecDeque<AttackType>,
     game_params: &GameParams,
-) -> (f64, Vec<Damage>, u64) {
+) -> (f64, Vec<DamageInfo>, u64) {
     // use a priority queue to manage the events
     let mut events: BinaryHeap<Event> = BinaryHeap::new();
 
@@ -201,19 +265,23 @@ pub fn run(
         game_params,
     );
 
-    add_initial_auras(game_params, &mut state);
+    add_initial_auras(game_params, &mut state, &mut events);
 
     // and launch
     return execute_commands(&mut events, &mut selected_commands, &mut state, game_params);
 }
 
-fn add_initial_auras(game_params: &GameParams<'_>, state: &mut State<'_>) {
+fn add_initial_auras(
+    game_params: &GameParams<'_>,
+    state: &mut State<'_>,
+    events: &mut BinaryHeap<Event>,
+) {
     for aura in game_params.initial_attacker_auras.iter() {
-        state.attacker_auras.insert(aura.clone(), 5_000);
+        state.add_attacker_aura(*aura, Some(5000), None, events);
     }
 
     for aura in game_params.initial_target_auras.iter() {
-        state.target_auras.insert(aura.clone(), 5_000);
+        state.add_target_aura(*aura, Some(5000), None, events);
     }
 }
 
@@ -222,7 +290,7 @@ fn execute_commands(
     remaining_commands: &mut VecDeque<AttackType>,
     state: &mut State,
     game_params: &GameParams,
-) -> (f64, Vec<Damage>, u64) {
+) -> (f64, Vec<DamageInfo>, u64) {
     loop {
         match events.pop() {
             None => {
@@ -250,7 +318,7 @@ fn on_event(
         return;
     }
 
-    println!("on_event: {:#?}", event);
+    // println!("on_event: {:#?}", event);
     // advance time
     state.time_ms = event.time_ms;
     state.refresh_cds_and_auras(game_params, event, events);
@@ -277,9 +345,11 @@ fn on_event(
             trigger_stealth_exit_if_applicable(event, events, game_params, state);
 
             let attacker_stats: AttackerStats = compute_attacker_stats(game_params, state);
+            let target_stats = compute_target_stats(game_params, state);
 
             let spell_result: SpellResult = simulate_spell(
                 &attacker_stats,
+                &target_stats,
                 game_params,
                 state,
                 event.attack_type.unwrap(),
@@ -289,14 +359,14 @@ fn on_event(
 
             // println!("spell_result: {:#?}", spell_result);
             if spell_result.damage.is_some() {
-                on_damage_from_ability(
+                let damage_info = on_damage_from_ability(
                     &spell_result.damage.unwrap(),
+                    spell_result.damage_type.unwrap(),
                     state,
-                    event.time_ms,
                     event.attack_type.unwrap(),
                 );
                 on_post_damage_events(
-                    spell_result.damage.unwrap(),
+                    &damage_info,
                     &attacker_stats,
                     state,
                     game_params,
@@ -324,6 +394,8 @@ fn on_event(
         EventCategory::PassiveTriggered => (),
         EventCategory::AuraAttackerStart => (),
         EventCategory::AuraAttackerEnd => (),
+        EventCategory::AuraTargetStart => (),
+        EventCategory::AuraTargetEnd => (),
     }
 }
 
@@ -387,11 +459,7 @@ fn trigger_stealth_exit_if_applicable(
     game_params: &GameParams,
     state: &mut State,
 ) {
-    if !state
-        .attacker_auras
-        .get(&Aura::Invisibility)
-        .is_some_and(|&time_end| state.time_ms < time_end)
-    {
+    if state.attacker_auras.get(&Aura::Invisibility).is_none() {
         return;
     }
 
@@ -446,33 +514,57 @@ fn add_cooldown_to_state(state: &mut State<'_>, attack_type: AttackType, cooldow
 
 pub fn on_damage_from_ability(
     damage: &f64,
+    damage_type: DamageType,
     state: &mut State,
-    time_ms: u64,
     attack_type: AttackType,
-) {
+) -> DamageInfo {
     state.total_damage += damage;
-    state.damage_history.push(Damage {
+    state.last_attack_time_ms = state.time_ms;
+    let damage = DamageInfo {
         amount: *damage,
-        time_ms: time_ms,
+        damage_type: damage_type,
+        time_ms: state.time_ms,
         source: DamageSource::Ability,
         source_ability: Some(attack_type),
         source_rune: None,
         source_item: None,
-    });
-    state.last_attack_time_ms = time_ms;
+    };
+    state.damage_history.push(damage.clone());
+
+    return damage;
 }
 
-pub fn on_damage_from_rune(damage: &f64, state: &mut State, event: &Event, rune: Rune) {
+pub fn on_damage_from_rune(damage: &f64, damage_type: DamageType, state: &mut State, rune: Rune) {
     state.total_damage += damage;
-    state.damage_history.push(Damage {
+    state.damage_history.push(DamageInfo {
         amount: *damage,
-        time_ms: event.time_ms,
+        damage_type,
+        time_ms: state.time_ms,
         source: DamageSource::Rune,
         source_ability: None,
         source_rune: Some(rune),
         source_item: None,
     });
-    state.last_attack_time_ms = event.time_ms;
+    state.last_attack_time_ms = state.time_ms;
+}
+
+pub fn on_damage_from_item(
+    damage: &f64,
+    damage_type: DamageType,
+    state: &mut State,
+    item_name: Item,
+) {
+    state.total_damage += damage;
+    state.damage_history.push(DamageInfo {
+        amount: *damage,
+        damage_type,
+        time_ms: state.time_ms,
+        source: DamageSource::Item,
+        source_ability: None,
+        source_rune: None,
+        source_item: Some(item_name),
+    });
+    state.last_attack_time_ms = state.time_ms;
 }
 
 fn insert_attack_cast_end_event(
@@ -509,11 +601,12 @@ fn insert_next_attack_event(
                     attack_type,
                     game_params.initial_config,
                 );
-                if let Some(invis_end) = state.attacker_auras.get(&Aura::Invisibility) {
-                    invis_end + ability.recast_gap_duration.unwrap()
+                if let Some(invis_aura_app) = state.attacker_auras.get(&Aura::Invisibility) {
+                    invis_aura_app.end_ms.unwrap() + ability.recast_gap_duration.unwrap()
                 } else {
-                    if let Some(delay_end) = state.attacker_auras.get(&Aura::VoidAssaultDelay) {
-                        *delay_end
+                    if let Some(delay_aura_app) = state.attacker_auras.get(&Aura::VoidAssaultDelay)
+                    {
+                        delay_aura_app.end_ms.unwrap()
                     } else {
                         if let Some(_) = state.attacker_auras.get(&Aura::VoidAssaultRecastReady) {
                             0
@@ -596,6 +689,30 @@ pub fn insert_aura_attacker_end_event(events: &mut BinaryHeap<Event>, time_ms: u
     events.push(event);
 }
 
+pub fn insert_aura_target_start_event(events: &mut BinaryHeap<Event>, time_ms: u64, aura: Aura) {
+    let event = Event {
+        attack_type: None,
+        category: EventCategory::AuraTargetStart,
+        time_ms,
+        passive_effect: None,
+        aura: Some(aura),
+    };
+
+    events.push(event);
+}
+
+pub fn insert_aura_target_end_event(events: &mut BinaryHeap<Event>, time_ms: u64, aura: Aura) {
+    let event = Event {
+        attack_type: None,
+        category: EventCategory::AuraTargetEnd,
+        time_ms,
+        passive_effect: None,
+        aura: Some(aura),
+    };
+
+    events.push(event);
+}
+
 // fn on_cooldown_ended(event: &Event) {
 //     println!(
 //         "cooldown ended for {:#?} at {:#?}",
@@ -611,8 +728,8 @@ pub fn insert_aura_attacker_end_event(events: &mut BinaryHeap<Event>, time_ms: u
 //     );
 // }
 
-fn on_post_damage_events(
-    damage: f64,
+pub fn on_post_damage_events(
+    damage_info: &DamageInfo,
     attacker_stats: &AttackerStats,
     state: &mut State,
     game_params: &GameParams,
@@ -623,13 +740,27 @@ fn on_post_damage_events(
     // println!("passive_effects:");
     for effect in game_params.passive_effects.iter() {
         // println!("{:#?}", effect);
-        effect.handle_on_post_damage(damage, attacker_stats, state, game_params, event, events);
+        effect.handle_on_post_damage(
+            damage_info,
+            attacker_stats,
+            state,
+            game_params,
+            event,
+            events,
+        );
     }
 
     // println!("aura effects:");
     for (aura, _) in state.attacker_auras.clone().iter() {
         // println!("{:#?}", aura);
-        aura.on_post_damage(damage, attacker_stats, state, game_params, event, events);
+        aura.on_post_damage(
+            damage_info,
+            attacker_stats,
+            state,
+            game_params,
+            event,
+            events,
+        );
     }
     // println!("on_post_damage_events-----------------------");
 }
