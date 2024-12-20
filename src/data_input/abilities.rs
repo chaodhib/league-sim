@@ -53,7 +53,10 @@ impl EffectWithCallbacks for UnseenThreat {
             panic!();
         }
 
-        if event.attack_type.is_some_and(|x| x != AttackType::AA) {
+        if damage_info
+            .source_ability
+            .is_none_or(|x| x != AttackType::AA)
+        {
             return;
         }
 
@@ -78,31 +81,28 @@ impl EffectWithCallbacks for UnseenThreat {
             AttackType::P,
         );
 
-        // ----------------------------------------------
-        // looks like this passive is not triggering any event IG
-        // ----------------------------------------------
-        // let new_damage_info = DamageInfo {
-        //     amount: mitigated_dmg,
-        //     damage_type: DamageType::Magical,
-        //     time_ms: state.time_ms,
-        //     source: simulation::DamageSource::Ability,
-        //     source_ability: Some(AttackType::P),
-        //     source_rune: None,
-        //     source_item: None,
-        // };
-        //
-        // simulation::on_post_damage_events(
-        //     &new_damage_info,
-        //     &attacker_stats,
-        //     state,
-        //     game_params,
-        //     event,
-        //     events,
-        // );
-
         // remove buff
         state.end_early_attacker_aura(
             &super::common::Aura::UnseenThreat,
+            game_params,
+            event,
+            events,
+        );
+
+        let new_damage_info = DamageInfo {
+            amount: mitigated_dmg,
+            damage_type: DamageType::Magical,
+            time_ms: state.time_ms,
+            source: simulation::DamageSource::Ability,
+            source_ability: Some(AttackType::P),
+            source_rune: None,
+            source_item: None,
+        };
+
+        simulation::on_post_damage_events(
+            &new_damage_info,
+            &attacker_stats,
+            state,
             game_params,
             event,
             events,

@@ -44,11 +44,11 @@ fn main() -> std::io::Result<()> {
     let mut config: HashMap<String, String> = HashMap::new();
     config.insert(
         "CHAMPION_KHAZIX_ISOLATED_TARGET".to_string(),
-        "FALSE".to_string(),
+        "TRUE".to_string(),
     );
 
-    config.insert("CHAMPION_KHAZIX_R_EVOLVED".to_string(), "TRUE".to_string());
-    config.insert("RUNE_DARK_HARVEST_STACKS".to_string(), "2".to_string());
+    config.insert("CHAMPION_KHAZIX_R_EVOLVED".to_string(), "FALSE".to_string());
+    config.insert("RUNE_DARK_HARVEST_STACKS".to_string(), "1".to_string());
 
     let item_ids: Vec<u64> = vec![
         3158, // Ionian Boots of Lucidity
@@ -103,25 +103,26 @@ fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: Hash
     let mut selected_commands = VecDeque::new();
     selected_commands.push_back(attack::AttackType::Q);
     selected_commands.push_back(attack::AttackType::W);
-    selected_commands.push_back(attack::AttackType::E);
+    // selected_commands.push_back(attack::AttackType::E);
+    selected_commands.push_back(attack::AttackType::R);
     selected_commands.push_back(attack::AttackType::AA);
     selected_commands.push_back(attack::AttackType::Q);
     let hp_perc = 100.0;
-    let level: u64 = 6;
-    let gold_cap: u64 = 20000;
+    let level: u64 = 11;
+    let gold_cap: u64 = 7100;
     let target_stats: TargetStats = TargetStats {
         // mid hp ashe at level 18
-        armor: 104.2,
-        max_health: 2327.0,
-        current_health: 2327.0 * 0.5,
-        magic_resistance: 52.1,
+        armor: 69.0,
+        max_health: 2074.0,
+        current_health: 1863.0,
+        magic_resistance: 50.0,
     };
 
-    let static_data = data_input::parse_files(&item_ids, &config);
+    let static_data = data_input::parse_files(Champion::Khazix, &item_ids, &config);
 
     // return;
 
-    let perms = item_ids.into_iter().combinations(5);
+    let perms = item_ids.into_iter().combinations(3);
     let progress = Arc::new(AtomicUsize::new(0));
     let size: usize = perms.size_hint().1.unwrap();
     let best_builds: ArrayQueue<Build> = ArrayQueue::new(size);
@@ -144,8 +145,9 @@ fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: Hash
         }
 
         let mut game_params: GameParams<'_> = GameParams {
-            champion_stats: &static_data.base_champion_stats,
             champion: Champion::Khazix,
+            champion_data: &static_data.champion_data,
+            champion_stats: &static_data.base_champion_stats,
             level: level,
             items: &selected_items,
             initial_config: &config,
@@ -192,7 +194,7 @@ fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: Hash
     let results = best_builds
         .into_iter()
         .sorted_by(|a, b| b.dps.partial_cmp(&a.dps).unwrap())
-        .take(3)
+        .take(10)
         .map(|build| {
             let item_names = build
                 .item_ids
@@ -232,12 +234,12 @@ fn run_single(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSe
     let global_start = Instant::now();
 
     let mut selected_commands = VecDeque::new();
-    selected_commands.push_back(attack::AttackType::R);
+    // selected_commands.push_back(attack::AttackType::R);
     selected_commands.push_back(attack::AttackType::AA);
-    selected_commands.push_back(attack::AttackType::R);
+    // selected_commands.push_back(attack::AttackType::R);
     selected_commands.push_back(attack::AttackType::AA);
-    selected_commands.push_back(attack::AttackType::R);
-    selected_commands.push_back(attack::AttackType::AA);
+    // selected_commands.push_back(attack::AttackType::R);
+    // selected_commands.push_back(attack::AttackType::AA);
     // selected_commands.push_back(attack::AttackType::Q);
     // selected_commands.push_back(attack::AttackType::W);
     // selected_commands.push_back(attack::AttackType::E);
@@ -254,12 +256,13 @@ fn run_single(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSe
         magic_resistance: 100.0,
     };
 
-    let static_data = data_input::parse_files(&item_ids, &config);
+    let static_data = data_input::parse_files(Champion::Khazix, &item_ids, &config);
 
     let mut selected_items: Vec<&ItemData> = Vec::new();
 
     let selected_item_names: Vec<&str> = vec![
-        "Ionian Boots of Lucidity",
+        // "Ionian Boots of Lucidity",
+        "Eclipse",
         // "Berserker's Greaves",
         // "Youmuu's Ghostblade",
         // "Profane Hydra",
@@ -280,6 +283,7 @@ fn run_single(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSe
 
     let mut game_params: GameParams<'_> = GameParams {
         champion: Champion::Khazix,
+        champion_data: &static_data.champion_data,
         champion_stats: &static_data.base_champion_stats,
         level: level,
         items: &selected_items,
@@ -291,10 +295,11 @@ fn run_single(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSe
         attacker_hp_perc: hp_perc,
         passive_effects: &mut Vec::new(),
         crit_handling: CritHandlingChoice::Min,
-        initial_attacker_auras: &vec![Aura::UnseenThreat],
+        // initial_attacker_auras: &vec![Aura::UnseenThreat],
+        initial_attacker_auras: &vec![],
         initial_target_auras: &Vec::new(),
         abilities_extra_data: &static_data.abilities_extra_data,
-        start_time_ms: 2400_000,
+        start_time_ms: 600_000,
     };
 
     compile_passive_effects(&mut game_params);

@@ -1,7 +1,10 @@
-use super::common::{self, AttackerStats, Aura, Champion, DamageType, GameParams, PassiveEffect};
+use super::{
+    champions::AdaptiveType,
+    common::{self, AttackerStats, Aura, Champion, DamageType, GameParams, PassiveEffect},
+};
 use crate::{
     attack::AttackType,
-    simulation::{self, DamageInfo, State},
+    simulation::{self, DamageInfo, DamageSource, State},
 };
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -170,13 +173,17 @@ struct DarkHarvest {
 impl DarkHarvest {
     fn handle_on_post_damage(
         &self,
-        _damage_info: &DamageInfo,
+        damage_info: &DamageInfo,
         attacker_stats: &AttackerStats,
         state: &mut State<'_>,
         game_params: &GameParams<'_>,
         event: &crate::simulation::Event,
         events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
     ) {
+        if damage_info.source != DamageSource::Ability {
+            return;
+        }
+
         let target_stats = common::compute_target_stats(game_params, state);
         // check if it is in cooldown & hp requirement
         let current_hp = target_stats.current_health / target_stats.max_health * 100.0;
@@ -194,6 +201,11 @@ impl DarkHarvest {
             event.time_ms,
             PassiveEffect::DarkHarvest,
         );
+
+        // set cooldown
+        state
+            .effects_cooldowns
+            .insert(PassiveEffect::DarkHarvest, event.time_ms + self.cooldown);
 
         // fetch the current of stacks
         let stack_count = state
@@ -214,12 +226,10 @@ impl DarkHarvest {
             + self.bonus_ad * attacker_stats.ad_bonus
             + self.bonus_ap * attacker_stats.ability_power;
 
-        let damage = common::apply_adaptive_damage(adaptive_damage, attacker_stats);
-        let damage_type = if game_params.champion == Champion::Khazix {
-            DamageType::Physical
-        } else {
-            // todo
-            panic!()
+        let damage = common::apply_adaptive_damage(adaptive_damage, attacker_stats, game_params);
+        let damage_type = match game_params.champion_data.adaptive_type {
+            AdaptiveType::Physical => DamageType::Physical,
+            AdaptiveType::Magic => DamageType::Magical,
         };
 
         simulation::on_damage_from_rune(&damage, damage_type, state, Rune::DarkHarvest);
@@ -229,11 +239,6 @@ impl DarkHarvest {
             "RUNE_DARK_HARVEST_STACKS".to_string(),
             (stack_count + 1).to_string(),
         );
-
-        // set cooldown
-        state
-            .effects_cooldowns
-            .insert(PassiveEffect::DarkHarvest, event.time_ms + self.cooldown);
     }
 }
 
@@ -243,6 +248,7 @@ pub struct SuddenImpact {
     buff_duration: u64,
     cooldown: u64,
 }
+
 impl SuddenImpact {
     fn handle_dash_event(
         &self,

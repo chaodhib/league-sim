@@ -2,9 +2,12 @@ use std::{collections::HashMap, fs::File, io::BufReader};
 
 use serde_json::Value;
 
-use crate::simulation::{DamageInfo, State};
+use crate::{
+    attack::compute_mitigated_damage,
+    simulation::{self, on_post_damage_events, DamageInfo, DamageSource, State},
+};
 
-use super::common::{AttackerStats, DamageType, GameParams, PassiveEffect};
+use super::common::{compute_target_stats, AttackerStats, DamageType, GameParams, PassiveEffect};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Item {
@@ -118,7 +121,7 @@ impl Item {
         event: &crate::simulation::Event,
         events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
     ) {
-        match self {
+        match &self {
             Item::BlackCleaver => match passive_effect {
                 PassiveEffect::Carve => {
                     if damage_info.damage_type == DamageType::Physical {
@@ -136,11 +139,84 @@ impl Item {
                             Some(stack),
                             events,
                         );
+
+                        // println!("Carve stack:  {:#?}", stack);
                     }
                 }
-                _ => todo!(),
+                _ => panic!("Unhandled passive effect for BlackCleaver"),
             },
-            &_ => todo!(),
+            Item::Eclipse => match passive_effect {
+                PassiveEffect::EverRisingMoon => {
+                    if damage_info.source != DamageSource::Ability
+                        && damage_info.source != DamageSource::ItemActive
+                    {
+                        return;
+                    }
+
+                    if state
+                        .effects_cooldowns
+                        .contains_key(&super::common::PassiveEffect::EverRisingMoon)
+                    {
+                        return;
+                    }
+
+                    if let Some(aura_app) =
+                        state.target_auras.get(&super::common::Aura::EverRisingMoon)
+                    {
+                        state.end_early_target_aura(
+                            &super::common::Aura::EverRisingMoon,
+                            game_params,
+                            event,
+                            events,
+                        );
+
+                        state.effects_cooldowns.insert(
+                            super::common::PassiveEffect::EverRisingMoon,
+                            event.time_ms + 6_000,
+                        );
+
+                        let perc_hp_dmg: f64 = match game_params.champion_data.attack_type {
+                            super::champions::AttackType::Melee => 0.06,
+                            super::champions::AttackType::Ranged => 0.04,
+                        };
+
+                        let target_stats = compute_target_stats(game_params, state);
+
+                        let unmitigated_damage = target_stats.max_health * perc_hp_dmg;
+                        let mitigated_damage = compute_mitigated_damage(
+                            attacker_stats,
+                            &target_stats,
+                            unmitigated_damage,
+                            DamageType::Physical,
+                        );
+
+                        let damage_info = simulation::on_damage_from_item(
+                            &mitigated_damage,
+                            DamageType::Physical,
+                            state,
+                            Item::Eclipse,
+                        );
+
+                        on_post_damage_events(
+                            &damage_info,
+                            &attacker_stats,
+                            state,
+                            game_params,
+                            event,
+                            events,
+                        );
+                    } else {
+                        state.add_target_aura(
+                            super::common::Aura::EverRisingMoon,
+                            Some(2_000),
+                            Some(1),
+                            events,
+                        );
+                    };
+                }
+                _ => panic!("Unhandled passive effect for Eclipse"),
+            },
+            _ => todo!(),
         }
     }
 }

@@ -53,12 +53,12 @@ impl PartialOrd for Event {
         Some(self.cmp(other))
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum DamageSource {
     Ability,
-    // Passive,
     Rune,
-    Item,
+    ItemPassive,
+    ItemActive,
 }
 
 #[derive(Clone, Debug)]
@@ -221,6 +221,24 @@ impl State<'_> {
             },
         );
         aura.on_start(self, Unit::Target);
+    }
+
+    pub fn end_early_target_aura(
+        &mut self,
+        aura: &Aura,
+        game_params: &GameParams<'_>,
+        event: &Event,
+        events: &mut BinaryHeap<Event>,
+    ) {
+        // remove the default 'aura_target_end' event (added in add_target_aura)
+        events.retain(|event| {
+            event.category != EventCategory::AuraTargetEnd || event.aura != Some(aura.clone())
+        });
+
+        // then proceed
+        insert_aura_target_end_event(events, self.time_ms, aura.clone());
+        aura.on_end(self, game_params, event, events, Unit::Target);
+        self.target_auras.remove(aura);
     }
 
     pub fn on_expire_target_aura(
@@ -553,18 +571,22 @@ pub fn on_damage_from_item(
     damage_type: DamageType,
     state: &mut State,
     item_name: Item,
-) {
-    state.total_damage += damage;
-    state.damage_history.push(DamageInfo {
+) -> DamageInfo {
+    let damage_info = DamageInfo {
         amount: *damage,
         damage_type,
         time_ms: state.time_ms,
-        source: DamageSource::Item,
+        source: DamageSource::ItemPassive,
         source_ability: None,
         source_rune: None,
         source_item: Some(item_name),
-    });
+    };
+
+    state.total_damage += damage;
+    state.damage_history.push(damage_info.clone());
     state.last_attack_time_ms = state.time_ms;
+
+    return damage_info;
 }
 
 fn insert_attack_cast_end_event(

@@ -12,7 +12,7 @@ use crate::{
 
 use super::{
     abilities::{self, find_ability, AbilitiesExtraData, SpellData},
-    champions::{stat_increase, ChampionStats},
+    champions::{stat_increase, AdaptiveType, ChampionData, ChampionStats},
     items::{Item, ItemData},
     runes::{collect_runes_stats, Rune, RunesData},
 };
@@ -94,6 +94,7 @@ pub struct TargetStats {
 // this is a container for data that is constant throughout the duration of each simulation
 pub struct GameParams<'a> {
     pub champion: Champion,
+    pub champion_data: &'a ChampionData,
     pub champion_stats: &'a ChampionStats,
     pub level: u64,
     pub items: &'a Vec<&'a ItemData>,
@@ -221,7 +222,15 @@ impl PassiveEffect {
             ),
 
             PassiveEffect::SuddenImpact => (),
-            PassiveEffect::EverRisingMoon => (),
+            PassiveEffect::EverRisingMoon => Item::Eclipse.handle_on_post_damage(
+                self,
+                damage_info,
+                attacker_stats,
+                state,
+                game_params,
+                event,
+                events,
+            ),
             PassiveEffect::Eminence => (),
             PassiveEffect::IonianInsight => (),
             PassiveEffect::Preparation => (),
@@ -308,6 +317,7 @@ pub enum Aura {
     VoidAssaultDelay,
     VoidAssaultRecastReady,
     Carve,
+    EverRisingMoon,
 }
 
 impl Aura {
@@ -483,13 +493,13 @@ pub fn compute_attacker_stats(game_params: &GameParams, state: &State) -> Attack
     offensive_stats += collect_runes_stats(state, game_params);
 
     apply_passives(&mut offensive_stats, items);
-    apply_adaptive_force(&mut offensive_stats);
+    apply_adaptive_force(&mut offensive_stats, game_params);
 
-    println!(
-        "compute_attacker_stats ad: {:#?}, time: {:#?}",
-        offensive_stats.ad_base + offensive_stats.ad_bonus,
-        state.time_ms
-    );
+    // println!(
+    //     "compute_attacker_stats ad: {:#?}, time: {:#?}",
+    //     offensive_stats.ad_base + offensive_stats.ad_bonus,
+    //     state.time_ms
+    // );
 
     offensive_stats
 }
@@ -500,10 +510,10 @@ pub fn compute_target_stats(game_params: &GameParams, state: &State) -> TargetSt
         let stacks = carve_aura_app.stacks.unwrap();
         armor *= 1.0 - (0.06 * stacks as f64);
     }
-    println!(
-        "compute_target_stats armor: {:#?}, time: {:#?}",
-        armor, state.time_ms
-    );
+    // println!(
+    //     "compute_target_stats armor: {:#?}, time: {:#?}",
+    //     armor, state.time_ms
+    // );
 
     return TargetStats {
         armor,
@@ -525,26 +535,43 @@ pub fn convert_adaptive(adaptive_force: f64, damage_type: DamageType) -> f64 {
     }
 }
 
-fn apply_adaptive_force(offensive_stats: &mut AttackerStats) {
-    if offensive_stats.ad_bonus >= offensive_stats.ability_power {
+fn apply_adaptive_force(offensive_stats: &mut AttackerStats, game_params: &GameParams) {
+    if offensive_stats.ad_bonus > offensive_stats.ability_power {
         offensive_stats.ad_bonus +=
             convert_adaptive(offensive_stats.adaptive_force, DamageType::Physical);
     } else if offensive_stats.ad_bonus < offensive_stats.ability_power {
         offensive_stats.ability_power +=
             convert_adaptive(offensive_stats.adaptive_force, DamageType::Magical);
+    } else {
+        match game_params.champion_data.adaptive_type {
+            AdaptiveType::Physical => {
+                offensive_stats.ad_bonus +=
+                    convert_adaptive(offensive_stats.adaptive_force, DamageType::Physical)
+            }
+            AdaptiveType::Magic => {
+                offensive_stats.ability_power +=
+                    convert_adaptive(offensive_stats.adaptive_force, DamageType::Magical)
+            }
+        };
     }
     offensive_stats.adaptive_force = 0.0;
 }
 
-pub fn apply_adaptive_damage(adaptive_damage: f64, offensive_stats: &AttackerStats) -> f64 {
+pub fn apply_adaptive_damage(
+    adaptive_damage: f64,
+    offensive_stats: &AttackerStats,
+    game_params: &GameParams,
+) -> f64 {
     if offensive_stats.ad_bonus > offensive_stats.ability_power {
         convert_adaptive(adaptive_damage, DamageType::Physical)
     } else if offensive_stats.ad_bonus < offensive_stats.ability_power {
         convert_adaptive(adaptive_damage, DamageType::Magical)
     } else {
-        // todo: the default depends on the champion
-        // see "adaptiveType"
-        convert_adaptive(adaptive_damage, DamageType::Physical)
+        let damage_type = match game_params.champion_data.adaptive_type {
+            AdaptiveType::Physical => DamageType::Physical,
+            AdaptiveType::Magic => DamageType::Magical,
+        };
+        convert_adaptive(adaptive_damage, damage_type)
     }
 }
 
