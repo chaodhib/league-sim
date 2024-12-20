@@ -9,7 +9,7 @@ use crate::{
 
 use super::common::{compute_target_stats, AttackerStats, DamageType, GameParams, PassiveEffect};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Item {
     Unknown,
     IonianBootsofLucidity,

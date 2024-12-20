@@ -15,7 +15,8 @@ mod simulation;
 use crossbeam::queue::ArrayQueue;
 use data_input::{
     common::{
-        compile_passive_effects, Aura, Champion, CritHandlingChoice, GameParams, TargetStats,
+        compile_passive_effects, Aura, AuraApplication, Champion, CritHandlingChoice, GameParams,
+        TargetStats,
     },
     items::{above_gold_cap, has_item_group_duplicates, Item, ItemData},
     runes::Rune,
@@ -158,7 +159,12 @@ fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: Hash
             runes_data: &static_data.runes_data,
             passive_effects: &mut Vec::new(),
             crit_handling: CritHandlingChoice::Min,
-            initial_attacker_auras: &vec![Aura::UnseenThreat],
+            initial_attacker_auras: &vec![AuraApplication {
+                aura: Aura::UnseenThreat,
+                stacks: None,
+                start_ms: 0,
+                end_ms: None,
+            }],
             initial_target_auras: &Vec::new(),
             abilities_extra_data: &static_data.abilities_extra_data,
             start_time_ms: 1_850_000,
@@ -295,8 +301,19 @@ fn run_single(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSe
         attacker_hp_perc: hp_perc,
         passive_effects: &mut Vec::new(),
         crit_handling: CritHandlingChoice::Min,
-        // initial_attacker_auras: &vec![Aura::UnseenThreat],
-        initial_attacker_auras: &vec![],
+        // initial_attacker_auras: &vec![AuraApplication {
+        //     aura: Aura::UnseenThreat,
+        //     stacks: None,
+        //     start_ms: 0,
+        //     end_ms: None,
+        // }],
+        // initial_attacker_auras: &vec![],
+        initial_attacker_auras: &vec![AuraApplication {
+            aura: Aura::HubrisEminence,
+            stacks: Some(17),
+            start_ms: 0,
+            end_ms: Some(90_000),
+        }],
         initial_target_auras: &Vec::new(),
         abilities_extra_data: &static_data.abilities_extra_data,
         start_time_ms: 600_000,

@@ -294,12 +294,12 @@ fn add_initial_auras(
     state: &mut State<'_>,
     events: &mut BinaryHeap<Event>,
 ) {
-    for aura in game_params.initial_attacker_auras.iter() {
-        state.add_attacker_aura(*aura, Some(5000), None, events);
+    for aura_app in game_params.initial_attacker_auras.iter() {
+        state.add_attacker_aura(aura_app.aura, aura_app.end_ms, aura_app.stacks, events);
     }
 
-    for aura in game_params.initial_target_auras.iter() {
-        state.add_target_aura(*aura, Some(5000), None, events);
+    for aura_app in game_params.initial_target_auras.iter() {
+        state.add_target_aura(aura_app.aura, aura_app.end_ms, aura_app.stacks, events);
     }
 }
 

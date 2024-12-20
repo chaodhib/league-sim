@@ -107,8 +107,8 @@ pub struct GameParams<'a> {
     pub runes_data: &'a RunesData,
     pub passive_effects: &'a mut Vec<PassiveEffect>,
     pub crit_handling: CritHandlingChoice,
-    pub initial_attacker_auras: &'a Vec<Aura>,
-    pub initial_target_auras: &'a Vec<Aura>,
+    pub initial_attacker_auras: &'a Vec<AuraApplication>,
+    pub initial_target_auras: &'a Vec<AuraApplication>,
     pub start_time_ms: u64,
 }
 
@@ -171,27 +171,6 @@ impl PassiveEffect {
             &_ => todo!("missing {name}"),
         }
     }
-
-    // pub fn to_string(effect: PassiveEffect) -> &'static str {
-    //     match effect {
-    //         // items
-    //         PassiveEffect::Eminence => "Eminence",
-    //         PassiveEffect::Preparation => "Preparation",
-    //         PassiveEffect::EverRisingMoon => "Ever Rising Moon",
-    //         PassiveEffect::Carve => "Carve",
-    //         PassiveEffect::Death => "Death",
-    //         PassiveEffect::IonianInsight => "Ionian Insight",
-    //         PassiveEffect::DragonForce => "DragonForce",
-    //         PassiveEffect::FocusedWill => "Focused Will",
-    //         PassiveEffect::LightshieldStrike => "Lightshield Strike",
-    //         PassiveEffect::Energized => "Energized",
-    //         PassiveEffect::Firmament => "Firmament",
-
-    //         // runes
-    //         PassiveEffect::DarkHarvest => "",
-    //         PassiveEffect::SuddenImpact => "",
-    //     }
-    // }
 
     pub fn handle_on_post_damage(
         &self,
@@ -318,6 +297,7 @@ pub enum Aura {
     VoidAssaultRecastReady,
     Carve,
     EverRisingMoon,
+    HubrisEminence,
 }
 
 impl Aura {
@@ -423,6 +403,40 @@ impl Aura {
             _ => (),
         }
     }
+
+    fn offensive_stats(
+        &self,
+        state: &State<'_>,
+        game_params: &GameParams<'_>,
+    ) -> Option<AttackerStats> {
+        match self {
+            Aura::HubrisEminence => {
+                if game_params
+                    .items
+                    .iter()
+                    .all(|item_data| item_data.item != Item::Hubris)
+                {
+                    return None;
+                }
+
+                let mut offensive_stats = AttackerStats {
+                    ..Default::default()
+                };
+
+                let stacks: u64 =
+                    if let Some(aura_app) = state.attacker_auras.get(&Aura::HubrisEminence) {
+                        aura_app.stacks.unwrap()
+                    } else {
+                        panic!("HubrisEminence aura not found");
+                    };
+
+                offensive_stats.ad_bonus = stacks as f64;
+
+                Some(offensive_stats)
+            }
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -491,6 +505,7 @@ pub fn compute_attacker_stats(game_params: &GameParams, state: &State) -> Attack
         ultimate_haste: 0.0,
     };
     offensive_stats += collect_runes_stats(state, game_params);
+    offensive_stats += collect_aura_stats(state, game_params);
 
     apply_passives(&mut offensive_stats, items);
     apply_adaptive_force(&mut offensive_stats, game_params);
@@ -502,6 +517,21 @@ pub fn compute_attacker_stats(game_params: &GameParams, state: &State) -> Attack
     // );
 
     offensive_stats
+}
+
+fn collect_aura_stats(state: &State<'_>, game_params: &GameParams<'_>) -> AttackerStats {
+    let mut offensive_stats = AttackerStats {
+        ..Default::default()
+    };
+
+    for (aura, aura_app) in state.attacker_auras.iter() {
+        let aura_stats: Option<AttackerStats> = aura.offensive_stats(state, game_params);
+        if aura_stats.is_some() {
+            offensive_stats += aura_stats.unwrap();
+        }
+    }
+
+    return offensive_stats;
 }
 
 pub fn compute_target_stats(game_params: &GameParams, state: &State) -> TargetStats {
