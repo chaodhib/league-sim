@@ -1,13 +1,16 @@
-use std::{collections::HashMap, fs::File, io::BufReader};
+use std::{cmp, collections::HashMap, fs::File, io::BufReader};
 
 use serde_json::Value;
 
 use crate::{
-    attack::compute_mitigated_damage,
+    attack::{compute_mitigated_damage, AttackType},
     simulation::{self, on_post_damage_events, DamageInfo, DamageSource, State},
 };
 
-use super::common::{compute_target_stats, AttackerStats, DamageType, GameParams, PassiveEffect};
+use super::common::{
+    compute_attacker_stats, compute_target_stats, AttackerStats, DamageType, GameParams,
+    PassiveEffect,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Item {
@@ -40,6 +43,7 @@ pub enum Item {
     RanduinsOmen,
     FrozenHeart,
     Stridebreaker,
+    BladeofTheRuinedKing,
 }
 
 impl Item {
@@ -73,6 +77,7 @@ impl Item {
             "Randuin's Omen" => Item::RanduinsOmen,
             "Frozen Heart" => Item::FrozenHeart,
             "Stridebreaker" => Item::Stridebreaker,
+            "Blade of The Ruined King" => Item::BladeofTheRuinedKing,
             &_ => todo!(),
         }
     }
@@ -108,6 +113,143 @@ impl Item {
             Item::RanduinsOmen => "Randuin's Omen".to_string(),
             Item::FrozenHeart => "Frozen Heart".to_string(),
             Item::Stridebreaker => "Stridebreaker".to_string(),
+            Item::BladeofTheRuinedKing => "Blade of the Ruined King".to_string(),
+        }
+    }
+
+    pub fn handle_on_pre_damage(
+        &self,
+        passive_effect: &PassiveEffect,
+        damage_info: &DamageInfo,
+        attacker_stats: &AttackerStats,
+        state: &mut State<'_>,
+        game_params: &GameParams<'_>,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+    ) {
+        match &self {
+            Item::SunderedSky => match passive_effect {
+                PassiveEffect::LightshieldStrike => {
+                    if damage_info
+                        .source_ability
+                        .is_none_or(|attack_type| attack_type != AttackType::AA)
+                    {
+                        return;
+                    }
+
+                    if state
+                        .effects_cooldowns
+                        .contains_key(&PassiveEffect::LightshieldStrike)
+                    {
+                        return;
+                    }
+
+                    state.add_target_aura(
+                        super::common::Aura::LightshieldStrike,
+                        None,
+                        None,
+                        events,
+                    );
+
+                    state
+                        .effects_cooldowns
+                        .insert(PassiveEffect::LightshieldStrike, event.time_ms + 8_000);
+                }
+                _ => panic!("Unhandled passive effect for SunderedSky"),
+            },
+            Item::VoltaicCyclosword => match passive_effect {
+                PassiveEffect::Energized => {
+                    if damage_info
+                        .source_ability
+                        .is_none_or(|attack_type| attack_type != AttackType::AA)
+                    {
+                        return;
+                    }
+
+                    if let Some(aura_app) =
+                        state.attacker_auras.get(&super::common::Aura::Energized)
+                    {
+                        if aura_app.stacks.unwrap() == 100 {
+                            state.end_early_attacker_aura(
+                                &super::common::Aura::Energized,
+                                game_params,
+                                event,
+                                events,
+                            );
+
+                            let target_stats = compute_target_stats(game_params, state);
+
+                            const UNMITIGATED_DAMAGE: f64 = 100.0;
+
+                            let mitigated_damage = compute_mitigated_damage(
+                                attacker_stats,
+                                &target_stats,
+                                UNMITIGATED_DAMAGE,
+                                DamageType::Physical,
+                            );
+
+                            simulation::on_damage_from_item(
+                                &mitigated_damage,
+                                DamageType::Physical,
+                                state,
+                                Item::VoltaicCyclosword,
+                            );
+
+                            return;
+                        }
+                    }
+
+                    const STACKS_PER_AA: u64 = 6;
+                    if let Some(aura_app) = state
+                        .attacker_auras
+                        .get_mut(&super::common::Aura::Energized)
+                    {
+                        aura_app.stacks = Some(aura_app.stacks.unwrap() + STACKS_PER_AA);
+                    } else {
+                        state.add_attacker_aura(
+                            super::common::Aura::Energized,
+                            None,
+                            Some(cmp::min(STACKS_PER_AA, 100)),
+                            events,
+                        );
+                    };
+                }
+                _ => panic!("Unhandled passive effect for SunderedSky"),
+            },
+            Item::BladeofTheRuinedKing => match passive_effect {
+                PassiveEffect::MistsEdge => {
+                    if damage_info
+                        .source_ability
+                        .is_none_or(|attack_type| attack_type != AttackType::AA)
+                    {
+                        return;
+                    }
+
+                    let perc_hp_dmg: f64 = match game_params.champion_data.attack_type {
+                        super::champions::AttackType::Melee => 0.08,
+                        super::champions::AttackType::Ranged => 0.05,
+                    };
+
+                    let target_stats = compute_target_stats(game_params, state);
+
+                    let unmitigated_damage = target_stats.current_health * perc_hp_dmg;
+                    let mitigated_damage = compute_mitigated_damage(
+                        attacker_stats,
+                        &target_stats,
+                        unmitigated_damage,
+                        DamageType::Physical,
+                    );
+
+                    simulation::on_damage_from_item(
+                        &mitigated_damage,
+                        DamageType::Physical,
+                        state,
+                        Item::BladeofTheRuinedKing,
+                    );
+                }
+                _ => panic!("Unhandled passive effect for BladeofTheRuinedKing"),
+            },
+            _ => todo!(),
         }
     }
 
@@ -136,7 +278,7 @@ impl Item {
                         state.add_target_aura(
                             super::common::Aura::Carve,
                             Some(6_000),
-                            Some(stack),
+                            Some(cmp::min(stack, 5)),
                             events,
                         );
 
@@ -216,6 +358,102 @@ impl Item {
                 }
                 _ => panic!("Unhandled passive effect for Eclipse"),
             },
+            Item::SpearofShojin => match passive_effect {
+                PassiveEffect::FocusedWill => {
+                    if damage_info.source_ability.is_some_and(|attack_type| {
+                        vec![AttackType::Q, AttackType::W, AttackType::E].contains(&attack_type)
+                    }) {
+                        let stack = if let Some(aura_app) =
+                            state.attacker_auras.get(&super::common::Aura::FocusedWill)
+                        {
+                            aura_app.stacks.unwrap() + 1
+                        } else {
+                            1
+                        };
+
+                        state.add_attacker_aura(
+                            super::common::Aura::FocusedWill,
+                            Some(6_000),
+                            Some(cmp::min(stack, 4)),
+                            events,
+                        );
+                    }
+                }
+                _ => panic!("Unhandled passive effect for SpearofShojin"),
+            },
+            Item::SunderedSky => match passive_effect {
+                PassiveEffect::LightshieldStrike => {
+                    state.end_early_attacker_aura(
+                        &super::common::Aura::LightshieldStrike,
+                        game_params,
+                        event,
+                        events,
+                    );
+                }
+                _ => panic!("Unhandled passive effect for SunderedSky"),
+            },
+            Item::TheCollector => match passive_effect {
+                PassiveEffect::Death => {
+                    let current_health =
+                        game_params.initial_target_stats.current_health - state.total_damage;
+                    let hp_prc = current_health / game_params.initial_target_stats.max_health;
+                    if hp_prc < 5.0 {
+                        simulation::on_damage_from_item(
+                            &current_health,
+                            DamageType::True,
+                            state,
+                            Item::TheCollector,
+                        );
+                    }
+                }
+                _ => panic!("Unhandled passive effect for SunderedSky"),
+            },
+            _ => todo!(),
+        }
+    }
+
+    pub(crate) fn handle_on_movement(
+        &self,
+        passive_effect: &PassiveEffect,
+        duration: u64,
+        state: &mut State<'_>,
+        game_params: &GameParams<'_>,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+    ) {
+        match &self {
+            Item::VoltaicCyclosword => match passive_effect {
+                PassiveEffect::Energized => {
+                    let attacker_stats = compute_attacker_stats(game_params, state);
+                    let move_speed = (attacker_stats.movement_speed_base
+                        + attacker_stats.movement_speed_flat_bonus)
+                        * (1.0 + attacker_stats.movement_speed_perc_bonus);
+
+                    let distance_traveled = move_speed * duration as f64 / 1000.0;
+                    let generated_stacks = (distance_traveled / 24.0) as u64;
+
+                    // println!(
+                    //     "time: {:#?}. generated_stacks: {:#?}. move_speed: {:#?}. distance_traveled: {:#?}. duration: {:#?}",
+                    //     state.time_ms, generated_stacks, move_speed, distance_traveled, duration
+                    // );
+
+                    if let Some(aura_app) = state
+                        .attacker_auras
+                        .get_mut(&super::common::Aura::Energized)
+                    {
+                        let new_stacks = cmp::min(aura_app.stacks.unwrap() + generated_stacks, 100);
+                        aura_app.stacks = Some(new_stacks);
+                    } else {
+                        state.add_attacker_aura(
+                            super::common::Aura::Energized,
+                            None,
+                            Some(cmp::min(generated_stacks, 100)),
+                            events,
+                        );
+                    };
+                }
+                _ => panic!("Unhandled passive effect for SunderedSky"),
+            },
             _ => todo!(),
         }
     }
@@ -255,6 +493,10 @@ pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, ItemData> {
             lethality: ele.1["PhysicalLethality"].as_f64().unwrap_or_default(),
             // attack_speed_base: 0.0,
             attack_speed_bonus: ele.1["mPercentAttackSpeedMod"].as_f64().unwrap_or_default(),
+            movement_speed_flat_bonus: ele.1["mFlatMovementSpeedMod"].as_f64().unwrap_or_default(),
+            movement_speed_perc_bonus: ele.1["mPercentMovementSpeedMod"]
+                .as_f64()
+                .unwrap_or_default(),
             ..Default::default()
         };
 

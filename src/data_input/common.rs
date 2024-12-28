@@ -1,5 +1,7 @@
 use std::{
+    cmp::{self, Ordering},
     collections::{HashMap, HashSet},
+    f32::consts::E,
     ops::{Add, AddAssign},
 };
 
@@ -48,26 +50,34 @@ pub struct AttackerStats {
     pub attack_delay_offset: f64,
     pub attack_cast_time: f64,
     pub attack_total_time: f64,
-    pub damage_physical_multiplier: f64,
-    pub damage_magical_multiplier: f64,
-    pub damage_true_multiplier: f64,
+    // pub damage_physical_multiplier: f64,
+    // pub damage_magical_multiplier: f64,
+    // pub damage_true_multiplier: f64,
+    pub damage_ability_multiplier: f64,
     pub adaptive_force: f64,
+    pub movement_speed_base: f64,
+    pub movement_speed_flat_bonus: f64,
+    pub movement_speed_perc_bonus: f64,
 }
 
 impl AddAssign for AttackerStats {
     fn add_assign(&mut self, other: AttackerStats) {
         self.ability_haste += other.ability_haste;
+        self.basic_ability_haste += other.basic_ability_haste;
+        self.ultimate_haste += other.ultimate_haste;
         self.ad_base += other.ad_base;
         self.ad_bonus += other.ad_bonus;
         self.lethality += other.lethality;
         self.armor_penetration_perc += other.armor_penetration_perc;
-        self.crit_chance += other.crit_chance;
+        self.crit_chance = f64::min(self.crit_chance + other.crit_chance, 1.0);
         self.attack_speed_base += other.attack_speed_base;
         self.attack_speed_bonus += other.attack_speed_bonus;
-        // multipliers are combined multiplicatively
-        self.damage_physical_multiplier *= other.damage_physical_multiplier;
-        self.damage_magical_multiplier *= other.damage_magical_multiplier;
-        self.damage_true_multiplier *= other.damage_true_multiplier;
+        // // multipliers are combined multiplicatively
+        // self.damage_physical_multiplier *= other.damage_physical_multiplier;
+        // self.damage_magical_multiplier *= other.damage_magical_multiplier;
+        // self.damage_true_multiplier *= other.damage_true_multiplier;
+        self.damage_ability_multiplier =
+            (self.damage_ability_multiplier + 1.0) * (other.damage_ability_multiplier + 1.0) - 1.0;
         self.adaptive_force += other.adaptive_force;
         self.ability_power += other.ability_power;
     }
@@ -125,7 +135,9 @@ pub enum PassiveEffect {
     LightshieldStrike,
     Death,
     Energized,
+    Galvanize,
     Firmament,
+    MistsEdge,
 
     // Runes
     DarkHarvest,
@@ -164,11 +176,62 @@ impl PassiveEffect {
             "Blackout" => None,
             "Extinguish" => None,
             "Energized" => Some(Self::Energized),
-            "Galvanize" => None,
+            "Galvanize" => Some(Self::Galvanize),
             "Firmament" => Some(Self::Firmament),
             "Haunt" => None,
+            "Mist's Edge" => Some(Self::MistsEdge),
+            "Clawing Shadows" => None,
 
             &_ => todo!("missing {name}"),
+        }
+    }
+
+    pub fn handle_on_pre_damage(
+        &self,
+        damage_info: &DamageInfo,
+        attacker_stats: &AttackerStats,
+        state: &mut State<'_>,
+        game_params: &GameParams<'_>,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+    ) {
+        match self {
+            PassiveEffect::LightshieldStrike => Item::SunderedSky.handle_on_pre_damage(
+                self,
+                damage_info,
+                attacker_stats,
+                state,
+                game_params,
+                event,
+                events,
+            ),
+            PassiveEffect::Energized => Item::VoltaicCyclosword.handle_on_pre_damage(
+                self,
+                damage_info,
+                attacker_stats,
+                state,
+                game_params,
+                event,
+                events,
+            ),
+            PassiveEffect::MistsEdge => Item::BladeofTheRuinedKing.handle_on_pre_damage(
+                self,
+                damage_info,
+                attacker_stats,
+                state,
+                game_params,
+                event,
+                events,
+            ),
+            PassiveEffect::DarkHarvest => Rune::DarkHarvest.handle_on_pre_damage(
+                damage_info,
+                attacker_stats,
+                state,
+                game_params,
+                event,
+                events,
+            ),
+            &_ => (),
         }
     }
 
@@ -191,15 +254,6 @@ impl PassiveEffect {
                 event,
                 events,
             ),
-            PassiveEffect::DarkHarvest => Rune::DarkHarvest.handle_on_post_damage(
-                damage_info,
-                attacker_stats,
-                state,
-                game_params,
-                event,
-                events,
-            ),
-
             PassiveEffect::SuddenImpact => (),
             PassiveEffect::EverRisingMoon => Item::Eclipse.handle_on_post_damage(
                 self,
@@ -210,15 +264,25 @@ impl PassiveEffect {
                 event,
                 events,
             ),
-            PassiveEffect::Eminence => (),
-            PassiveEffect::IonianInsight => (),
-            PassiveEffect::Preparation => (),
-            PassiveEffect::DragonForce => (),
-            PassiveEffect::FocusedWill => (),
-            PassiveEffect::LightshieldStrike => (),
-            PassiveEffect::Death => (),
-            PassiveEffect::Energized => (),
-            PassiveEffect::Firmament => (),
+            PassiveEffect::FocusedWill => Item::SpearofShojin.handle_on_post_damage(
+                self,
+                damage_info,
+                attacker_stats,
+                state,
+                game_params,
+                event,
+                events,
+            ),
+            PassiveEffect::LightshieldStrike => Item::SunderedSky.handle_on_post_damage(
+                self,
+                damage_info,
+                attacker_stats,
+                state,
+                game_params,
+                event,
+                events,
+            ),
+            &_ => (),
         }
     }
 
@@ -245,6 +309,8 @@ impl PassiveEffect {
             PassiveEffect::Energized => (),
             PassiveEffect::Firmament => (),
             PassiveEffect::DarkHarvest => (),
+            PassiveEffect::Galvanize => (),
+            PassiveEffect::MistsEdge => (),
         }
     }
 
@@ -271,6 +337,75 @@ impl PassiveEffect {
             PassiveEffect::Energized => (),
             PassiveEffect::Firmament => (),
             PassiveEffect::DarkHarvest => (),
+            PassiveEffect::Galvanize => (),
+            PassiveEffect::MistsEdge => (),
+        }
+    }
+
+    fn offensive_stats(
+        &self,
+        state: &State<'_>,
+        game_params: &GameParams<'_>,
+    ) -> Option<AttackerStats> {
+        match self {
+            PassiveEffect::IonianInsight => {
+                let offensive_stats = AttackerStats {
+                    // todo: add summoner spell haste
+                    ..Default::default()
+                };
+
+                Some(offensive_stats)
+            }
+            Self::DragonForce => {
+                let offensive_stats = AttackerStats {
+                    basic_ability_haste: 25.0,
+                    ..Default::default()
+                };
+
+                Some(offensive_stats)
+            }
+            _ => None,
+        }
+    }
+
+    pub fn execution_order(a: &Self, b: &Self) -> Ordering {
+        let order_fn = |x: &Self| -> u32 {
+            match &x {
+                PassiveEffect::Firmament => 1,
+                PassiveEffect::MistsEdge => 2,
+                PassiveEffect::DarkHarvest => 3,
+                PassiveEffect::LightshieldStrike => 4,
+                _ => 5,
+            }
+        };
+
+        let order_a: u32 = order_fn(a);
+        let order_b: u32 = order_fn(b);
+
+        // println!("order_a: {:#?}. effect: {:#?}", order_a, a);
+        // println!("order_b: {:#?}. effect: {:#?}", order_b, b);
+
+        order_a.cmp(&order_b)
+    }
+
+    pub fn handle_on_movement(
+        &self,
+        event: &crate::simulation::Event,
+        events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+        game_params: &GameParams<'_>,
+        state: &mut State<'_>,
+        duration: u64,
+    ) {
+        match self {
+            PassiveEffect::Energized => Item::VoltaicCyclosword.handle_on_movement(
+                self,
+                duration,
+                state,
+                game_params,
+                event,
+                events,
+            ),
+            &_ => (),
         }
     }
 }
@@ -280,6 +415,7 @@ pub enum DamageType {
     Physical,
     Magical,
     True,
+    Unknown,
 }
 
 #[derive(PartialEq, Debug, Clone, Copy)]
@@ -298,6 +434,10 @@ pub enum Aura {
     Carve,
     EverRisingMoon,
     HubrisEminence,
+    Preparation,
+    FocusedWill,
+    LightshieldStrike,
+    Energized,
 }
 
 impl Aura {
@@ -434,12 +574,66 @@ impl Aura {
 
                 Some(offensive_stats)
             }
+            Aura::Preparation => {
+                let lethality = match game_params.champion_data.attack_type {
+                    super::champions::AttackType::Melee => 11.0,
+                    super::champions::AttackType::Ranged => 7.0,
+                };
+
+                let offensive_stats = AttackerStats {
+                    lethality,
+                    ..Default::default()
+                };
+
+                Some(offensive_stats)
+            }
+            Aura::FocusedWill => {
+                if game_params
+                    .items
+                    .iter()
+                    .all(|item_data| item_data.item != Item::SpearofShojin)
+                {
+                    panic!("SpearofShojin item not found despite a FocusedWill aura being present");
+                }
+
+                let stacks: u64 =
+                    if let Some(aura_app) = state.attacker_auras.get(&Aura::FocusedWill) {
+                        aura_app.stacks.unwrap()
+                    } else {
+                        panic!("FocusedWill aura not found");
+                    };
+
+                let offensive_stats = AttackerStats {
+                    damage_ability_multiplier: (stacks as f64 * 0.03),
+                    ..Default::default()
+                };
+
+                Some(offensive_stats)
+            }
+            Aura::LightshieldStrike => {
+                if game_params
+                    .items
+                    .iter()
+                    .all(|item_data| item_data.item != Item::SunderedSky)
+                {
+                    panic!(
+                        "SunderedSky item not found despite a LightshieldStrike aura being present"
+                    );
+                }
+
+                let offensive_stats = AttackerStats {
+                    crit_chance: 1.0,
+                    ..Default::default()
+                };
+
+                Some(offensive_stats)
+            }
             _ => None,
         }
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct AuraApplication {
     pub aura: Aura,
     pub start_ms: u64,
@@ -490,9 +684,10 @@ pub fn compute_attacker_stats(game_params: &GameParams, state: &State) -> Attack
             + items
                 .iter()
                 .fold(0.0, |acc, x| acc + x.offensive_stats.attack_speed_bonus),
-        damage_physical_multiplier: 0.0,
-        damage_magical_multiplier: 0.0,
-        damage_true_multiplier: 0.0,
+        // damage_physical_multiplier: 0.0,
+        // damage_magical_multiplier: 0.0,
+        // damage_true_multiplier: 0.0,
+        damage_ability_multiplier: 0.0,
         adaptive_force: 0.0,
         // todo
         ability_power: 0.0,
@@ -503,11 +698,18 @@ pub fn compute_attacker_stats(game_params: &GameParams, state: &State) -> Attack
         // todo
         basic_ability_haste: 0.0,
         ultimate_haste: 0.0,
+        movement_speed_base: champion_stats.base_movement_speed,
+        movement_speed_flat_bonus: items.iter().fold(0.0, |acc, x| {
+            acc + x.offensive_stats.movement_speed_flat_bonus
+        }),
+        movement_speed_perc_bonus: items.iter().fold(0.0, |acc, x| {
+            acc + x.offensive_stats.movement_speed_perc_bonus
+        }),
     };
     offensive_stats += collect_runes_stats(state, game_params);
     offensive_stats += collect_aura_stats(state, game_params);
+    offensive_stats += collect_passive_effects_stats(state, game_params);
 
-    apply_passives(&mut offensive_stats, items);
     apply_adaptive_force(&mut offensive_stats, game_params);
 
     // println!(
@@ -553,8 +755,23 @@ pub fn compute_target_stats(game_params: &GameParams, state: &State) -> TargetSt
     };
 }
 
-fn apply_passives(offensive_stats: &mut AttackerStats, items: &Vec<&ItemData>) {
-    // todo: change this in a callback fashion
+fn collect_passive_effects_stats(state: &State, game_params: &GameParams) -> AttackerStats {
+    let mut offensive_stats: AttackerStats = AttackerStats {
+        ..Default::default()
+    };
+
+    for passive_effect in game_params
+        .items
+        .iter()
+        .flat_map(|&item_data| &item_data.passives)
+    {
+        let aura_stats: Option<AttackerStats> = passive_effect.offensive_stats(state, game_params);
+        if aura_stats.is_some() {
+            offensive_stats += aura_stats.unwrap();
+        }
+    }
+
+    return offensive_stats;
 }
 
 pub fn convert_adaptive(adaptive_force: f64, damage_type: DamageType) -> f64 {
@@ -562,6 +779,7 @@ pub fn convert_adaptive(adaptive_force: f64, damage_type: DamageType) -> f64 {
         DamageType::Magical => adaptive_force,
         DamageType::Physical => adaptive_force * 0.6,
         DamageType::True => panic!(),
+        DamageType::Unknown => panic!(),
     }
 }
 
@@ -629,6 +847,8 @@ pub fn compile_passive_effects(game_params: &mut GameParams<'_>) {
         // .chain(champion_passives)
         .flat_map(|effects| effects)
         .collect_vec();
+
+    passive_effects.sort_by(PassiveEffect::execution_order);
 
     game_params.passive_effects.append(&mut passive_effects);
 }

@@ -63,9 +63,11 @@ impl EffectWithCallbacks for UnseenThreat {
         let attacker_stats = compute_attacker_stats(game_params, state);
         let target_stats = compute_target_stats(game_params, state);
 
-        let magic_damage: f64 = self.base_damage
+        let mut magic_damage: f64 = self.base_damage
             + self.per_level_bonus * game_params.level as f64
             + self.bonus_ad_ratio * attacker_stats.ad_bonus;
+
+        magic_damage *= attacker_stats.damage_ability_multiplier + 1.0;
 
         let mitigated_dmg = compute_mitigated_damage(
             &attacker_stats,
@@ -99,14 +101,14 @@ impl EffectWithCallbacks for UnseenThreat {
             source_item: None,
         };
 
-        simulation::on_post_damage_events(
-            &new_damage_info,
-            &attacker_stats,
-            state,
-            game_params,
-            event,
-            events,
-        );
+        // simulation::on_post_damage_events(
+        //     &new_damage_info,
+        //     &attacker_stats,
+        //     state,
+        //     game_params,
+        //     event,
+        //     events,
+        // );
     }
 }
 

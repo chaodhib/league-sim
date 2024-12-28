@@ -84,7 +84,7 @@ impl Rune {
         }
     }
 
-    pub fn handle_on_post_damage(
+    pub fn handle_on_pre_damage(
         &self,
         damage_info: &DamageInfo,
         attacker_stats: &AttackerStats,
@@ -95,18 +95,7 @@ impl Rune {
     ) {
         match self {
             Rune::DarkHarvest => {
-                game_params.runes_data.dark_harvest.handle_on_post_damage(
-                    damage_info,
-                    attacker_stats,
-                    state,
-                    game_params,
-                    event,
-                    events,
-                );
-            }
-
-            Rune::SuddenImpact => {
-                game_params.runes_data.sudden_impact.handle_on_post_damage(
+                game_params.runes_data.dark_harvest.handle_on_pre_damage(
                     damage_info,
                     attacker_stats,
                     state,
@@ -119,6 +108,20 @@ impl Rune {
             _ => (),
         }
     }
+
+    // pub fn handle_on_post_damage(
+    //     &self,
+    //     damage_info: &DamageInfo,
+    //     attacker_stats: &AttackerStats,
+    //     state: &mut State<'_>,
+    //     game_params: &GameParams<'_>,
+    //     event: &crate::simulation::Event,
+    //     events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
+    // ) {
+    //     match self {
+    //         _ => (),
+    //     }
+    // }
 
     pub(crate) fn handle_dash_event(
         &self,
@@ -171,7 +174,7 @@ struct DarkHarvest {
 }
 
 impl DarkHarvest {
-    fn handle_on_post_damage(
+    fn handle_on_pre_damage(
         &self,
         damage_info: &DamageInfo,
         attacker_stats: &AttackerStats,
@@ -221,12 +224,11 @@ impl DarkHarvest {
             .unwrap();
 
         // trigger the damage
-        let adaptive_damage = self.base_damage
+        let damage = self.base_damage
             + self.damage_per_soul * stack_count as f64
             + self.bonus_ad * attacker_stats.ad_bonus
             + self.bonus_ap * attacker_stats.ability_power;
 
-        let damage = common::apply_adaptive_damage(adaptive_damage, attacker_stats, game_params);
         let damage_type = match game_params.champion_data.adaptive_type {
             AdaptiveType::Physical => DamageType::Physical,
             AdaptiveType::Magic => DamageType::Magical,
@@ -301,6 +303,9 @@ impl SuddenImpact {
         events: &mut std::collections::BinaryHeap<simulation::Event>,
     ) {
         if state.attacker_auras.get(&Aura::SuddenImpactReady).is_none() {
+            println!("state.attacker_auras: {:#?}", state.attacker_auras);
+            // println!("game_params.items: {:#?}", game_params.items);
+
             panic!();
         }
 

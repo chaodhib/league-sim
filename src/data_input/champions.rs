@@ -21,6 +21,8 @@ pub struct ChampionStats {
     // windup calculation (newer formula)
     pub attack_cast_time: f64,
     pub attack_total_time: f64,
+
+    pub base_movement_speed: f64,
 }
 
 pub enum AttackType {
@@ -100,6 +102,7 @@ pub fn get_base_champion_stats(champion: Champion) -> (ChampionData, ChampionSta
         attack_total_time: character["stats"]["attackTotalTime"]["flat"]
             .as_f64()
             .unwrap(),
+        base_movement_speed: character["stats"]["movespeed"]["flat"].as_f64().unwrap(),
     };
 
     (champion_data, champion_stats)

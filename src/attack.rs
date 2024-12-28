@@ -138,8 +138,11 @@ fn compute_ability_damage(
     let bonus_damage: f64 = ability.coefficient_ad * attacker_stats.ad_bonus;
     // println!("2 bonus_damage: {:#?}", bonus_damage);
 
-    let total_damage: f64 = base_damage + bonus_damage;
+    let mut total_damage: f64 = base_damage + bonus_damage;
     // println!("3 total_damage: {:#?}", total_damage);
+
+    // include damage modifiers
+    total_damage *= attacker_stats.damage_ability_multiplier + 1.0;
 
     let dmg = compute_mitigated_damage(
         attacker_stats,
@@ -311,6 +314,7 @@ pub fn compute_mitigated_damage(
         DamageType::Physical => target_stats.armor,
         DamageType::Magical => target_stats.magic_resistance,
         DamageType::True => panic!(),
+        DamageType::Unknown => panic!(),
     };
 
     // println!("3 armor: {:#?}", armor);
@@ -321,9 +325,9 @@ pub fn compute_mitigated_damage(
     // 3) penetration, %
     let penetration_perc = match damage_type {
         DamageType::Physical => attacker_stats.armor_penetration_perc,
-        // todo
         DamageType::Magical => 0.0,
         DamageType::True => panic!(),
+        DamageType::Unknown => panic!(),
     };
 
     damage_resistance *= 1.0 - penetration_perc;
@@ -331,9 +335,9 @@ pub fn compute_mitigated_damage(
     // 4) penetration, flat
     let penetration_flat = match damage_type {
         DamageType::Physical => attacker_stats.lethality,
-        // todo
         DamageType::Magical => 0.0,
         DamageType::True => panic!(),
+        DamageType::Unknown => panic!(),
     };
     damage_resistance = (damage_resistance - penetration_flat).max(0.0);
 
@@ -351,8 +355,14 @@ fn cooldown(ability: &SpellData, spell_rank: u64, attacker_stats: &AttackerStats
             .get(&spell_rank)
             .unwrap();
 
-        let reduced_cd: u64 =
-            (base_cd as f64 * 100.0 / (100.0 + attacker_stats.ability_haste)) as u64;
+        let mut haste = attacker_stats.ability_haste;
+        if ability.key == "R" {
+            haste += attacker_stats.ultimate_haste;
+        } else if vec!["Q", "W", "E"].contains(&ability.key.as_str()) {
+            haste += attacker_stats.basic_ability_haste;
+        }
+
+        let reduced_cd: u64 = (base_cd as f64 * 100.0 / (100.0 + haste)) as u64;
 
         // println!("base_cd: {:#?}", base_cd);
         // println!("reduced_cd: {:#?}", reduced_cd);

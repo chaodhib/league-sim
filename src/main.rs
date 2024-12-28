@@ -48,8 +48,17 @@ fn main() -> std::io::Result<()> {
         "TRUE".to_string(),
     );
 
-    config.insert("CHAMPION_KHAZIX_R_EVOLVED".to_string(), "FALSE".to_string());
-    config.insert("RUNE_DARK_HARVEST_STACKS".to_string(), "1".to_string());
+    config.insert("CHAMPION_KHAZIX_Q_EVOLVED".to_string(), "TRUE".to_string());
+    config.insert("CHAMPION_KHAZIX_R_EVOLVED".to_string(), "TRUE".to_string());
+    config.insert("RUNE_DARK_HARVEST_STACKS".to_string(), "2".to_string());
+    config.insert(
+        "ITEM_HUBRIS_EMINENCE_ACTIVE".to_string(),
+        "FALSE".to_string(),
+    );
+    config.insert(
+        "ITEM_OPPORTUNITY_PREPARATION_READY".to_string(),
+        "TRUE".to_string(),
+    );
 
     let item_ids: Vec<u64> = vec![
         3158, // Ionian Boots of Lucidity
@@ -81,6 +90,7 @@ fn main() -> std::io::Result<()> {
         3143, // Randuin's Omen
         3110, // Frozen Heart
         6631, // Stridebreaker
+        3153, // Blade of the Ruined King
     ];
 
     let mut runes: HashSet<Rune> = HashSet::new();
@@ -91,6 +101,7 @@ fn main() -> std::io::Result<()> {
     runes.insert(Rune::GatheringStorm);
     runes.insert(Rune::AdaptiveForce1);
     runes.insert(Rune::AdaptiveForce2);
+    // runes.insert(Rune::AbilityHaste);
 
     // run_multiple(config, item_ids, runes);
     run_single(config, item_ids, runes);
@@ -105,25 +116,26 @@ fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: Hash
     selected_commands.push_back(attack::AttackType::Q);
     selected_commands.push_back(attack::AttackType::W);
     // selected_commands.push_back(attack::AttackType::E);
-    selected_commands.push_back(attack::AttackType::R);
+    // selected_commands.push_back(attack::AttackType::R);
+    selected_commands.push_back(attack::AttackType::AA);
+    // selected_commands.push_back(attack::AttackType::R);
     selected_commands.push_back(attack::AttackType::AA);
     selected_commands.push_back(attack::AttackType::Q);
     let hp_perc = 100.0;
-    let level: u64 = 11;
-    let gold_cap: u64 = 7100;
+    let level: u64 = 18;
+    let gold_cap: u64 = 20000;
     let target_stats: TargetStats = TargetStats {
-        // mid hp ashe at level 18
-        armor: 69.0,
-        max_health: 2074.0,
-        current_health: 1863.0,
-        magic_resistance: 50.0,
+        armor: 100.0,
+        max_health: 2400.0,
+        current_health: 2400.0,
+        magic_resistance: 100.0,
     };
 
     let static_data = data_input::parse_files(Champion::Khazix, &item_ids, &config);
 
     // return;
 
-    let perms = item_ids.into_iter().combinations(3);
+    let perms = item_ids.into_iter().combinations(5);
     let progress = Arc::new(AtomicUsize::new(0));
     let size: usize = perms.size_hint().1.unwrap();
     let best_builds: ArrayQueue<Build> = ArrayQueue::new(size);
@@ -167,7 +179,7 @@ fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: Hash
             }],
             initial_target_auras: &Vec::new(),
             abilities_extra_data: &static_data.abilities_extra_data,
-            start_time_ms: 1_850_000,
+            start_time_ms: 0,
         };
 
         compile_passive_effects(&mut game_params);
@@ -199,7 +211,7 @@ fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: Hash
 
     let results = best_builds
         .into_iter()
-        .sorted_by(|a, b| b.dps.partial_cmp(&a.dps).unwrap())
+        .sorted_by(|a, b| b.damage.partial_cmp(&a.damage).unwrap())
         .take(10)
         .map(|build| {
             let item_names = build
@@ -240,25 +252,26 @@ fn run_single(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSe
     let global_start = Instant::now();
 
     let mut selected_commands = VecDeque::new();
-    // selected_commands.push_back(attack::AttackType::R);
-    selected_commands.push_back(attack::AttackType::AA);
-    // selected_commands.push_back(attack::AttackType::R);
-    selected_commands.push_back(attack::AttackType::AA);
-    // selected_commands.push_back(attack::AttackType::R);
-    // selected_commands.push_back(attack::AttackType::AA);
-    // selected_commands.push_back(attack::AttackType::Q);
-    // selected_commands.push_back(attack::AttackType::W);
+    selected_commands.push_back(attack::AttackType::Q);
+    selected_commands.push_back(attack::AttackType::W);
     // selected_commands.push_back(attack::AttackType::E);
-    // selected_commands.push_back(attack::AttackType::AA);
-
-    let hp_perc: f64 = 100.0;
-    let level: u64 = 6;
-    let _gold_cap: u64 = 20000;
+    // selected_commands.push_back(attack::AttackType::R);
+    selected_commands.push_back(attack::AttackType::AA);
+    // selected_commands.push_back(attack::AttackType::R);
+    selected_commands.push_back(attack::AttackType::AA);
+    selected_commands.push_back(attack::AttackType::Q);
+    selected_commands.push_back(attack::AttackType::AA);
+    selected_commands.push_back(attack::AttackType::Q);
+    selected_commands.push_back(attack::AttackType::AA);
+    selected_commands.push_back(attack::AttackType::Q);
+    selected_commands.push_back(attack::AttackType::AA);
+    let hp_perc = 100.0;
+    let level: u64 = 18;
+    let gold_cap: u64 = 20000;
     let target_stats: TargetStats = TargetStats {
-        // mid hp ashe at level 18
         armor: 100.0,
-        max_health: 2300.0,
-        current_health: 2300.0,
+        max_health: 2400.0,
+        current_health: 2400.0,
         magic_resistance: 100.0,
     };
 
@@ -268,14 +281,20 @@ fn run_single(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSe
 
     let selected_item_names: Vec<&str> = vec![
         // "Ionian Boots of Lucidity",
-        "Eclipse",
-        // "Berserker's Greaves",
+        // // "Eclipse",
+        // // "Berserker's Greaves",
         // "Youmuu's Ghostblade",
-        // "Profane Hydra",
-        // "Bloodthirster",
-        // "Opportunity",
-        "Black Cleaver",
-        // "Serylda's Grudge",
+        // // "Profane Hydra",
+        // // "Bloodthirster",
+        // // "Opportunity",
+        // // "Black Cleaver",
+        // // "Serylda's Grudge",
+        // "Edge of Night",
+        "Youmuu's Ghostblade",
+        "Serylda's Grudge",
+        "Profane Hydra",
+        "Hubris",
+        "Voltaic Cyclosword",
     ];
 
     for ele in selected_item_names.iter() {
@@ -308,15 +327,29 @@ fn run_single(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSe
         //     end_ms: None,
         // }],
         // initial_attacker_auras: &vec![],
-        initial_attacker_auras: &vec![AuraApplication {
-            aura: Aura::HubrisEminence,
-            stacks: Some(17),
-            start_ms: 0,
-            end_ms: Some(90_000),
-        }],
+        // initial_attacker_auras: &vec![AuraApplication {
+        //     aura: Aura::HubrisEminence,
+        //     stacks: Some(17),
+        //     start_ms: 0,
+        //     end_ms: Some(90_000),
+        // }],
+        initial_attacker_auras: &vec![
+            AuraApplication {
+                aura: Aura::UnseenThreat,
+                stacks: None,
+                start_ms: 0,
+                end_ms: None,
+            },
+            AuraApplication {
+                aura: Aura::Energized,
+                stacks: Some(100),
+                start_ms: 0,
+                end_ms: None,
+            },
+        ],
         initial_target_auras: &Vec::new(),
         abilities_extra_data: &static_data.abilities_extra_data,
-        start_time_ms: 600_000,
+        start_time_ms: 0,
     };
 
     compile_passive_effects(&mut game_params);
