@@ -31,6 +31,7 @@ pub enum EventCategory {
     AuraTargetEnd,
     CooldownEnded,
     PassiveTriggered,
+    TargetDied,
 }
 
 #[derive(Eq, PartialEq, Debug)]
@@ -256,7 +257,7 @@ impl State<'_> {
 pub fn run(
     mut selected_commands: VecDeque<AttackType>,
     game_params: &GameParams,
-) -> (f64, Vec<DamageInfo>, u64) {
+) -> (f64, Vec<DamageInfo>, u64, bool) {
     // use a priority queue to manage the events
     let mut events: BinaryHeap<Event> = BinaryHeap::new();
 
@@ -343,7 +344,7 @@ fn execute_commands(
     remaining_commands: &mut VecDeque<AttackType>,
     state: &mut State,
     game_params: &GameParams,
-) -> (f64, Vec<DamageInfo>, u64) {
+) -> (f64, Vec<DamageInfo>, u64, bool) {
     loop {
         match events.pop() {
             None => {
@@ -351,9 +352,19 @@ fn execute_commands(
                     state.total_damage.clone(),
                     state.damage_history.clone(),
                     state.last_attack_time_ms,
+                    false,
                 )
             }
             Some(next_event) => {
+                if next_event.category == EventCategory::TargetDied {
+                    return (
+                        state.total_damage.clone(),
+                        state.damage_history.clone(),
+                        state.last_attack_time_ms,
+                        true,
+                    );
+                }
+
                 on_event(&next_event, events, remaining_commands, game_params, state)
             }
         }
@@ -458,6 +469,20 @@ fn on_event(
                 );
             }
 
+            let target_stats = compute_target_stats(game_params, state);
+            if target_stats.current_health <= 0.0 {
+                let event = Event {
+                    attack_type: None,
+                    category: EventCategory::TargetDied,
+                    time_ms: state.time_ms,
+                    passive_effect: None,
+                    aura: None,
+                };
+
+                events.push(event);
+                return;
+            }
+
             if spell_result.cooldown.is_some() {
                 let cooldown_end_ms = spell_result.cooldown.unwrap() + state.time_ms;
                 insert_cooldown_ended_event(events, event, cooldown_end_ms);
@@ -479,6 +504,7 @@ fn on_event(
         EventCategory::AuraAttackerEnd => (),
         EventCategory::AuraTargetStart => (),
         EventCategory::AuraTargetEnd => (),
+        EventCategory::TargetDied => (),
     }
 }
 
