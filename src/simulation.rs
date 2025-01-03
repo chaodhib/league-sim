@@ -710,7 +710,7 @@ fn insert_next_attack_event(
                         delay_aura_app.end_ms.unwrap()
                     } else {
                         if let Some(_) = state.attacker_auras.get(&Aura::VoidAssaultRecastReady) {
-                            0
+                            current_time_ms
                         } else {
                             // the ability is in cooldown. We can't queue it right away.
                             state.cooldowns.remove(&attack_type).unwrap()
