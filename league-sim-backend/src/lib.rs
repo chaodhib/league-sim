@@ -1,5 +1,6 @@
 mod utils;
 
+use utils::set_panic_hook;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -10,4 +11,9 @@ extern "C" {
 #[wasm_bindgen]
 pub fn greet() {
     alert("Hello, league-sim!");
+}
+
+#[wasm_bindgen]
+pub fn init() {
+    set_panic_hook();
 }
