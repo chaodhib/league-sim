@@ -14,4 +14,4 @@ app.use(PrimeVue, {
 });
 app.mount('#app');
 wasm.init();
-// wasm.greet();
+wasm.execute_simulation();
