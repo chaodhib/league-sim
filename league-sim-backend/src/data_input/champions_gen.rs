@@ -14,7 +14,7 @@ pub fn get_base_champion_stats(champion: Champion) -> (ChampionData, ChampionSta
             }
         }
     };
-    let champion_data = match champion {
+    let champion_stats = match champion {
         Champion::Khazix => {
             ChampionStats {
                 armor_flat: 32f64,
