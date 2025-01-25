@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 
 use abilities::{pull_abilities_data, AbilitiesExtraData, SpellData};
-use champions::{get_base_champion_stats, ChampionData, ChampionStats};
+use champions::{ChampionData, ChampionStats};
+use champions_gen::get_base_champion_stats;
 use common::Champion;
 use items::{pull_items_data, ItemData};
 use runes::{pull_runes, RunesData};
 
 pub mod abilities;
 pub mod champions;
+pub mod champions_gen;
 pub mod common;
 pub mod items;
 pub mod runes;

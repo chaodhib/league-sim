@@ -1,0 +1,13 @@
+[package]
+name = "game-data-parser"
+version = "0.1.0"
+authors = ["Chaouki Dhib <chaodhib@gmail.com>"]
+edition = "2021"
+rust-version = "1.82"
+
+[dependencies]
+prettyplease = "0.2.29"
+quote = "1.0.38"
+serde_json = "1.0.136"
+syn = "2.0.96"
+uneval = "0.2.4"
