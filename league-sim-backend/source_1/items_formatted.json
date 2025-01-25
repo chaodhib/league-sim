@@ -82,6 +82,7 @@
       "specialRecipe" : 0,
       "to" : [
          3211,
+         323109,
          3109,
          3801
       ]
@@ -111,16 +112,18 @@
       "specialRecipe" : 0,
       "to" : [
          3119,
-         6667,
          3748,
          8001,
          3083,
+         2502,
          3084,
          3116,
          3143,
+         323119,
          6665,
          6609,
-         4637
+         4637,
+         6667
       ]
    },
    {
@@ -177,11 +180,13 @@
       "specialRecipe" : 0,
       "to" : [
          3115,
+         326657,
          3118,
          3116,
          3135,
          6621,
          3165,
+         326621,
          4637,
          6657
       ]
@@ -235,8 +240,12 @@
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : [
+         323075,
+         323107,
          1011,
+         323222,
          6035,
+         323050,
          2021,
          3211,
          4401,
@@ -245,13 +254,13 @@
          6662,
          6660,
          3803,
-         2502,
          3012,
          3044,
          3053,
          3066,
          3067,
          3075,
+         326617,
          3147,
          3742,
          3801,
@@ -284,6 +293,7 @@
          1031,
          3047,
          2019,
+         323190,
          2421,
          3023,
          3082,
@@ -320,12 +330,14 @@
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : [
+         323075,
          6662,
          3068,
-         2502,
          3002,
+         323109,
          3075,
          3109,
+         323002,
          3742,
          6665
       ]
@@ -356,6 +368,7 @@
          3211,
          3001,
          3111,
+         323190,
          4632,
          3190,
          3155,
@@ -424,6 +437,7 @@
          6692,
          3123,
          3051,
+         323004,
          3155,
          3035,
          3077,
@@ -509,8 +523,8 @@
          3072,
          3026,
          3031,
-         6671,
-         4403
+         4403,
+         6671
       ]
    },
    {
@@ -665,7 +679,10 @@
          3113,
          3116,
          3124,
+         324005,
          3147,
+         323504,
+         326616,
          3802,
          3916,
          4635,
@@ -810,6 +827,7 @@
          4401,
          2504,
          3091,
+         328020,
          6665,
          8020
       ]
@@ -997,7 +1015,7 @@
          "Jungle"
       ],
       "description" : "<mainText><stats></stats><br><br><passive>Jungle Companions</passive><br>Summon a <font color='#1CA935'>Mosstomper</font> that assists you against monsters.<br><br><passive>Mosstomper's Courage</passive><br>The companion grows as you hunt monsters, empowering your <spellName>Smite</spellName>. When fully grown, it grants a <shield>shield</shield> that regenerates after killing large monsters or out of combat.</mainText>",
-      "displayInItemSets" : true,
+      "displayInItemSets" : false,
       "from" : [],
       "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/1103_Jungle_T1_MosstomperSeedling.png",
       "id" : 1105,
@@ -1020,7 +1038,7 @@
          "Jungle"
       ],
       "description" : "<mainText><stats></stats><br><br><passive>Jungle Companions</passive><br>Summon a <font color='#38A8E8'>Gustwalker</font> that assists you against monsters.<br><br><passive>Gustwalker's Gait</passive><br>The companion grows as you hunt monsters, empowering your <spellName>Smite</spellName>. When fully grown, it grants <speed>Move Speed</speed> upon entering brush, increased when killing large monsters.</mainText>",
-      "displayInItemSets" : true,
+      "displayInItemSets" : false,
       "from" : [],
       "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/1102_Jungle_T1_GustwalkerHatchling.png",
       "id" : 1106,
@@ -1043,7 +1061,7 @@
          "Jungle"
       ],
       "description" : "<mainText><stats></stats><br><br><passive>Jungle Companions</passive><br>Summon a <font color='#DD2E2E'>Scorchclaw</font> that assists you against monsters.<br><br><passive>Scorchclaw's Slash</passive><br>The companion grows as you hunt monsters, empowering your <spellName>Smite</spellName>. When fully grown, it periodically imbues your next Attack or Ability to burn enemies and <status>Slow</status> them. Killing large monsters readies this immediately.</mainText>",
-      "displayInItemSets" : true,
+      "displayInItemSets" : false,
       "from" : [],
       "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/1101_Jungle_T1_ScorchclawPup.png",
       "id" : 1107,
@@ -1087,11 +1105,9 @@
    },
    {
       "active" : false,
-      "categories" : [
-         "OnHit"
-      ],
-      "description" : "GeneratedTip_Item_1501_ExternalDescription",
-      "displayInItemSets" : true,
+      "categories" : [],
+      "description" : "<mainText><stats></stats><br><br></mainText>",
+      "displayInItemSets" : false,
       "from" : [],
       "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/34.png",
       "id" : 1501,
@@ -1750,8 +1766,8 @@
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : [
-         6696,
          6698,
+         6696,
          6699
       ]
    },
@@ -2156,10 +2172,10 @@
       "id" : 2141,
       "inStore" : true,
       "isEnchantment" : false,
-      "maxStacks" : 20,
+      "maxStacks" : 100,
       "name" : "Cappa Juice",
-      "price" : 100,
-      "priceTotal" : 100,
+      "price" : 500,
+      "priceTotal" : 500,
       "requiredAlly" : "",
       "requiredBuffCurrencyCost" : 0,
       "requiredBuffCurrencyName" : "",
@@ -2476,16 +2492,16 @@
       "active" : false,
       "categories" : [
          "Health",
+         "SpellBlock",
          "Armor",
          "CooldownReduction",
          "AbilityHaste"
       ],
-      "description" : "<mainText><stats><attention> 350</attention> Health<br><attention> 60</attention> Armor<br><attention> 10</attention> Ability Haste</stats><br><br><passive>Anguish</passive><br>Every 5 seconds while in combat with champions, deal <magicDamage>magic damage</magicDamage> to nearby enemy champions and <healing>heal for 250%</healing> of the damage dealt.</mainText>",
+      "description" : "<mainText><stats><attention> 400</attention> Health<br><attention> 25</attention> Armor<br><attention> 25</attention> Magic Resist<br><attention> 10</attention> Ability Haste</stats><br><br><passive>Anguish</passive><br>Every 4 seconds while in combat with champions, deal <magicDamage>magic damage</magicDamage> to nearby enemy champions and <healing>heal for 250%</healing> of the damage dealt.</mainText>",
       "displayInItemSets" : true,
       "from" : [
-         1031,
-         3067,
-         1028
+         3105,
+         1011
       ],
       "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/2502_UnendingDespair.png",
       "id" : 2502,
@@ -2782,7 +2798,9 @@
       "requiredBuffCurrencyName" : "",
       "requiredChampion" : "",
       "specialRecipe" : 0,
-      "to" : []
+      "to" : [
+         3170
+      ]
    },
    {
       "active" : false,
@@ -2889,7 +2907,9 @@
       "requiredBuffCurrencyName" : "",
       "requiredChampion" : "",
       "specialRecipe" : 0,
-      "to" : []
+      "to" : [
+         3176
+      ]
    },
    {
       "active" : false,
@@ -2915,7 +2935,9 @@
       "requiredBuffCurrencyName" : "",
       "requiredChampion" : "",
       "specialRecipe" : 0,
-      "to" : []
+      "to" : [
+         3175
+      ]
    },
    {
       "active" : false,
@@ -2976,7 +2998,8 @@
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : [
-         3110
+         3110,
+         323110
       ]
    },
    {
@@ -3041,7 +3064,7 @@
          "CriticalStrike",
          "AttackSpeed"
       ],
-      "description" : "<mainText><stats><attention> 50</attention> Attack Damage<br><attention> 25%</attention> Attack Speed</stats><br><br><passive>Practice Makes Lethal</passive><br>On-Attack, gain 0.2% Critical Strike Chance permanently up to 25%.<br><br><passive>Flurry</passive><br>On-Attacking an enemy champion, gain 30% Attack Speed for 6 seconds (30 second cooldown). <br>Attacks reduce this cooldown by 1 second, increased to 2 seconds for Critical Strikes.</mainText>",
+      "description" : "<mainText><stats><attention> 55</attention> Attack Damage<br><attention> 35%</attention> Attack Speed</stats><br><br><passive>Practice Makes Lethal</passive><br>On-Attack, gain 0.2% Critical Strike Chance permanently up to 25%.<br><br><passive>Flurry</passive><br>On-Attacking an enemy champion, gain 30% Attack Speed for 6 seconds (30 second cooldown). <br>Attacks reduce this cooldown by 1 second, increased to 2 seconds for Critical Strikes.</mainText>",
       "displayInItemSets" : true,
       "from" : [
          1038,
@@ -3054,8 +3077,8 @@
       "isEnchantment" : false,
       "maxStacks" : 1,
       "name" : "Yun Tal Wildarrows",
-      "price" : 650,
-      "priceTotal" : 2900,
+      "price" : 750,
+      "priceTotal" : 3000,
       "requiredAlly" : "",
       "requiredBuffCurrencyCost" : 0,
       "requiredBuffCurrencyName" : "",
@@ -3070,7 +3093,7 @@
          "CriticalStrike",
          "ArmorPenetration"
       ],
-      "description" : "<mainText><stats><attention> 35</attention> Attack Damage<br><attention> 30%</attention> Armor Penetration<br><attention> 25%</attention> Critical Strike Chance</stats><br><br><passive>Grievous Wounds</passive><br>Dealing physical damage applies <keyword>40% Wounds</keyword> to enemy champions for 3 seconds.</mainText>",
+      "description" : "<mainText><stats><attention> 35</attention> Attack Damage<br><attention> 35%</attention> Armor Penetration<br><attention> 25%</attention> Critical Strike Chance</stats><br><br><passive>Grievous Wounds</passive><br>Dealing physical damage applies <keyword>40% Wounds</keyword> to enemy champions for 3 seconds.</mainText>",
       "displayInItemSets" : true,
       "from" : [
          3123,
@@ -3083,8 +3106,8 @@
       "isEnchantment" : false,
       "maxStacks" : 1,
       "name" : "Mortal Reminder",
-      "price" : 350,
-      "priceTotal" : 3200,
+      "price" : 450,
+      "priceTotal" : 3300,
       "requiredAlly" : "",
       "requiredBuffCurrencyCost" : 0,
       "requiredBuffCurrencyName" : "",
@@ -3130,7 +3153,7 @@
          "CriticalStrike",
          "ArmorPenetration"
       ],
-      "description" : "<mainText><stats><attention> 35</attention> Attack Damage<br><attention> 35%</attention> Armor Penetration<br><attention> 25%</attention> Critical Strike Chance</stats><br><br></mainText>",
+      "description" : "<mainText><stats><attention> 35</attention> Attack Damage<br><attention> 40%</attention> Armor Penetration<br><attention> 25%</attention> Critical Strike Chance</stats><br><br></mainText>",
       "displayInItemSets" : true,
       "from" : [
          3035,
@@ -3142,8 +3165,8 @@
       "isEnchantment" : false,
       "maxStacks" : 1,
       "name" : "Lord Dominik's Regards",
-      "price" : 250,
-      "priceTotal" : 3000,
+      "price" : 350,
+      "priceTotal" : 3100,
       "requiredAlly" : "",
       "requiredBuffCurrencyCost" : 0,
       "requiredBuffCurrencyName" : "",
@@ -3172,7 +3195,7 @@
       "maxStacks" : 1,
       "name" : "Atma's Reckoning",
       "price" : 925,
-      "priceTotal" : 3000,
+      "priceTotal" : 2900,
       "requiredAlly" : "",
       "requiredBuffCurrencyCost" : 0,
       "requiredBuffCurrencyName" : "",
@@ -3347,7 +3370,9 @@
       "requiredBuffCurrencyName" : "",
       "requiredChampion" : "",
       "specialRecipe" : 0,
-      "to" : []
+      "to" : [
+         3174
+      ]
    },
    {
       "active" : false,
@@ -3528,8 +3553,8 @@
       "to" : [
          4401,
          3181,
-         3083,
          3002,
+         323002,
          3742
       ]
    },
@@ -3560,21 +3585,28 @@
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : [
+         323107,
+         323222,
          3119,
          3071,
+         323190,
          3190,
          8001,
          4644,
          6630,
          6620,
-         2502,
          3050,
+         323109,
          3065,
          3107,
          3109,
+         326617,
          3152,
          3165,
          3222,
+         323119,
+         326620,
+         328020,
          4403,
          4629,
          6617,
@@ -3817,6 +3849,7 @@
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : [
+         323075,
          3075
       ]
    },
@@ -3911,6 +3944,7 @@
       "specialRecipe" : 0,
       "to" : [
          3110,
+         323110,
          3143
       ]
    },
@@ -3918,14 +3952,13 @@
       "active" : false,
       "categories" : [
          "Health",
-         "HealthRegen",
-         "NonbootsMovement"
+         "HealthRegen"
       ],
-      "description" : "<mainText><stats><attention> 1000</attention> Health<br><attention> 4%</attention> Move Speed<br><attention> 100%</attention> Base Health Regen</stats><br><br><passive>Warmog's Heart</passive><br>If you have 1500 bonus Health and have not taken damage within 6 seconds, restore <healing>Health</healing> per second and gain <speed>4% Move Speed</speed>.</mainText>",
+      "description" : "<mainText><stats><attention> 1000</attention> Health<br><attention> 100%</attention> Base Health Regen</stats><br><br><passive>Warmog's Heart</passive> <br>If you have 2000 bonus Health and have not taken damage within 8 seconds, restore  <healing></healing> Health per second.<br><br><passive>Warmog's Vitality</passive><br>Gain Bonus Health equal to 10% of your Item Health (<healing>0</healing>).</mainText>",
       "displayInItemSets" : true,
       "from" : [
          1011,
-         3066,
+         1011,
          3801
       ],
       "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3083_Tank_T3_Warmogs.png",
@@ -3934,7 +3967,7 @@
       "isEnchantment" : false,
       "maxStacks" : 1,
       "name" : "Warmog's Armor",
-      "price" : 800,
+      "price" : 700,
       "priceTotal" : 3300,
       "requiredAlly" : "",
       "requiredBuffCurrencyCost" : 0,
@@ -3949,7 +3982,7 @@
          "Health",
          "HealthRegen"
       ],
-      "description" : "<mainText><stats><attention> 900</attention> Health<br><attention> 100%</attention> Base Health Regen</stats><br><br><passive>Colossal Consumption</passive><br>If an enemy champion is nearby for a few seconds, your next Attack against them deals <physicalDamage>80 plus of 12%</physicalDamage> of your Item Health as <physicalDamage>bonus physical damage</physicalDamage> and grants <scaleHealth>12%</scaleHealth> of the damage as <scaleHealth>max Health.</scaleHealth><br><br><passive>Goliath</passive><br>For each <scaleHealth>1000 max Health</scaleHealth>, gain 3% increased size, up to 30%. </mainText>",
+      "description" : "<mainText><stats><attention> 900</attention> Health<br><attention> 100%</attention> Base Health Regen</stats><br><br><passive>Colossal Consumption</passive>  (0s) per target<br>If an enemy champion is nearby for a few seconds, your next Attack against them deals <physicalDamage>70 plus of 6%</physicalDamage> of your max Health as <physicalDamage>bonus physical damage</physicalDamage> and grants <scaleHealth>10%</scaleHealth> of the damage as <scaleHealth>max Health.</scaleHealth><br><br><passive>Goliath</passive><br>For each <scaleHealth>1000 max Health</scaleHealth>, gain 3% increased size, up to 30%. </mainText>",
       "displayInItemSets" : true,
       "from" : [
          1011,
@@ -4031,8 +4064,8 @@
          6675,
          3085,
          3094,
-         6671,
-         4403
+         4403,
+         6671
       ]
    },
    {
@@ -4242,8 +4275,8 @@
          "CooldownReduction",
          "AbilityHaste"
       ],
-      "description" : "<mainText><stats><attention> 30</attention> Armor<br><attention> 30</attention> Magic Resist<br><attention> 10</attention> Ability Haste</stats><br><br></mainText>",
-      "displayInItemSets" : false,
+      "description" : "<mainText><stats><attention> 25</attention> Armor<br><attention> 25</attention> Magic Resist<br><attention> 10</attention> Ability Haste</stats><br><br></mainText>",
+      "displayInItemSets" : true,
       "from" : [
          1033,
          1029
@@ -4254,18 +4287,20 @@
       "isEnchantment" : false,
       "maxStacks" : 1,
       "name" : "Aegis of the Legion",
-      "price" : 500,
-      "priceTotal" : 1200,
+      "price" : 400,
+      "priceTotal" : 1100,
       "requiredAlly" : "",
       "requiredBuffCurrencyCost" : 0,
       "requiredBuffCurrencyName" : "",
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : [
-         6667,
+         323050,
          3039,
+         2502,
          3193,
-         4403
+         4403,
+         6667
       ]
    },
    {
@@ -4324,16 +4359,20 @@
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : [
+         323003,
          3128,
          3115,
          3003,
          4628,
          3137,
+         324005,
+         326616,
          4636,
          4005,
          4629,
          4633,
-         6616
+         6616,
+         8010
       ]
    },
    {
@@ -4425,7 +4464,9 @@
       "requiredBuffCurrencyName" : "",
       "requiredChampion" : "",
       "specialRecipe" : 0,
-      "to" : []
+      "to" : [
+         3173
+      ]
    },
    {
       "active" : false,
@@ -4478,10 +4519,12 @@
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : [
+         322065,
          3504,
          4646,
          2065,
          3100,
+         323504,
          4629
       ]
    },
@@ -4509,12 +4552,17 @@
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : [
+         323107,
          223011,
+         323222,
          3504,
          3011,
          3107,
          6621,
          3222,
+         323504,
+         326616,
+         326621,
          6616
       ]
    },
@@ -4830,19 +4878,20 @@
          3156,
          126697,
          3004,
-         6696,
          6693,
          6692,
+         323004,
          6691,
          3074,
          6694,
-         6697,
          4402,
          3508,
          3179,
          6609,
          6610,
-         6632
+         6632,
+         6696,
+         6697
       ]
    },
    {
@@ -4878,10 +4927,10 @@
          3814,
          4004,
          6676,
-         6697,
          3131,
          3179,
          6695,
+         6697,
          6701
       ]
    },
@@ -5117,10 +5166,10 @@
       "specialRecipe" : 0,
       "to" : [
          4646,
-         6655,
          4645,
          3152,
-         4636
+         4636,
+         6655
       ]
    },
    {
@@ -5180,7 +5229,8 @@
       "specialRecipe" : 0,
       "to" : [
          6653,
-         4633
+         4633,
+         8010
       ]
    },
    {
@@ -5358,7 +5408,9 @@
       "requiredBuffCurrencyName" : "",
       "requiredChampion" : "",
       "specialRecipe" : 0,
-      "to" : []
+      "to" : [
+         3171
+      ]
    },
    {
       "active" : false,
@@ -5422,25 +5474,181 @@
    {
       "active" : false,
       "categories" : [
+         "Boots"
+      ],
+      "description" : "<mainText><stats><attention> 70</attention> Move Speed</stats><br><br><passive>Fleetfooted</passive><br>Reduce the effectiveness of <keyword>Slows</keyword> by 25%.<br><br><passive>Noxian Fervor</passive><br>Gain <speed>4% total Move Speed</speed>. </mainText>",
+      "displayInItemSets" : true,
+      "from" : [
+         3009
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/Boots_Tier3_Swiftness_64.png",
+      "id" : 3170,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Swiftmarch",
+      "price" : 750,
+      "priceTotal" : 1750,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "Feats_NoxianBootPurchaseBuff",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
          "AttackSpeed",
          "NonbootsMovement"
       ],
-      "description" : "<mainText><stats><attention> 45%</attention> Attack Speed<br><attention> 45</attention> Move Speed</stats><br><br><passive>Like the Wind</passive><br>Attacks grant <speed>5% Move Speed</speed>  <OnHit>On-Hit</OnHit> for 6 seconds, up to <speed>15%</speed>.</mainText>",
+      "description" : "<mainText><stats><attention> 25</attention> Ability Haste<br><attention> 50</attention> Move Speed</stats><br><br><passive>Ionian Insight</passive><br>Gain 10 Summoner Spell Haste.<br><br><passive>Noxian Haste</passive><br>Empowering or protecting allies with abilities, dealing damage to enemy Champions with abilities, or casting a Summoner Spell grants <speed> Move Speed</speed> for 4 seconds.<br><br><rules>Noxian Haste can only be triggered once per Ability cast.</rules></mainText>",
+      "displayInItemSets" : true,
+      "from" : [
+         3158
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/Boots_Tier3_IonianBoots_64.png",
+      "id" : 3171,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Crimson Lucidity",
+      "price" : 750,
+      "priceTotal" : 1650,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "Feats_NoxianBootPurchaseBuff",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "AttackSpeed",
+         "NonbootsMovement"
+      ],
+      "description" : "<mainText><stats><attention> 40%</attention> Attack Speed<br><attention> 50</attention> Move Speed</stats><br><br><passive>Noxian Gait</passive><br>Attacks against Champions grant <speed> Move Speed</speed>  <OnHit>On-Hit</OnHit> decaying over 2 seconds.</mainText>",
       "displayInItemSets" : true,
       "from" : [
          3006
       ],
-      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3172_Zephyr.png",
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/Boots_Tier3_BerserkersGreaves_64.png",
       "id" : 3172,
       "inStore" : true,
       "isEnchantment" : false,
       "maxStacks" : 1,
-      "name" : "Zephyr",
-      "price" : 2000,
-      "priceTotal" : 3100,
+      "name" : "Gunmetal Greaves",
+      "price" : 750,
+      "priceTotal" : 1850,
       "requiredAlly" : "",
       "requiredBuffCurrencyCost" : 0,
-      "requiredBuffCurrencyName" : "",
+      "requiredBuffCurrencyName" : "Feats_NoxianBootPurchaseBuff",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "SpellBlock",
+         "Boots",
+         "Tenacity",
+         "MagicResist"
+      ],
+      "description" : "<mainText><stats><attention> 35</attention> Magic Resist<br><attention> 50</attention> Move Speed<br><attention> 30%</attention> Tenacity</stats><br><br><passive>Noxian Persistence</passive>  (0s)<br>After taking magic damage from a Champion, gain a <shield></shield> <magicDamage>magic</magicDamage> <shield>shield</shield> for 4 seconds.</mainText>",
+      "displayInItemSets" : true,
+      "from" : [
+         3111
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/Boots_Tier3_Mercury_64.png",
+      "id" : 3173,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Chainlaced Crushers",
+      "price" : 750,
+      "priceTotal" : 2050,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "Feats_NoxianBootPurchaseBuff",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Armor",
+         "Boots"
+      ],
+      "description" : "<mainText><stats><attention> 40</attention> Armor<br><attention> 50</attention> Move Speed</stats><br><br><passive>Plating</passive><br>Reduces incoming damage from Attacks by 12%.<br><br><passive>Noxian Endurance</passive>  (0s)<br>After taking physical damage from a Champion, gain a <shield></shield> <physicalDamage>physical</physicalDamage> <shield>shield</shield> for 4 seconds.</mainText>",
+      "displayInItemSets" : true,
+      "from" : [
+         3047
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/Boots_Tier3_PlatedSteelcaps_64.png",
+      "id" : 3174,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Armored Advance",
+      "price" : 750,
+      "priceTotal" : 1950,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "Feats_NoxianBootPurchaseBuff",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Boots",
+         "MagicPenetration"
+      ],
+      "description" : "<mainText><stats><attention> 18</attention> Magic Penetration<br><attention> 8%</attention> Magic Penetration<br><attention> 50</attention> Move Speed</stats><br><br></mainText>",
+      "displayInItemSets" : true,
+      "from" : [
+         3020
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/Boots_Tier3_Sorceror_64.png",
+      "id" : 3175,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Spellslinger's Shoes",
+      "price" : 750,
+      "priceTotal" : 1850,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "Feats_NoxianBootPurchaseBuff",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Boots"
+      ],
+      "description" : "<mainText><stats><attention> 55</attention> Move Speed</stats><br><br><passive>Voidborn</passive><br>Gain Empowered Recall.<br><br><passive>Noxian Synchrony</passive><br>Gain <speed>45 Move Speed</speed> and <speed>10% total Move Speed</speed> when out of combat.</mainText>",
+      "displayInItemSets" : true,
+      "from" : [
+         3013
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/Boots_Tier3_SyncronisedSouls_64.png",
+      "id" : 3176,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Forever Forward",
+      "price" : 750,
+      "priceTotal" : 1650,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "Feats_SpecialQuestBootBuff",
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : []
@@ -5612,7 +5820,7 @@
       "maxStacks" : 1,
       "name" : "Gargoyle Stoneplate",
       "price" : 1350,
-      "priceTotal" : 3250,
+      "priceTotal" : 3150,
       "requiredAlly" : "",
       "requiredBuffCurrencyCost" : 0,
       "requiredBuffCurrencyName" : "",
@@ -6172,11 +6380,12 @@
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : [
-         6655,
+         323003,
          3003,
          3118,
          4644,
          2503,
+         6655,
          6656
       ]
    },
@@ -6208,6 +6417,7 @@
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : [
+         326657,
          4402,
          6657
       ]
@@ -6983,7 +7193,7 @@
          "SpellDamage",
          "CooldownReduction"
       ],
-      "description" : "<mainText><stats><attention> 60</attention> Ability Power<br><attention> 30</attention> Armor<br><attention> 30</attention> Magic Resist<br><attention> 10</attention> Ability Haste</stats><br><br><passive>Vile Decay</passive><br>Dealing magic damage reduces the target's magic resist by  5% for 6 seconds, stacking up to up to  30%. Repeat damage from the same spell cast can only stack this once per 2 second(s).</mainText>",
+      "description" : "<mainText><stats><attention> 60</attention> Ability Power<br><attention> 30</attention> Armor<br><attention> 30</attention> Magic Resist<br><attention> 10</attention> Ability Haste</stats><br><br><passive>Vile Decay</passive><br>Dealing <magicDamage>magic damage</magicDamage> to champions grants <scaleMR>5% magic penetration</scaleMR> for 6 seconds. (stacks 6 times).</mainText>",
       "displayInItemSets" : false,
       "from" : [],
       "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/4010_BloodlettersVeil.png",
@@ -7280,7 +7490,7 @@
       "maxStacks" : 1,
       "name" : "The Golden Spatula",
       "price" : 687,
-      "priceTotal" : 7287,
+      "priceTotal" : 7187,
       "requiredAlly" : "",
       "requiredBuffCurrencyCost" : 0,
       "requiredBuffCurrencyName" : "",
@@ -7610,8 +7820,12 @@
       "requiredChampion" : "",
       "specialRecipe" : 0,
       "to" : [
+         322065,
          2065,
          6620,
+         324005,
+         326617,
+         326620,
          4005,
          6617
       ]
@@ -8361,7 +8575,7 @@
       "maxStacks" : 1,
       "name" : "Radiant Virtue",
       "price" : 600,
-      "priceTotal" : 2700,
+      "priceTotal" : 2600,
       "requiredAlly" : "",
       "requiredBuffCurrencyCost" : 0,
       "requiredBuffCurrencyName" : "",
@@ -8984,13 +9198,42 @@
       "active" : false,
       "categories" : [
          "Health",
-         "SpellBlock",
+         "SpellDamage",
          "CooldownReduction",
-         "MagicPenetration",
+         "MagicPenetration"
+      ],
+      "description" : "<mainText><stats><attention> 60</attention> Ability Power<br><attention> 350</attention> Health<br><attention> 15</attention> Ability Haste</stats><br><br><passive>Vile Decay</passive><br>Dealing <magicDamage>magic damage</magicDamage> with abilities or passives to champions reduces their <scaleMR>Magic Resistance by 5%</scaleMR> for 6 seconds, up to 30%.</mainText>",
+      "displayInItemSets" : true,
+      "from" : [
+         3147,
+         3108
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/4010_BloodlettersVeil.png",
+      "id" : 8010,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Bloodletter's Curse",
+      "price" : 750,
+      "priceTotal" : 2900,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Health",
+         "SpellBlock",
+         "SpellDamage",
+         "CooldownReduction",
          "MagicResist",
          "AbilityHaste"
       ],
-      "description" : "<mainText><stats><attention> 300</attention> Health<br><attention> 45</attention> Magic Resist<br><attention> 15</attention> Ability Haste</stats><br><br><passive>Unmake</passive><br>Reduce nearby enemy champions <scaleMR>Magic Resist by 30%</scaleMR>. </mainText>",
+      "description" : "<mainText><stats><attention> 350</attention> Health<br><attention> 50</attention> Magic Resist<br><attention> 15</attention> Ability Haste</stats><br><br><passive>Unmake</passive><br>Nearby enemy champions take 12% more <magicDamage>magic damage</magicDamage>.</mainText>",
       "displayInItemSets" : true,
       "from" : [
          3067,
@@ -10856,7 +11099,7 @@
       "id" : 222141,
       "inStore" : true,
       "isEnchantment" : false,
-      "maxStacks" : 20,
+      "maxStacks" : 100,
       "name" : "Cappa Juice",
       "price" : 500,
       "priceTotal" : 500,
@@ -14395,6 +14638,639 @@
       "name" : "Abyssal Mask",
       "price" : 2500,
       "priceTotal" : 2500,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : true,
+      "categories" : [
+         "SpellDamage",
+         "ManaRegen",
+         "Active",
+         "CooldownReduction",
+         "NonbootsMovement",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 65</attention> Ability Power<br><attention> 15</attention> Ability Haste<br><attention> 6%</attention> Move Speed<br><attention> 150%</attention> Base Mana Regen</stats><br><br> <active>Inspiring Speech</active><br>Grant nearby allies <speed>30% Move Speed</speed> for 4 seconds.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3113,
+         4642
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/2065_Tank_T4_ShurelyasBattlesong.png",
+      "id" : 322065,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Shurelya's Battlesong",
+      "price" : 800,
+      "priceTotal" : 2600,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Health",
+         "Armor",
+         "NonbootsMovement"
+      ],
+      "description" : "<mainText><stats><attention> 300</attention> Health<br><attention> 45</attention> Armor<br><attention> 6%</attention> Move Speed</stats><br><br><passive>Lead the Way</passive><br>While moving, build up to <speed>20 bonus Move Speed</speed>. <br>At max speed:<li>Create a trail that grants allied champions <speed>Move Speed equal to 15%</speed> of yours. <li>If you are Melee, your next Attack <keyword>Slows</keyword> the target by 50% for 1 second.<br><br></mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3066,
+         1031
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3002_Trailblazer.png",
+      "id" : 323002,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Trailblazer",
+      "price" : 1000,
+      "priceTotal" : 2600,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "SpellDamage",
+         "Mana",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 70</attention> Ability Power<br><attention> 600</attention> Mana<br><attention> 25</attention> Ability Haste</stats><br><br><passive>Awe</passive><br>Gain Ability Power equal to <scaleMana>1% bonus Mana.</scaleMana><br><br><passive>Manaflow</passive>  (8s, max 5 charges)<br>Landing Abilties grant <scaleMana>7.5 max Mana</scaleMana> (doubled vs. champions).<br>Transforms into <rarityLegendary>Seraph's Embrace</rarityLegendary> at <scaleMana>360 max Mana</scaleMana>.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         323070,
+         3802,
+         3108
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3003_Mage_T3_ArchangelStaff.png",
+      "id" : 323003,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Archangel's Staff",
+      "price" : 450,
+      "priceTotal" : 2900,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Damage",
+         "Mana",
+         "CooldownReduction",
+         "OnHit",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 35</attention> Attack Damage<br><attention> 500</attention> Mana<br><attention> 15</attention> Ability Haste</stats><br><br><passive>Awe</passive><br>Gain <scaleAD> bonus Attack Damage</scaleAD>.<br><br><passive>Manaflow</passive>  (8s, max 4 charges)<br>Landing Attacks and Abilties grant <scaleMana>4.5 max Mana</scaleMana> (doubled vs. champions).<br>Transforms into <rarityLegendary>Muramana</rarityLegendary> at <scaleMana>360 max Mana</scaleMana>.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         323070,
+         3133,
+         1036
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3004_Marksman_T3_Manamune.png",
+      "id" : 323004,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Manamune",
+      "price" : 1100,
+      "priceTotal" : 2900,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Health",
+         "SpellBlock",
+         "Armor",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 350</attention> Health<br><attention> 30</attention> Armor<br><attention> 30</attention> Magic Resist<br><attention> 10</attention> Ability Haste</stats><br><br><passive>Frostfire Tempest</passive><br>Casting your Ultimate summons a storm around you for 5 seconds. The storm deals <magicDamage>30 magic damage</magicDamage> per second to enemy champions and <keyword>Slows</keyword> them by 30%.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3105,
+         1028
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3050_Enchanter_T3_ZekesConvergence.png",
+      "id" : 323050,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Zeke's Convergence",
+      "price" : 800,
+      "priceTotal" : 2300,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Mana",
+         "ManaRegen"
+      ],
+      "description" : "<mainText><stats><attention> 240</attention> Mana</stats><br><br><passive>Manaflow</passive>  (8s, max 4 charges)<br>Landing Abilties grant <scaleMana>4.5 max Mana</scaleMana> (doubled vs. champions), up to <scaleMana>360</scaleMana>.<br><br><passive>Helping Hand</passive><br>Attacks deal an additional <physicalDamage>5 physical damage</physicalDamage> to minions.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3070_All_T1_TearOfTheGoddess.png",
+      "id" : 323070,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Tear of the Goddess",
+      "price" : 400,
+      "priceTotal" : 400,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : [
+         3003,
+         3004,
+         323003,
+         323004,
+         323119
+      ]
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Health",
+         "Armor"
+      ],
+      "description" : "<mainText><stats><attention> 200</attention> Health<br><attention> 85</attention> Armor</stats><br><br><passive>Thorns</passive><br>When struck by an Attack, deal <magicDamage>magic damage</magicDamage> to the attacker and apply 40% <keyword>Wounds</keyword> for 3 seconds if they are a champion.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3076,
+         1031,
+         1028
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3075_Tank_T3_Thornmail.png",
+      "id" : 323075,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Thornmail",
+      "price" : 650,
+      "priceTotal" : 2650,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : true,
+      "categories" : [
+         "Health",
+         "ManaRegen",
+         "CooldownReduction",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 400</attention> Health<br><attention> 15</attention> Ability Haste<br><attention> 100%</attention> Base Mana Regen<br><attention> 10%</attention> Heal and Shield Power</stats><br><br> <active>Intervention</active><br>Restore <healing>200 - 400 Health</healing> to allied champions and deal <trueDamage>10% max Health true damage</trueDamage> to enemy champions after 2.5 seconds.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3067,
+         1028,
+         3114
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3107_Enchanter_T3_Redemption.png",
+      "id" : 323107,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Redemption",
+      "price" : 1000,
+      "priceTotal" : 2800,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : true,
+      "categories" : [
+         "Health",
+         "HealthRegen",
+         "Armor",
+         "Aura",
+         "Active",
+         "CooldownReduction",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 300</attention> Health<br><attention> 50</attention> Armor<br><attention> 10</attention> Ability Haste<br><attention> 150%</attention> Base Health Regen</stats><br><br><passive>Sacrifice</passive><br>While near your <attention>Worthy</attention> ally, take 12% of the damage they receive and <healing>heal for 10%</healing> of the damage they deal to champions. <active>Pledge</active>  (0s)<br>Designate an ally as <attention>Worthy</attention>.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3067,
+         1031,
+         1006
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3109_Tank_T3_KnightsVow.png",
+      "id" : 323109,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Knight's Vow",
+      "price" : 1000,
+      "priceTotal" : 2900,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Armor",
+         "Mana",
+         "Aura",
+         "CooldownReduction",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 75</attention> Armor<br><attention> 500</attention> Mana<br><attention> 25</attention> Ability Haste</stats><br><br><passive>Winter's Caress</passive><br>Reduce the <attackSpeed>Attack Speed</attackSpeed> of nearby champions by <attackSpeed>20%</attackSpeed>.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3082,
+         3024
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3110_Tank_T3_FrozenHeart.png",
+      "id" : 323110,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Frozen Heart",
+      "price" : 800,
+      "priceTotal" : 2700,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Health",
+         "Mana",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 550</attention> Health<br><attention> 500</attention> Mana<br><attention> 15</attention> Ability Haste</stats><br><br><passive>Awe</passive><br>Gain <scaleHealth> Health</scaleHealth>.<br><br><passive>Manaflow</passive>  (8s, max 4 charges)<br>Landing Attacks and Abilties grant <scaleMana>4.5 max Mana</scaleMana> (doubled vs. champions).<br>Transforms into <rarityLegendary>Fimbulwinter</rarityLegendary> at <scaleMana>360 max Mana</scaleMana>.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         323070,
+         1011,
+         3067
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3119_WintersApproach.png",
+      "id" : 323119,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Winter's Approach",
+      "price" : 300,
+      "priceTotal" : 2400,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : true,
+      "categories" : [
+         "Health",
+         "SpellBlock",
+         "Armor",
+         "Aura",
+         "Active",
+         "MagicResist",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 250</attention> Health<br><attention> 30</attention> Armor<br><attention> 30</attention> Magic Resist<br><attention> 10</attention> Ability Haste</stats><br><br> <active>Devotion</active><br>Grant nearby allies a <shield>200 - 360 Shield</shield> that decays over 2.5 seconds.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3067,
+         1029,
+         1033
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3190_Enchanter_T4_LocketOfIronSolari.png",
+      "id" : 323190,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Locket of the Iron Solari",
+      "price" : 1100,
+      "priceTotal" : 2600,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : true,
+      "categories" : [
+         "Health",
+         "ManaRegen",
+         "Active",
+         "CooldownReduction",
+         "Tenacity",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 400</attention> Health<br><attention> 100%</attention> Base Mana Regen<br><attention> 15%</attention> Heal and Shield Power<br><attention> 15</attention> Ability Haste</stats><br><br> <active>Purify</active><br>Remove all crowd control debuffs (excluding <keyword>Airborne</keyword> and <keyword>Suppression</keyword>) from an ally champion and restore <healing>100 - 250 Health</healing>.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3067,
+         1028,
+         3114
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3222_Enchanter_T3_MikaelsBlessing.png",
+      "id" : 323222,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Mikael's Blessing",
+      "price" : 1000,
+      "priceTotal" : 2800,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "AttackSpeed",
+         "SpellDamage",
+         "ManaRegen",
+         "NonbootsMovement"
+      ],
+      "description" : "<mainText><stats><attention> 55</attention> Ability Power<br><attention> 10%</attention> Heal and Shield Power<br><attention> 150%</attention> Base Mana Regen<br><attention> 6%</attention> Move Speed</stats><br><br><passive>Sanctify</passive><br>Healing or Shielding an ally enhances you both for 6 seconds, granting <attackSpeed>25% Attack Speed</attackSpeed> and <magicDamage>20 magic damage</magicDamage>  <OnHit>On-Hit</OnHit>.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3113,
+         1052,
+         3114
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3504_Enchanter_T3_ArdentCenser.png",
+      "id" : 323504,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Ardent Censer",
+      "price" : 700,
+      "priceTotal" : 2600,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "SpellDamage",
+         "ManaRegen",
+         "CooldownReduction",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 65</attention> Ability Power<br><attention> 20</attention> Ability Haste<br><attention> 150%</attention> Base Mana Regen</stats><br><br><passive>Coordinated Fire</passive>  (0s) per target<br><keyword>Slowing</keyword> or <keyword>Immobilizing</keyword> an enemy champion marks them for 5 seconds. Ally champion damage detonates the mark, dealing <magicDamage>magic damage equal to 10% of current health</magicDamage>. </mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3108,
+         1052,
+         4642
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/4005_Enchanter_T4_ImperialMandate.png",
+      "id" : 324005,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Imperial Mandate",
+      "price" : 600,
+      "priceTotal" : 2750,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "SpellDamage",
+         "ManaRegen",
+         "CooldownReduction",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 45</attention> Ability Power<br><attention> 10%</attention> Heal and Shield Power<br><attention> 150%</attention> Base Mana Regen<br><attention> 15</attention> Ability Haste</stats><br><br><passive>Rapids</passive><br>Healing or Shielding an ally grants you both <magicDamage>45 Ability Power</magicDamage> for 4 seconds.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3108,
+         1052,
+         3114
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/3744_Enchanter_T3_StaffOfFlowingWater.png",
+      "id" : 326616,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Staff of Flowing Water",
+      "price" : 750,
+      "priceTotal" : 2600,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Health",
+         "SpellDamage",
+         "ManaRegen",
+         "CooldownReduction",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 35</attention> Ability Power<br><attention> 400</attention> Health<br><attention> 20</attention> Ability Haste<br><attention> 150%</attention> Base Mana Regen</stats><br><br><passive>Starlit Grace</passive><br>Healing or shielding an ally chains the effect to another ally (excluding yourself), <healing>healing 30%</healing> or <shield>shielding 35%</shield> of the original amount.</mainText>",
+      "displayInItemSets" : true,
+      "from" : [
+         3067,
+         1028,
+         4642
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/6617_Enchanter_T4_MoonstoneRenewer.png",
+      "id" : 326617,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Moonstone Renewer",
+      "price" : 800,
+      "priceTotal" : 2900,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Health",
+         "SpellDamage",
+         "ManaRegen",
+         "CooldownReduction",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 35</attention> Ability Power<br><attention> 250</attention> Health<br><attention> 20</attention> Ability Haste<br><attention> 150%</attention> Base Mana Regen</stats><br><br><passive>Soul Siphon</passive><br>Damaging a champion grants a <passive>Soul Shard</passive>, up to 2. <br>Healing or Shielding an ally consumes all <passive>Soul Shards</passive> to restore <healing>Health</healing> and deal <magicDamage>magic damage</magicDamage> to the nearest enemy champion per Shard.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3067,
+         4642
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/6620_Echoes_of_Helia.png",
+      "id" : 326620,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Echoes of Helia",
+      "price" : 900,
+      "priceTotal" : 2600,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "SpellDamage",
+         "ManaRegen"
+      ],
+      "description" : "<mainText><stats><attention> 50</attention> Ability Power<br><attention> 20%</attention> Heal and Shield Power<br><attention> 150%</attention> Base Mana Regen</stats><br><br><passive>First Light</passive><br>Gain <healing>2% Heal and Shield Power</healing> and <scaleAP>10 Ability Power</scaleAP> per 100% Base Mana Regen.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         1026,
+         3114,
+         3114
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/6621_Dawncore.png",
+      "id" : 326621,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Dawncore",
+      "price" : 850,
+      "priceTotal" : 2900,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Health",
+         "HealthRegen",
+         "SpellDamage",
+         "Mana",
+         "ManaRegen"
+      ],
+      "description" : "<mainText><stats><attention> 50</attention> Ability Power<br><attention> 400</attention> Health<br><attention> 400</attention> Mana</stats><br><br><passive>Timeless</passive><br>This item gains <scaleHealth>10 Health</scaleHealth>, <scaleMana>20 Mana</scaleMana> and <scaleAP>3 Ability Power</scaleAP> every 60 seconds up to 10 times. Upon reaching max stacks, gain a level.<br><br><passive>Eternity</passive><br>Taking damage from champions restores <scaleMana>7%</scaleMana> of the damage as <scaleMana>Mana</scaleMana>. <br>Casting an ability <healing>heals for 25%</healing> of Mana spent.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         1026,
+         3803
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/6657_Mage_T4_RodOfAges.png",
+      "id" : 326657,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Rod of Ages",
+      "price" : 450,
+      "priceTotal" : 2600,
+      "requiredAlly" : "",
+      "requiredBuffCurrencyCost" : 0,
+      "requiredBuffCurrencyName" : "",
+      "requiredChampion" : "",
+      "specialRecipe" : 0,
+      "to" : []
+   },
+   {
+      "active" : false,
+      "categories" : [
+         "Health",
+         "SpellBlock",
+         "SpellDamage",
+         "CooldownReduction",
+         "MagicResist",
+         "AbilityHaste"
+      ],
+      "description" : "<mainText><stats><attention> 350</attention> Health<br><attention> 50</attention> Magic Resist<br><attention> 15</attention> Ability Haste</stats><br><br><passive>Unmake</passive><br>Nearby enemy champions take 12% more <magicDamage>magic damage</magicDamage>.</mainText>",
+      "displayInItemSets" : false,
+      "from" : [
+         3067,
+         1057
+      ],
+      "iconPath" : "/lol-game-data/assets/ASSETS/Items/Icons2D/8020_Tank_T3_AbyssalMask.png",
+      "id" : 328020,
+      "inStore" : true,
+      "isEnchantment" : false,
+      "maxStacks" : 1,
+      "name" : "Abyssal Mask",
+      "price" : 1200,
+      "priceTotal" : 2850,
       "requiredAlly" : "",
       "requiredBuffCurrencyCost" : 0,
       "requiredBuffCurrencyName" : "",

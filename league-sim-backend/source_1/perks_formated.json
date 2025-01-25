@@ -269,6 +269,23 @@
    },
    {
       "endOfGameStatDescs" : [
+         "Deep Wards: @eogvar1@"
+      ],
+      "iconPath" : "/lol-game-data/assets/v1/perk-images/Styles/Domination/DeepWard/DeepWard.png",
+      "id" : 8141,
+      "longDesc" : "Your wards in the enemy jungle are <keywordMajor>Deep</keywordMajor>. <keywordMajor>Deep</keywordMajor> wards gain +1 extra Health and +[30 - 45]s increased duration (+[45 - 150]s for Trinket stealth wards).<br><br>Level 9: Wards in the river are also <keywordMajor>Deep</keywordMajor>.",
+      "majorChangePatchVersion" : "14.1",
+      "name" : "Deep Ward",
+      "recommendationDescriptor" : "",
+      "recommendationDescriptorAttributes" : {
+         "kGold" : 2,
+         "kUtility" : 8
+      },
+      "shortDesc" : "Your wards in the enemy jungle are <keywordMajor>Deep</keywordMajor>, gaining Health and Duration.<br><br>Level 9: Wards in the river are also <keywordMajor>Deep</keywordMajor>.",
+      "tooltip" : "Your wards in the enemy jungle are <keywordMajor>Deep</keywordMajor>. <keywordMajor>Deep</keywordMajor> wards gain +1 extra Health and +@DurationIncrease@s increased duration (+@TrinketDurationIncrease@s for Trinket stealth wards).<br><br>Level 9: Wards in the river are also <keywordMajor>Deep</keywordMajor>.<br><hr><br>Deep Wards: @f1@"
+   },
+   {
+      "endOfGameStatDescs" : [
          "Total Bonus Damage: @eogvar1@"
       ],
       "iconPath" : "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/Scorch/Scorch.png",
@@ -319,7 +336,7 @@
    },
    {
       "endOfGameStatDescs" : [
-         "Max Attack Speed Uptime: @eogvar1@:@eogvar2@\\nDamage Dealt: @eogvar2@"
+         "Max Attack Speed Uptime: @eogvar1@:@eogvar2@<br>Damage Dealt: @eogvar2@"
       ],
       "iconPath" : "/lol-game-data/assets/v1/perk-images/Styles/Precision/LethalTempo/LethalTempoTemp.png",
       "id" : 8008,
@@ -398,19 +415,20 @@
    },
    {
       "endOfGameStatDescs" : [
-         "Total shield granted: @eogvar1@"
+         "Ultimate Cooldown Reduced: @eogvar1@ Seconds",
+         "Bonus Ultimate Damage/Healing/Shielding: @eogvar2@"
       ],
-      "iconPath" : "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/NullifyingOrb/Pokeshield.png",
+      "iconPath" : "/lol-game-data/assets/v1/perk-images/Styles/Sorcery/NullifyingOrb/Axiom_Arcanist.png",
       "id" : 8224,
-      "longDesc" : "When you take magic damage that would reduce your health below 30%, first gain a shield that absorbs 35 to 110 (+14% bonus attack damage) + (9% ability power) magic damage based on level for 4s.<br><br>Cooldown: 60s",
-      "majorChangePatchVersion" : "",
-      "name" : "Nullifying Orb",
+      "longDesc" : "Your Ultimate has increased damage, healing, and shielding. Scoring a takedown on an enemy champion reduces your Ultimate's current cooldown by 7%.",
+      "majorChangePatchVersion" : "14.1",
+      "name" : "Axiom Arcanist",
       "recommendationDescriptor" : "",
       "recommendationDescriptorAttributes" : {
          "kDurability" : 10
       },
-      "shortDesc" : "Gain a magic damage shield when taken to low health by magic damage.",
-      "tooltip" : "When you take magic damage that would reduce your Health below 30%, gain a shield that absorbs <magicDamage>@NullifyingShieldSize@ magic damage</magicDamage> for 4s.<br>Cooldown: 60s<br><br>Total Magic Damage Blocked: <magicDamage>@f1@</magicDamage>"
+      "shortDesc" : "Your Ultimate has increased damage, healing, and shielding. Scoring a takedown on an enemy champion reduces your Ultimate's current cooldown.",
+      "tooltip" : "Your Ultimate has 14% increased damage, healing, and shielding.<br>(AoE damage is reduced to an 9% increase)<br><br>Scoring a takedown on an enemy champion reduces your Ultimate's current cooldown by 7%.<br><br>Ultimate Cooldown Reduced: @f1@ Seconds<br>Bonus Ultimate Damage/Healing/Shielding: @f2@"
    },
    {
       "endOfGameStatDescs" : [
@@ -471,6 +489,22 @@
    },
    {
       "endOfGameStatDescs" : [
+         "Wards sensed: @eogvar1@"
+      ],
+      "iconPath" : "/lol-game-data/assets/v1/perk-images/Styles/Domination/SixthSense/SixthSense.png",
+      "id" : 8137,
+      "longDesc" : "Automatically sense a nearby untracked and unseen ward, tracking it for the team. <br><br>Level 11: Also reveal the ward for 10s.<br><br>This effect has a [275 Melee || 350 Ranged] second Cooldown.",
+      "majorChangePatchVersion" : "14.1",
+      "name" : "Sixth Sense",
+      "recommendationDescriptor" : "",
+      "recommendationDescriptorAttributes" : {
+         "kUtility" : 10
+      },
+      "shortDesc" : "On a long Cooldown, automatically sense a nearby untracked and unseen ward, tracking it for the team. <br><br>Level 11: Also reveal the ward for 10s.",
+      "tooltip" : "Automatically sense a nearby untracked and unseen ward, tracking it for the team. <br><br>Level @LevelThreshold@: Also reveal the ward for @RevealDuration@s.<br><br>This effect has a {{ Item_Melee_Ranged_Split }} second Cooldown.<br><hr><br>Wards sensed: @f1@"
+   },
+   {
+      "endOfGameStatDescs" : [
          "Gold Granted: @eogvar1@",
          "Items Looted: @eogvar2@"
       ],
@@ -486,11 +520,11 @@
    },
    {
       "endOfGameStatDescs" : [
-         "Reminder to drink water: @eogvar2@"
+         "Instant health restored: @eogvar2@"
       ],
       "iconPath" : "/lol-game-data/assets/v1/perk-images/Styles/Inspiration/TimeWarpTonic/TimeWarpTonic.png",
       "id" : 8352,
-      "longDesc" : "Consuming a potion grants 40% of its health restoration immediately.<br><br>",
+      "longDesc" : "Consuming a potion grants 40% of its health restoration immediately.",
       "majorChangePatchVersion" : "8.22",
       "name" : "Time Warp Tonic",
       "recommendationDescriptor" : "",
@@ -499,7 +533,7 @@
          "kMoveSpeed" : 5
       },
       "shortDesc" : "Potions grant some restoration immediately.",
-      "tooltip" : "Consuming a potion grants 40% of its health restoration immediately.<br><br><br><hr><br>Total health instantly restored: @f2@"
+      "tooltip" : "Consuming a potion grants 40% of its health restoration immediately.<br><hr><br>Total health instantly restored: @f2@"
    },
    {
       "endOfGameStatDescs" : [],
@@ -1185,6 +1219,23 @@
       "recommendationDescriptorAttributes" : {},
       "shortDesc" : "<pathBonus><pathDomination>Domination</pathDomination> + <pathPrecision>Precision</pathPrecision> Set Bonus</pathBonus>",
       "tooltip" : "<pathDomination>Domination</pathDomination> + <pathPrecision>Precision</pathPrecision><br>+0 Attack Damage or +0 Ability Power, <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Adaptive'><font color='#48C4B7'>Adaptive</font></lol-uikit-tooltipped-keyword><br>Current Bonus: <scaleAD>+@f1@ <scaleAD>Attack Damage</scaleAD></scaleAD><br>+0% Attack Speed"
+   },
+   {
+      "endOfGameStatDescs" : [
+         "Mementos Collected: @eogvar1@"
+      ],
+      "iconPath" : "/lol-game-data/assets/v1/perk-images/Styles/Domination/GrislyMementos/GrislyMementos.png",
+      "id" : 8140,
+      "longDesc" : "Collect 1 memento on champion <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Takedown'>takedowns</lol-uikit-tooltipped-keyword>, up to 18 total.<br><br>Gain 6 Trinket Haste for each collected. In game modes where vision Trinkets do not exist, instead gain 3 Summoner Spell Haste.",
+      "majorChangePatchVersion" : "14.1",
+      "name" : "Grisly Mementos",
+      "recommendationDescriptor" : "",
+      "recommendationDescriptorAttributes" : {
+         "kCooldown" : 5,
+         "kUtility" : 5
+      },
+      "shortDesc" : "Collect 1 memento on champion <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Takedown'>takedowns</lol-uikit-tooltipped-keyword>, up to 18 total.<br><br>Gain 6 Trinket Haste for each collected.",
+      "tooltip" : "Collect 1 memento on champion <lol-uikit-tooltipped-keyword key='LinkTooltip_Description_Takedown'>takedowns</lol-uikit-tooltipped-keyword>, up to 18 total.<br><br>Gain 6 Trinket Haste for each collected. In game modes where vision Trinkets do not exist, instead gain 3 Summoner Spell Haste.<br><hr><br>Mementos Collected: @f1@ (max 18)"
    },
    {
       "endOfGameStatDescs" : [
