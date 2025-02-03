@@ -7,7 +7,12 @@ rust-version = "1.82"
 
 [dependencies]
 prettyplease = "0.2.29"
+proc-macro2 = "1.0.93"
 quote = "1.0.38"
+shared_structs = { path = "../shared-structs" }
+serde = "1.0.217"
+serde_derive = "1.0.217"
 serde_json = "1.0.136"
+serde_path_to_error = "0.1.16"
 syn = "2.0.96"
 uneval = "0.2.4"

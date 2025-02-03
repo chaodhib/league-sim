@@ -1,14 +1,14 @@
-use std::{collections::HashMap, fs::File, io::BufReader};
-
-use serde_json::Value;
+use std::collections::HashMap;
 
 use crate::{
     attack::{compute_mitigated_damage, AttackType, SpellCategory},
     simulation::{self, DamageInfo},
 };
 
+use shared_structs::champions::*;
+
 use super::common::{
-    compute_attacker_stats, compute_target_stats, DamageType, EffectWithCallbacks, PassiveEffect,
+    compute_attacker_stats, compute_target_stats, DamageType, EffectWithCallbacks,
 };
 
 // #[derive(Debug)]
@@ -226,12 +226,7 @@ impl ScriptedEffect for KhazixR {
 pub fn pull_abilities_data(
     config: &HashMap<String, String>,
 ) -> (Vec<SpellData>, AbilitiesExtraData) {
-    let file = File::open("source_3/champions_formatted.json").unwrap();
-    let reader: BufReader<File> = BufReader::new(file);
-    let json_input: HashMap<String, HashMap<String, Value>> =
-        serde_json::from_reader(reader).unwrap();
-    let abilities = json_input.get("Khazix").unwrap().get("abilities").unwrap();
-
+    let khazix: Champion = include!("champions_gen/khazix.rs");
     let mut abilities_data = Vec::new();
 
     // Q (variation 1)
@@ -239,14 +234,13 @@ pub fn pull_abilities_data(
     for rank in 1..=5usize {
         ad_damage.insert(
             rank.try_into().unwrap(),
-            abilities["Q"][0]["effects"][1]["leveling"][0]["modifiers"][0]["values"][rank - 1]
-                .as_f64()
-                .unwrap(),
+            khazix.abilities.q[0].effects[1].leveling[0].modifiers[0].values[rank - 1],
         );
     }
 
-    let cast_time_s = abilities["Q"][0]["castTime"]
-        .as_str()
+    let cast_time_s = khazix.abilities.q[0]
+        .cast_time
+        .as_ref()
         .unwrap()
         .parse::<f64>()
         .unwrap();
@@ -255,9 +249,7 @@ pub fn pull_abilities_data(
     for rank in 1..=5usize {
         cooldown_ms.insert(
             rank.try_into().unwrap(),
-            abilities["Q"][0]["cooldown"]["modifiers"][0]["values"][rank - 1]
-                .as_u64()
-                .unwrap()
+            khazix.abilities.q[0].cooldown.as_ref().unwrap().modifiers[0].values[rank - 1] as u64
                 * 1000u64,
         );
     }
@@ -277,10 +269,7 @@ pub fn pull_abilities_data(
     abilities_data.push(SpellData {
         ad_damage,
         ap_damage,
-        coefficient_ad: abilities["Q"][0]["effects"][1]["leveling"][0]["modifiers"][1]["values"][0]
-            .as_f64()
-            .unwrap()
-            * 0.01,
+        coefficient_ad: khazix.abilities.q[0].effects[1].leveling[0].modifiers[1].values[0] * 0.01,
         coefficient_ap: 0.0f64,
         key: "Q".to_string(),
         variation_name: Some("Physical Damage".to_string()),
@@ -300,9 +289,7 @@ pub fn pull_abilities_data(
     for rank in 1..=5usize {
         ad_damage.insert(
             rank.try_into().unwrap(),
-            abilities["Q"][0]["effects"][1]["leveling"][1]["modifiers"][0]["values"][rank - 1]
-                .as_f64()
-                .unwrap(),
+            khazix.abilities.q[0].effects[1].leveling[1].modifiers[0].values[rank - 1],
         );
     }
 
@@ -310,10 +297,7 @@ pub fn pull_abilities_data(
     abilities_data.push(SpellData {
         ad_damage,
         ap_damage,
-        coefficient_ad: abilities["Q"][0]["effects"][1]["leveling"][1]["modifiers"][1]["values"][0]
-            .as_f64()
-            .unwrap()
-            * 0.01,
+        coefficient_ad: khazix.abilities.q[0].effects[1].leveling[1].modifiers[1].values[0] * 0.01,
         coefficient_ap: 0.0f64,
         key: "Q".to_string(),
         variation_name: Some("Increased Damage".to_string()),
@@ -333,14 +317,13 @@ pub fn pull_abilities_data(
     for rank in 1..=5usize {
         ad_damage.insert(
             rank.try_into().unwrap(),
-            abilities["W"][0]["effects"][0]["leveling"][0]["modifiers"][0]["values"][rank - 1]
-                .as_f64()
-                .unwrap(),
+            khazix.abilities.w[0].effects[0].leveling[0].modifiers[0].values[rank - 1],
         );
     }
 
-    let cast_time_s = abilities["W"][0]["castTime"]
-        .as_str()
+    let cast_time_s = khazix.abilities.w[0]
+        .cast_time
+        .as_ref()
         .unwrap()
         .parse::<f64>()
         .unwrap();
@@ -349,9 +332,7 @@ pub fn pull_abilities_data(
     for rank in 1..=5usize {
         cooldown_ms.insert(
             rank.try_into().unwrap(),
-            abilities["W"][0]["cooldown"]["modifiers"][0]["values"][rank - 1]
-                .as_u64()
-                .unwrap()
+            khazix.abilities.w[0].cooldown.as_ref().unwrap().modifiers[0].values[rank - 1] as u64
                 * 1000u64,
         );
     }
@@ -360,10 +341,7 @@ pub fn pull_abilities_data(
     abilities_data.push(SpellData {
         ad_damage,
         ap_damage,
-        coefficient_ad: abilities["W"][0]["effects"][0]["leveling"][0]["modifiers"][1]["values"][0]
-            .as_f64()
-            .unwrap()
-            * 0.01,
+        coefficient_ad: khazix.abilities.w[0].effects[0].leveling[0].modifiers[1].values[0] * 0.01,
         coefficient_ap: 0.0f64,
         key: "W".to_string(),
         variation_name: None,
@@ -383,9 +361,7 @@ pub fn pull_abilities_data(
     for rank in 1..=5usize {
         ad_damage.insert(
             rank.try_into().unwrap(),
-            abilities["E"][0]["effects"][0]["leveling"][0]["modifiers"][0]["values"][rank - 1]
-                .as_f64()
-                .unwrap(),
+            khazix.abilities.e[0].effects[0].leveling[0].modifiers[0].values[rank - 1],
         );
     }
 
@@ -393,9 +369,7 @@ pub fn pull_abilities_data(
     for rank in 1..=5usize {
         cooldown_ms.insert(
             rank.try_into().unwrap(),
-            abilities["E"][0]["cooldown"]["modifiers"][0]["values"][rank - 1]
-                .as_u64()
-                .unwrap()
+            khazix.abilities.e[0].cooldown.as_ref().unwrap().modifiers[0].values[rank - 1] as u64
                 * 1000u64,
         );
     }
@@ -404,10 +378,7 @@ pub fn pull_abilities_data(
     abilities_data.push(SpellData {
         ad_damage,
         ap_damage,
-        coefficient_ad: abilities["E"][0]["effects"][0]["leveling"][0]["modifiers"][1]["values"][0]
-            .as_f64()
-            .unwrap()
-            * 0.01,
+        coefficient_ad: khazix.abilities.e[0].effects[0].leveling[0].modifiers[1].values[0] * 0.01,
         coefficient_ap: 0.0f64,
         key: "E".to_string(),
         variation_name: None,
@@ -427,9 +398,7 @@ pub fn pull_abilities_data(
     for rank in 1..=3usize {
         cooldown_ms.insert(
             rank.try_into().unwrap(),
-            abilities["R"][0]["cooldown"]["modifiers"][0]["values"][rank - 1]
-                .as_u64()
-                .unwrap()
+            khazix.abilities.r[0].cooldown.as_ref().unwrap().modifiers[0].values[rank - 1] as u64
                 * 1000u64,
         );
     }

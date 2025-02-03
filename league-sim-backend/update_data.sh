@@ -11,6 +11,9 @@ wget -O source_3/champions.json http://cdn.merakianalytics.com/riot/lol/resource
 cat source_3/items.json | json_pp > source_3/items_formatted.json
 cat source_3/champions.json | json_pp > source_3/champions_formatted.json
 
+wget -O source_3/champions/Khazix.json http://cdn.merakianalytics.com/riot/lol/resources/latest/en-US/champions/Khazix.json
+cat source_3/champions/Khazix.json | json_pp > source_3/champions/Khazix_formatted.json
+
 wget -O source_4/121.json https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champions/121.json
 cat source_4/121.json | json_pp > source_4/121_formatted.json
 

@@ -1,18 +1,23 @@
+use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
+
+use core::panic;
+use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
+use shared_structs::champions::Champion;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
+use std::path::Path;
 
 fn main() -> std::io::Result<()> {
     champions_gen();
+    abilities_gen();
     Ok(())
 }
 
 fn champions_gen() -> Result<(), Box<dyn std::error::Error>> {
     let mut buffer: File = File::create("../league-sim-backend/src/data_input/champions_gen.rs")?;
-
-    // let _ = buffer.write(b"\n");
 
     let file = File::open("source_3/champions_formatted.json").unwrap();
     let reader: BufReader<File> = BufReader::new(file);
@@ -68,7 +73,7 @@ fn champions_gen() -> Result<(), Box<dyn std::error::Error>> {
                 },
             };
 
-            let champion_data = match champion {
+            let champion_stats = match champion {
                 Champion::Khazix => ChampionStats {
                     armor_flat: #armor_flat,
                     armor_per_level: #armor_per_level,
@@ -90,6 +95,26 @@ fn champions_gen() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     buffer.write_all(format_rust(tokens).as_bytes());
+
+    Ok(())
+}
+
+fn abilities_gen() -> Result<(), Box<dyn std::error::Error>> {
+    let file = File::open("source_3/champions/Khazix.json").unwrap();
+    let reader: BufReader<File> = BufReader::new(file);
+    let jd = &mut serde_json::Deserializer::from_reader(reader);
+
+    let result: Result<Champion, _> = serde_path_to_error::deserialize(jd);
+    match result {
+        Ok(champion) => {
+            let path = Path::new("../league-sim-backend/src/data_input/champions_gen/khazix.rs");
+            uneval::to_file(champion, path).expect("Write failed");
+        }
+        Err(err) => {
+            let path = err.path().to_string();
+            panic!("Parsing error at path: {}", path);
+        }
+    };
 
     Ok(())
 }
