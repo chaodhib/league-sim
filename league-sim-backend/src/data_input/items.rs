@@ -12,6 +12,8 @@ use super::common::{
     PassiveEffect,
 };
 
+use shared_structs::items::*;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Item {
     Unknown,
@@ -47,38 +49,38 @@ pub enum Item {
 }
 
 impl Item {
-    pub fn from_string(string: String) -> Self {
+    pub fn from_string(string: String) -> Option<Self> {
         match string.as_str() {
-            "Ionian Boots of Lucidity" => Item::IonianBootsofLucidity,
-            "Berserker's Greaves" => Item::BerserkersGreaves,
-            "Youmuu's Ghostblade" => Item::YoumuusGhostblade,
-            "Opportunity" => Item::Opportunity,
-            "Edge of Night" => Item::EdgeofNight,
-            "Serylda's Grudge" => Item::SeryldasGrudge,
-            "Profane Hydra" => Item::ProfaneHydra,
-            "Eclipse" => Item::Eclipse,
-            "Maw of Malmortius" => Item::MawofMalmortius,
-            "Umbral Glaive" => Item::UmbralGlaive,
-            "Hubris" => Item::Hubris,
-            "Death's Dance" => Item::DeathsDance,
-            "Lord Dominik's Regards" => Item::LordDominiksRegards,
-            "Mortal Reminder" => Item::MortalReminder,
-            "Chempunk Chainsword" => Item::ChempunkChainsword,
-            "Black Cleaver" => Item::BlackCleaver,
-            "The Collector" => Item::TheCollector,
-            "Bloodthirster" => Item::Bloodthirster,
-            "Voltaic Cyclosword" => Item::VoltaicCyclosword,
-            "Serpent's Fang" => Item::SerpentsFang,
-            "Guardian Angel" => Item::GuardianAngel,
-            "Spear of Shojin" => Item::SpearofShojin,
-            "Axiom Arc" => Item::AxiomArc,
-            "Sundered Sky" => Item::SunderedSky,
-            "Ravenous Hydra" => Item::RavenousHydra,
-            "Randuin's Omen" => Item::RanduinsOmen,
-            "Frozen Heart" => Item::FrozenHeart,
-            "Stridebreaker" => Item::Stridebreaker,
-            "Blade of The Ruined King" => Item::BladeofTheRuinedKing,
-            &_ => todo!(),
+            "Ionian Boots of Lucidity" => Some(Item::IonianBootsofLucidity),
+            "Berserker's Greaves" => Some(Item::BerserkersGreaves),
+            "Youmuu's Ghostblade" => Some(Item::YoumuusGhostblade),
+            "Opportunity" => Some(Item::Opportunity),
+            "Edge of Night" => Some(Item::EdgeofNight),
+            "Serylda's Grudge" => Some(Item::SeryldasGrudge),
+            "Profane Hydra" => Some(Item::ProfaneHydra),
+            "Eclipse" => Some(Item::Eclipse),
+            "Maw of Malmortius" => Some(Item::MawofMalmortius),
+            "Umbral Glaive" => Some(Item::UmbralGlaive),
+            "Hubris" => Some(Item::Hubris),
+            "Death's Dance" => Some(Item::DeathsDance),
+            "Lord Dominik's Regards" => Some(Item::LordDominiksRegards),
+            "Mortal Reminder" => Some(Item::MortalReminder),
+            "Chempunk Chainsword" => Some(Item::ChempunkChainsword),
+            "Black Cleaver" => Some(Item::BlackCleaver),
+            "The Collector" => Some(Item::TheCollector),
+            "Bloodthirster" => Some(Item::Bloodthirster),
+            "Voltaic Cyclosword" => Some(Item::VoltaicCyclosword),
+            "Serpent's Fang" => Some(Item::SerpentsFang),
+            "Guardian Angel" => Some(Item::GuardianAngel),
+            "Spear of Shojin" => Some(Item::SpearofShojin),
+            "Axiom Arc" => Some(Item::AxiomArc),
+            "Sundered Sky" => Some(Item::SunderedSky),
+            "Ravenous Hydra" => Some(Item::RavenousHydra),
+            "Randuin's Omen" => Some(Item::RanduinsOmen),
+            "Frozen Heart" => Some(Item::FrozenHeart),
+            "Stridebreaker" => Some(Item::Stridebreaker),
+            "Blade of the Ruined King" => Some(Item::BladeofTheRuinedKing),
+            &_ => None,
         }
     }
 
@@ -566,19 +568,18 @@ pub fn above_gold_cap(selected_items: &[&ItemData], gold_cap: &u64) -> bool {
 }
 
 fn enrich_items_data(items_map: &mut HashMap<u64, ItemData>) {
-    let file = File::open("source_1/items_formatted.json").unwrap();
-    let reader: BufReader<File> = BufReader::new(file);
-    let json_input: Vec<Value> = serde_json::from_reader(reader).unwrap();
+    // let file = File::open("source_1/items_formatted.json").unwrap();
+    // let reader: BufReader<File> = BufReader::new(file);
+    // let json_input: Vec<Value> = serde_json::from_reader(reader).unwrap();
+    let item_map: HashMap<String, ItemSourceData> = include!("items_gen.rs");
 
     for ele in items_map.iter_mut() {
-        // let item_key = format!("Items/{}", ele.0);
-        let item_data = json_input
-            .iter()
-            .find(|&x| &x["id"].as_u64().unwrap_or_default() == ele.0)
-            .unwrap();
+        let item_key = format!("{}", ele.0);
+        let item = item_map.get(&item_key).unwrap();
 
-        ele.1.item = Item::from_string(item_data["name"].as_str().unwrap().to_string());
-        ele.1.total_cost = item_data["priceTotal"].as_u64().unwrap();
+        println!("{:#?}", item.name.clone());
+        ele.1.item = Item::from_string(item.name.clone()).unwrap();
+        ele.1.total_cost = item.shop.prices.clone().unwrap_or_default().total as u64;
     }
 }
 

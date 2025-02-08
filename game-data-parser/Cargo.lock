@@ -149,8 +149,6 @@ dependencies = [
 [[package]]
 name = "uneval"
 version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63cc5d2fd8648d7e2be86098f60c9ece7045cc710b3c1e226910e2f37d11dc73"
 dependencies = [
  "serde",
  "thiserror",
