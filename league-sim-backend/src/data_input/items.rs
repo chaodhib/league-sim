@@ -12,7 +12,8 @@ use super::common::{
     PassiveEffect,
 };
 
-use shared_structs::items::*;
+use shared_structs::items_cdragon::*;
+use shared_structs::items_meraki::*;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Item {
@@ -472,41 +473,87 @@ pub struct ItemData {
 }
 
 pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, ItemData> {
-    let file = File::open("source_2/items_formatted.json").unwrap();
-    let reader: BufReader<File> = BufReader::new(file);
-    let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
+    let item_map: HashMap<String, ItemDataCdragon> = include!("items_gen/items_cdragon_gen.rs");
+    let item_map_meraki: HashMap<String, ItemDataMeraki> =
+        include!("items_gen/items_meraki_gen.rs");
 
     let mut map = HashMap::new();
     let mut sanity_checker: Vec<String> = Vec::new();
-    for ele in json_input.iter() {
-        let item_id = ele.1["itemID"].as_u64().unwrap_or_default();
-        if !item_ids.contains(&item_id) {
-            continue;
-        }
+    for (_key, item_data_meraki) in item_map_meraki.iter() {
+        let item_id = item_data_meraki.id as u64;
+        let item_data = item_map.get(&format!("Items/{item_id}")).unwrap();
 
         let stats = AttackerStats {
-            ability_haste: ele.1["mAbilityHasteMod"].as_f64().unwrap_or_default(),
+            ability_haste: item_data_meraki
+                .clone()
+                .stats
+                .unwrap_or_default()
+                .ability_haste
+                .unwrap_or_default()
+                .flat,
             // ad_base: 0.0,
-            ad_bonus: ele.1["mFlatPhysicalDamageMod"].as_f64().unwrap_or_default(),
-            armor_penetration_perc: ele.1["mPercentArmorPenetrationMod"]
-                .as_f64()
-                .unwrap_or_default(),
-            crit_chance: ele.1["mFlatCritChanceMod"].as_f64().unwrap_or_default(),
-            lethality: ele.1["PhysicalLethality"].as_f64().unwrap_or_default(),
+            ad_bonus: item_data_meraki
+                .clone()
+                .stats
+                .unwrap_or_default()
+                .attack_damage
+                .unwrap_or_default()
+                .flat,
+            armor_penetration_perc: item_data_meraki
+                .clone()
+                .stats
+                .unwrap_or_default()
+                .armor_penetration
+                .unwrap_or_default()
+                .percent
+                / 100.0,
+            crit_chance: item_data_meraki
+                .clone()
+                .stats
+                .unwrap_or_default()
+                .critical_strike_chance
+                .unwrap_or_default()
+                .percent
+                / 100.0,
+            lethality: item_data_meraki
+                .clone()
+                .stats
+                .unwrap_or_default()
+                .lethality
+                .unwrap_or_default()
+                .flat,
             // attack_speed_base: 0.0,
-            attack_speed_bonus: ele.1["mPercentAttackSpeedMod"].as_f64().unwrap_or_default(),
-            movement_speed_flat_bonus: ele.1["mFlatMovementSpeedMod"].as_f64().unwrap_or_default(),
-            movement_speed_perc_bonus: ele.1["mPercentMovementSpeedMod"]
-                .as_f64()
-                .unwrap_or_default(),
+            attack_speed_bonus: item_data_meraki
+                .clone()
+                .stats
+                .unwrap_or_default()
+                .attack_speed
+                .unwrap_or_default()
+                .flat
+                / 100.0,
+            movement_speed_flat_bonus: item_data_meraki
+                .clone()
+                .stats
+                .unwrap_or_default()
+                .movespeed
+                .unwrap_or_default()
+                .flat,
+            movement_speed_perc_bonus: item_data_meraki
+                .clone()
+                .stats
+                .unwrap_or_default()
+                .movespeed
+                .unwrap_or_default()
+                .percent
+                / 100.0,
             ..Default::default()
         };
 
         let mut item_groups = Vec::new();
 
-        let item_groups_source = ele.1["mItemGroups"].as_array().unwrap();
+        let item_groups_source = item_data.m_item_groups.clone();
         for item_group_source in item_groups_source.iter() {
-            let new_value = item_group_source.as_str().unwrap();
+            let new_value = item_group_source.as_str();
             if new_value != "Items/ItemGroups/Default" {
                 item_groups.push(new_value.to_string());
             }
@@ -516,13 +563,32 @@ pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, ItemData> {
             }
         }
 
+        let mut passives = Vec::new();
+
+        for passive in item_data_meraki.passives.iter() {
+            let passive_name = passive.name.clone().unwrap_or_default();
+            if let Some(passive_effect) = PassiveEffect::from_string(&passive_name) {
+                println!(
+                    "{:#?},{:#?}",
+                    item_data_meraki.name,
+                    passive_name.to_string()
+                );
+                passives.push(passive_effect);
+            }
+        }
+
         let item = ItemData {
-            id: ele.1["itemID"].as_u64().unwrap(),
-            item: Item::Unknown,
-            total_cost: 0,
+            id: item_id,
+            item: Item::from_string(item_data_meraki.name.clone()).unwrap_or(Item::Unknown),
+            total_cost: item_data_meraki
+                .shop
+                .prices
+                .clone()
+                .unwrap_or_default()
+                .total as u64,
             offensive_stats: stats,
             item_groups,
-            passives: Vec::new(),
+            passives: passives,
         };
 
         map.insert(item.id, item);
@@ -537,9 +603,6 @@ pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, ItemData> {
         println!("{:#?}", sanity_checker);
         panic!();
     }
-
-    enrich_items_data(&mut map);
-    enrich_with_item_effects(&mut map);
 
     map
 }
@@ -565,39 +628,4 @@ pub fn above_gold_cap(selected_items: &[&ItemData], gold_cap: &u64) -> bool {
         .fold(0, |acc, item| acc + item.total_cost);
 
     build_cost > *gold_cap
-}
-
-fn enrich_items_data(items_map: &mut HashMap<u64, ItemData>) {
-    // let file = File::open("source_1/items_formatted.json").unwrap();
-    // let reader: BufReader<File> = BufReader::new(file);
-    // let json_input: Vec<Value> = serde_json::from_reader(reader).unwrap();
-    let item_map: HashMap<String, ItemSourceData> = include!("items_gen.rs");
-
-    for ele in items_map.iter_mut() {
-        let item_key = format!("{}", ele.0);
-        let item = item_map.get(&item_key).unwrap();
-
-        println!("{:#?}", item.name.clone());
-        ele.1.item = Item::from_string(item.name.clone()).unwrap();
-        ele.1.total_cost = item.shop.prices.clone().unwrap_or_default().total as u64;
-    }
-}
-
-fn enrich_with_item_effects(items_map: &mut HashMap<u64, ItemData>) {
-    let file = File::open("source_3/items_formatted.json").unwrap();
-    let reader: BufReader<File> = BufReader::new(file);
-    let json_input: HashMap<String, Value> = serde_json::from_reader(reader).unwrap();
-
-    for ele in items_map.iter_mut() {
-        let item_key = format!("{}", ele.0);
-        let item_data = json_input.get(&item_key).unwrap();
-        // println!("{:#?}--------------", ele.1.name);
-        for passive in item_data["passives"].as_array().unwrap().iter() {
-            let passive_name = passive["name"].as_str().unwrap();
-            if let Some(passive_effect) = PassiveEffect::from_string(passive_name) {
-                // println!("{:#?},{:#?}", ele.1.item, passive_name.to_string());
-                ele.1.passives.push(passive_effect);
-            }
-        }
-    }
 }

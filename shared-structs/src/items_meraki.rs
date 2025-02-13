@@ -2,10 +2,10 @@ use serde_derive::Deserialize;
 use serde_derive::Serialize;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ItemSourceData {
+pub struct ItemDataMeraki {
     pub name: String,
-    pub id: i64,
-    pub tier: i64,
+    pub id: u64,
+    pub tier: u64,
     pub rank: Vec<String>,
     // #[serde(rename(deserialize = "buildsFrom"))]
     // pub builds_from: Vec<i64>,
@@ -101,7 +101,7 @@ pub struct Active {
     pub name: Option<String>,
     pub effects: String,
     pub range: Option<u64>,
-    pub cooldown: Option<String>,
+    pub cooldown: Option<f64>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -113,7 +113,7 @@ pub struct Shop {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Prices {
-    pub total: i64,
+    pub total: u64,
     // pub combined: i64,
     // pub sell: i64,
 }

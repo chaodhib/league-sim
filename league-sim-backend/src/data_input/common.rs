@@ -182,7 +182,7 @@ impl PassiveEffect {
             "Mist's Edge" => Some(Self::MistsEdge),
             "Clawing Shadows" => None,
 
-            &_ => todo!("missing {name}"),
+            &_ => None,
         }
     }
 
