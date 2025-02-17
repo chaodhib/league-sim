@@ -101,7 +101,6 @@ fn main() -> std::io::Result<()> {
     let mut runes: HashSet<Rune> = HashSet::new();
     runes.insert(Rune::DarkHarvest);
     runes.insert(Rune::SuddenImpact);
-    runes.insert(Rune::EyeballCollection);
     runes.insert(Rune::AbsoluteFocus);
     runes.insert(Rune::GatheringStorm);
     runes.insert(Rune::AdaptiveForce1);

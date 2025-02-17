@@ -11,7 +11,6 @@ use crate::{
 pub enum Rune {
     DarkHarvest,
     SuddenImpact,
-    EyeballCollection,
     AbsoluteFocus,
     GatheringStorm,
     AdaptiveForce1,
@@ -32,12 +31,6 @@ impl Rune {
         match self {
             Rune::DarkHarvest => None,
             Rune::SuddenImpact => None,
-            Rune::EyeballCollection => Some(
-                game_params
-                    .runes_data
-                    .eyeball_collection
-                    .offensive_stats(state, game_params),
-            ),
             Rune::AbsoluteFocus => Some(
                 game_params
                     .runes_data
@@ -74,7 +67,6 @@ impl Rune {
             Rune::DarkHarvest => Some(PassiveEffect::DarkHarvest),
             Rune::SuddenImpact => Some(PassiveEffect::SuddenImpact),
 
-            Rune::EyeballCollection => None,
             Rune::AbsoluteFocus => None,
             Rune::GatheringStorm => None,
             Rune::AdaptiveForce1 => None,
@@ -330,32 +322,6 @@ impl SuddenImpact {
     }
 }
 
-struct EyeballCollection {
-    per_stack_bonus: f64,
-    max_stack: u64,
-    max_stack_bonus: f64,
-}
-
-impl EyeballCollection {
-    fn offensive_stats(&self, _state: &State<'_>, game_params: &GameParams<'_>) -> AttackerStats {
-        let stack_count: u64 = game_params
-            .initial_config
-            .get("RUNE_EYEBALL_COLLECTION_STACKS")
-            .unwrap_or(&"0".to_string())
-            .parse::<u64>()
-            .unwrap();
-        let mut adaptive_force: f64 = self.per_stack_bonus * (stack_count as f64);
-        if stack_count >= self.max_stack {
-            adaptive_force += self.max_stack_bonus;
-        }
-
-        return AttackerStats {
-            adaptive_force,
-            ..Default::default()
-        };
-    }
-}
-
 struct AbsoluteFocus {
     hp_perc_threshold: f64,
     min_damage: f64,
@@ -395,7 +361,6 @@ impl GatheringStorm {
 pub struct RunesData {
     pub dark_harvest: DarkHarvest,
     pub sudden_impact: SuddenImpact,
-    pub eyeball_collection: EyeballCollection,
     pub absolute_focus: AbsoluteFocus,
     pub gathering_storm: GatheringStorm,
 }
@@ -423,8 +388,8 @@ pub fn pull_runes() -> RunesData {
 
     let dark_harvest = DarkHarvest {
         hp_perc_threshold: 50.0,
-        base_damage: 20.0,
-        damage_per_soul: 9.0,
+        base_damage: 30.0,
+        damage_per_soul: 11.0,
         bonus_ad: 0.1,
         bonus_ap: 0.05,
         cooldown: 35000,
@@ -435,12 +400,6 @@ pub fn pull_runes() -> RunesData {
         max_damage: 80.0,
         buff_duration: 4000,
         cooldown: 10_000,
-    };
-
-    let eyeball_collection = EyeballCollection {
-        per_stack_bonus: 2.0,
-        max_stack: 10,
-        max_stack_bonus: 10.0,
     };
 
     let absolute_focus = AbsoluteFocus {
@@ -454,7 +413,6 @@ pub fn pull_runes() -> RunesData {
     return RunesData {
         dark_harvest,
         sudden_impact,
-        eyeball_collection,
         absolute_focus,
         gathering_storm,
     };
