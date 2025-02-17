@@ -1,36 +1,91 @@
 <script setup>
-// import InputText from 'primevue/inputtext';
-// import Button from 'primevue/button';
-// import { ref } from 'vue';
-
-// const text = ref('');
-
-
-// import Tabs from 'primevue/tabs';
-// import TabList from 'primevue/tablist';
-// import Tab from 'primevue/tab';
-// import TabPanels from 'primevue/tabpanels';
-// import TabPanel from 'primevue/tabpanel';
-
-
-// import DataTable from 'primevue/datatable';
-// import Column from 'primevue/column';
-// import ColumnGroup from 'primevue/columngroup';   // optional
-// import Row from 'primevue/row';                   // optional
-
+import { ref, onMounted } from 'vue';
+import * as wasm from "league-sim";
+import Button from 'primevue/button';
+import Dropdown from 'primevue/dropdown';
 import TabPanel from './components/TabPanel.vue';
 import DataTable from './components/DataTable.vue';
+import ChampionIcon from './components/icons/ChampionIcon.vue';
+const tabPanelRef = ref(null);
+const dataTableRef = ref(null);
 
+// Simulation mode
+const simulationModes = [
+  {
+    name: 'Item Optimizer',
+    code: 'items',
+    tooltip: 'Find the best item combinations for maximum damage'
+  },
+  {
+    name: 'Ability Optimizer',
+    code: 'combo',
+    tooltip: 'Find the most effective ability sequence'
+  },
+  {
+    name: 'Single Simulation',
+    code: 'single',
+    tooltip: 'Run a single simulation with the current settings'
+  }
+];
+const selectedMode = ref(simulationModes[0]);
+
+const startSimulation = async () => {
+  const state = tabPanelRef.value.getState();
+
+  try {
+    // Map frontend state to backend config format
+    const backendState = {
+      mode: state.mode,
+      champion: state.champion,
+      config: {
+        CHAMPION_KHAZIX_ISOLATED_TARGET: state.champion_evolution.isolatedTarget ? "TRUE" : "FALSE",
+        CHAMPION_KHAZIX_Q_EVOLVED: state.champion_evolution.qEvolved ? "TRUE" : "FALSE",
+        CHAMPION_KHAZIX_R_EVOLVED: state.champion_evolution.rEvolved ? "TRUE" : "FALSE",
+        RUNE_DARK_HARVEST_STACKS: state.runes.darkHarvestStacks.toString()
+      },
+      runes: state.runes.selected,
+      items: state.items.selected.map(item => item.id),
+      target: state.target
+    };
+
+    // Execute simulation with the selected mode
+    const result = await wasm.execute_simulation(backendState);
+
+    // Update results table
+    dataTableRef.value.updateResults(result.abilities.map(ability => ({
+      baseDamage: ability.base_damage,
+      bonusDamage: ability.bonus_damage,
+      totalDamage: ability.total_damage,
+      mitigatedDamage: ability.mitigated_damage
+    })));
+  } catch (error) {
+    console.error('Simulation error:', error);
+  }
+};
 </script>
 
 <template>
   <div class="app-layout">
     <div class="side-panel">
-      <Button label="Start" severity="primary" class="p-button-lg w-full" raised />
+      <div class="side-panel-content">
+        <div class="header">
+          <ChampionIcon champion="Khazix" size="48" />
+        </div>
+        <Button label="Run simulation" severity="primary" class="p-button-lg w-full" raised @click="startSimulation" />
+        <div class="field mb-4">
+          <Dropdown id="mode" v-model="selectedMode" :options="simulationModes" optionLabel="name" class="w-full">
+            <template #option="slotProps">
+              <div class="p-2" v-tooltip.right.focus="slotProps.option.tooltip">
+                {{ slotProps.option.name }}
+              </div>
+            </template>
+          </Dropdown>
+        </div>
+      </div>
     </div>
     <div class="main-content">
-      <TabPanel />
-      <DataTable />
+      <TabPanel ref="tabPanelRef" :mode="selectedMode.code" />
+      <DataTable ref="dataTableRef" />
     </div>
   </div>
 </template>
@@ -40,20 +95,35 @@ import DataTable from './components/DataTable.vue';
   display: flex;
   width: 100%;
   min-height: 100vh;
+  background-color: var(--surface-ground);
 }
 
 .side-panel {
-  width: 200px;
-  background-color: white;
-  border-right: 1px solid #e2e8f0;
+  width: 250px;
+  background-color: var(--surface-card);
+  border-right: 1px solid var(--surface-border);
   padding: 1rem;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--card-shadow);
+}
+
+.side-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.side-panel-content .field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-color-secondary);
 }
 
 .main-content {
   flex: 1;
   padding: 2rem;
-  background-color: #f8fafc;
+  background-color: var(--surface-ground);
 }
 
 #app {
@@ -64,8 +134,23 @@ import DataTable from './components/DataTable.vue';
 }
 
 body {
-  background-color: #f8fafc;
   margin: 0;
   padding: 0;
+}
+</style>
+
+<style scoped>
+.header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.header :deep(.champion-icon) {
+  transition: transform 0.2s ease;
+}
+
+.header:hover :deep(.champion-icon) {
+  transform: scale(1.1);
 }
 </style>

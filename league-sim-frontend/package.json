@@ -11,6 +11,7 @@
   "dependencies": {
     "@primevue/themes": "^4.2.5",
     "league-sim": "file:../league-sim-backend/pkg",
+    "primeicons": "^7.0.0",
     "primevue": "^4.2.5",
     "vite-plugin-top-level-await": "^1.4.4",
     "vite-plugin-wasm": "^3.4.1",

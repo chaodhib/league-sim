@@ -53,6 +53,21 @@ struct TopResult {
 #[wasm_bindgen]
 extern "C" {
     fn alert(s: &str);
+
+    // Use `js_namespace` here to bind `console.log(..)` instead of just
+    // `log(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+
+    // The `console.log` is quite polymorphic, so we can bind it with multiple
+    // signatures. Note that we need to use `js_name` to ensure we always call
+    // `log` in JS.
+    #[wasm_bindgen(js_namespace = console, js_name = log)]
+    fn log_u32(a: u32);
+
+    // Multiple arguments too!
+    #[wasm_bindgen(js_namespace = console, js_name = log)]
+    fn log_many(a: &str, b: &str);
 }
 
 #[wasm_bindgen]
@@ -66,7 +81,10 @@ pub fn init() {
 }
 
 #[wasm_bindgen]
-pub fn execute_simulation() {
+pub fn execute_simulation(js_obj: JsValue) -> Result<JsValue, JsValue> {
+    // println!("{:#?}", js_obj);
+    log(format!("execute_simulation: {:#?}", js_obj).as_str());
+
     // list of configs provided by the user. Static once the simulation is running
     let mut config: HashMap<String, String> = HashMap::new();
     config.insert(
@@ -132,6 +150,9 @@ pub fn execute_simulation() {
     run_multiple(config, item_ids, runes);
     // run_single(config, item_ids, runes);
     // run_ttk(config, item_ids, runes);
+
+    let map: HashMap<String, String> = HashMap::new();
+    Ok(serde_wasm_bindgen::to_value(&map)?)
 }
 
 fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSet<Rune>) {
@@ -234,6 +255,7 @@ fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: Hash
             "Progress: {:#?}%",
             current_progress as f64 / size as f64 * 100.0
         );
+        log_u32((current_progress as f64 / size as f64 * 100.0) as u32);
     });
 
     let results = sort_best_builds(static_data, best_builds.into_iter().collect_vec());
