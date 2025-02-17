@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import runesImage from '../assets/images/runes.png';
 import skillOrderImage from '../assets/images/skill_order.png';
 
@@ -10,14 +10,31 @@ const props = defineProps({
     }
 });
 
-// Clear items and abilities based on mode
-watch(() => props.mode, (newMode) => {
+// Initialize items if starting in Item Optimizer mode
+onMounted(() => {
+    if (props.mode === 'items') {
+        selectedItems.value = [...allItems.value];
+    }
+});
+
+// Handle mode changes
+watch(() => props.mode, (newMode, oldMode) => {
     if (newMode === 'items') {
+        // Fill with all available items in Item Optimizer mode
+        selectedItems.value = [...allItems.value];
+    } else if (oldMode === 'items') {
+        // Clear items when leaving Item Optimizer mode
         selectedItems.value = [];
     }
     if (newMode === 'combo') {
         abilitySequence.value = [];
     }
+});
+
+const availableItems = computed(() => {
+    return allItems.value.filter(item =>
+        !selectedItems.value.some(selectedItem => selectedItem.id === item.id)
+    );
 });
 
 // Champion stats
@@ -56,13 +73,16 @@ const clearAbilities = () => {
 const isolatedTarget = ref(false);
 const qEvolved = ref(false);
 const rEvolved = ref(false);
+const unseenThreatBuff = ref(false);
 
 // Runes
 const darkHarvestStacks = ref(0);
 
 // Items
+const maxGold = ref(null);
+const numItems = ref(6);
 const selectedItems = ref([]);
-const availableItems = ref([
+const allItems = ref([
     { id: 3158, name: 'Ionian Boots of Lucidity' },
     { id: 3006, name: 'Berserker\'s Greaves' },
     { id: 3142, name: 'Youmuu\'s Ghostblade' },
@@ -94,11 +114,24 @@ const availableItems = ref([
     { id: 3153, name: 'Blade of the Ruined King' },
 ]);
 
+// Game settings
+const critHandling = ref('average');
+const gameTime = ref(0);
+const critHandlingOptions = [
+    { label: 'Take the average', value: 'average' },
+    { label: 'Never crit', value: 'never' },
+    { label: 'Always crit', value: 'always' }
+];
+
 // Target stats
 const armor = ref(0);
-const maxHealth = ref(100);
-const currentHealth = ref(100);
+const maxHealth = ref(1000);
+const currentHealth = ref(1000);
 const magicResistance = ref(0);
+
+// Set initial health values
+maxHealth.value = 1000;
+currentHealth.value = 1000;
 
 const getState = () => {
     return {
@@ -111,6 +144,7 @@ const getState = () => {
             isolatedTarget: isolatedTarget.value,
             qEvolved: qEvolved.value,
             rEvolved: rEvolved.value,
+            unseenThreatBuff: unseenThreatBuff.value,
         },
         runes: {
             darkHarvestStacks: darkHarvestStacks.value,
@@ -120,7 +154,13 @@ const getState = () => {
             sequence: abilitySequence.value.map(ability => ability.id)
         },
         items: {
-            selected: selectedItems.value
+            selected: selectedItems.value,
+            maxGold: maxGold.value,
+            numItems: numItems.value
+        },
+        game: {
+            critHandling: critHandling.value,
+            gameTime: gameTime.value
         },
         target: {
             armor: armor.value,
@@ -132,15 +172,13 @@ const getState = () => {
 };
 
 const addItem = (item) => {
-    if (selectedItems.value.length < 6 && props.mode !== 'items') {
+    if (props.mode === 'items' || selectedItems.value.length < 6) {
         selectedItems.value.push(item);
     }
 };
 
 const removeItem = (index) => {
-    if (props.mode !== 'items') {
-        selectedItems.value.splice(index, 1);
-    }
+    selectedItems.value.splice(index, 1);
 };
 
 defineExpose({
@@ -176,6 +214,10 @@ defineExpose({
                 <div class="field-checkbox">
                     <Checkbox v-model="rEvolved" :binary="true" inputId="rEvolved" />
                     <label for="rEvolved">R Evolved</label>
+                </div>
+                <div class="field-checkbox">
+                    <Checkbox v-model="unseenThreatBuff" :binary="true" inputId="unseenThreatBuff" />
+                    <label for="unseenThreatBuff">Start with Unseen Threat buff</label>
                 </div>
             </div>
         </TabPanel>
@@ -225,16 +267,42 @@ defineExpose({
             </div>
         </TabPanel>
 
+        <TabPanel header="Game">
+            <h2>Game Settings</h2>
+            <div class="input-group">
+                <div class="field">
+                    <label for="critHandling">How to handle crits?</label>
+                    <Dropdown id="critHandling" v-model="critHandling" :options="critHandlingOptions"
+                        optionLabel="label" optionValue="value" />
+                </div>
+                <div class="field">
+                    <label for="gameTime">Game time (in min)</label>
+                    <InputNumber id="gameTime" v-model="gameTime" :min="0" showButtons buttonLayout="horizontal"
+                        incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" />
+                </div>
+            </div>
+        </TabPanel>
+
         <TabPanel header="Items">
             <h2>Item Settings</h2>
+            <div v-if="props.mode === 'items'" class="input-group">
+                <div class="field">
+                    <label for="maxGold">Max gold</label>
+                    <InputNumber id="maxGold" v-model="maxGold" :min="0" showButtons buttonLayout="horizontal"
+                        incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" />
+                </div>
+                <div class="field">
+                    <label for="numItems">Number of items</label>
+                    <InputNumber id="numItems" v-model="numItems" :min="1" :max="6" showButtons
+                        buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" />
+                </div>
+            </div>
             <div class="items-container">
                 <div class="selected-items">
-                    <h3>Selected Items {{ props.mode === 'items' ? '(disabled in Item Optimizer mode)' :
-                        `(${selectedItems.length}/6)` }}</h3>
+                    <h3>Selected Items {{ props.mode !== 'items' ? `(${selectedItems.length}/6)` : '' }}</h3>
                     <div class="items-grid">
                         <div v-for="(item, index) in selectedItems" :key="index" class="item-slot">
-                            <Button :label="item.name" severity="secondary" @click="removeItem(index)"
-                                :disabled="props.mode === 'items'" />
+                            <Button :label="item.name" severity="secondary" @click="removeItem(index)" />
                         </div>
                     </div>
                 </div>
@@ -242,7 +310,7 @@ defineExpose({
                     <h3>Available Items</h3>
                     <div class="items-grid">
                         <div v-for="item in availableItems" :key="item.id" class="item-slot">
-                            <Button :label="item.name" :disabled="selectedItems.length >= 6 || props.mode === 'items'"
+                            <Button :label="item.name" :disabled="(props.mode !== 'items' && selectedItems.length >= 6)"
                                 @click="addItem(item)" />
                         </div>
                     </div>
