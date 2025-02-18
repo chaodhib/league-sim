@@ -82,6 +82,9 @@ const darkHarvestStacks = ref(0);
 const maxGold = ref(null);
 const numItems = ref(6);
 const selectedItems = ref([]);
+const hubrisEminenceActive = ref(false);
+const hubrisEminenceStacks = ref(0);
+const opportunityPreparationReady = ref(false);
 const allItems = ref([
     { id: 3158, name: 'Ionian Boots of Lucidity' },
     { id: 3006, name: 'Berserker\'s Greaves' },
@@ -156,7 +159,10 @@ const getState = () => {
         items: {
             selected: selectedItems.value,
             maxGold: maxGold.value,
-            numItems: numItems.value
+            numItems: numItems.value,
+            hubrisEminenceActive: hubrisEminenceActive.value,
+            hubrisEminenceStacks: hubrisEminenceStacks.value,
+            opportunityPreparationReady: opportunityPreparationReady.value
         },
         game: {
             critHandling: critHandling.value,
@@ -314,6 +320,23 @@ defineExpose({
                                 @click="addItem(item)" />
                         </div>
                     </div>
+                </div>
+            </div>
+            <div class="input-group">
+                <div class="field-checkbox">
+                    <Checkbox v-model="hubrisEminenceActive" :binary="true" inputId="hubrisEminenceActive" />
+                    <label for="hubrisEminenceActive">If Hubris is equipped, eminence buff active?</label>
+                </div>
+                <div class="field">
+                    <label for="hubrisEminenceStacks">If hubris is equipped, eminence stacks</label>
+                    <InputNumber id="hubrisEminenceStacks" v-model="hubrisEminenceStacks" :min="0" showButtons
+                        buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" />
+                </div>
+                <div class="field-checkbox">
+                    <Checkbox v-model="opportunityPreparationReady" :binary="true"
+                        inputId="opportunityPreparationReady" />
+                    <label for="opportunityPreparationReady">If Opportunity is equipped, Preparation passive
+                        ready?</label>
                 </div>
             </div>
         </TabPanel>

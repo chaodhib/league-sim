@@ -41,7 +41,10 @@ const startSimulation = async () => {
         CHAMPION_KHAZIX_ISOLATED_TARGET: state.champion_evolution.isolatedTarget ? "TRUE" : "FALSE",
         CHAMPION_KHAZIX_Q_EVOLVED: state.champion_evolution.qEvolved ? "TRUE" : "FALSE",
         CHAMPION_KHAZIX_R_EVOLVED: state.champion_evolution.rEvolved ? "TRUE" : "FALSE",
-        RUNE_DARK_HARVEST_STACKS: state.runes.darkHarvestStacks.toString()
+        RUNE_DARK_HARVEST_STACKS: state.runes.darkHarvestStacks.toString(),
+        ITEM_HUBRIS_EMINENCE_ACTIVE: state.items.hubrisEminenceActive ? "TRUE" : "FALSE",
+        ITEM_HUBRIS_EMINENCE_STACKS: state.items.hubrisEminenceStacks.toString(),
+        ITEM_OPPORTUNITY_PREPARATION_READY: state.items.opportunityPreparationReady ? "TRUE" : "FALSE"
       },
       runes: state.runes.selected,
       items: state.items.selected.map(item => item.id),
