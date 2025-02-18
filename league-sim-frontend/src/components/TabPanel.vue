@@ -10,6 +10,20 @@ const props = defineProps({
     }
 });
 
+// Error message handling
+const errorMessage = computed(() => {
+    if (props.mode === 'items' && abilitySequence.value.length === 0) {
+        return 'In Item Optimizer mode, you must add at least one ability in the Ability Sequence.';
+    }
+    if (props.mode === 'combo' && selectedItems.value.length === 0) {
+        return 'In Ability Optimizer mode, you must select at least one item.';
+    }
+    if (props.mode === 'single' && (abilitySequence.value.length === 0 || selectedItems.value.length === 0)) {
+        return 'In Single Simulation mode, you must add at least one ability in the sequence and one item.';
+    }
+    return '';
+});
+
 // Initialize items if starting in Item Optimizer mode
 onMounted(() => {
     if (props.mode === 'items') {
@@ -137,13 +151,22 @@ maxHealth.value = 1000;
 currentHealth.value = 1000;
 
 const getState = () => {
+    // Validate based on mode
+    if (props.mode === 'items' && abilitySequence.value.length === 0) {
+        throw new Error('In Item Optimizer mode, you must select at least one ability in the sequence.');
+    }
+    if (props.mode === 'combo' && selectedItems.value.length === 0) {
+        throw new Error('In Ability Optimizer mode, you must select at least one item.');
+    }
+    if (props.mode === 'single' && (abilitySequence.value.length === 0 || selectedItems.value.length === 0)) {
+        throw new Error('In Single Simulation mode, you must select at least one ability in the sequence and one item.');
+    }
+
     return {
         mode: props.mode,
         champion: {
             level: level.value,
             healthPercentage: healthPercentage.value,
-        },
-        champion_evolution: {
             isolatedTarget: isolatedTarget.value,
             qEvolved: qEvolved.value,
             rEvolved: rEvolved.value,
@@ -151,7 +174,6 @@ const getState = () => {
         },
         runes: {
             darkHarvestStacks: darkHarvestStacks.value,
-            selected: ['Dark Harvest']
         },
         abilities: {
             sequence: abilitySequence.value.map(ability => ability.id)
@@ -194,6 +216,7 @@ defineExpose({
 
 <template>
     <TabView class="light-theme">
+        <Message v-if="errorMessage" severity="error" :text="errorMessage" />
         <TabPanel header="Champion">
             <h2>Champion Settings</h2>
             <div class="input-group">

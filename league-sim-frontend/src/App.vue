@@ -1,13 +1,15 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import * as wasm from "league-sim";
 import Button from 'primevue/button';
 import Dropdown from 'primevue/dropdown';
+import Message from 'primevue/message';
 import TabPanel from './components/TabPanel.vue';
 import DataTable from './components/DataTable.vue';
 import ChampionIcon from './components/icons/ChampionIcon.vue';
 const tabPanelRef = ref(null);
 const dataTableRef = ref(null);
+const errorMessage = ref('');
 
 // Simulation mode
 const simulationModes = [
@@ -30,24 +32,29 @@ const simulationModes = [
 const selectedMode = ref(simulationModes[0]);
 
 const startSimulation = async () => {
-  const state = tabPanelRef.value.getState();
+  errorMessage.value = ''; // Clear any previous error
 
   try {
+    const state = tabPanelRef.value.getState();
+
     // Map frontend state to backend config format
     const backendState = {
       mode: state.mode,
+      abilitySequence: state.abilities.sequence,
       champion: state.champion,
       config: {
-        CHAMPION_KHAZIX_ISOLATED_TARGET: state.champion_evolution.isolatedTarget ? "TRUE" : "FALSE",
-        CHAMPION_KHAZIX_Q_EVOLVED: state.champion_evolution.qEvolved ? "TRUE" : "FALSE",
-        CHAMPION_KHAZIX_R_EVOLVED: state.champion_evolution.rEvolved ? "TRUE" : "FALSE",
+        CHAMPION_KHAZIX_ISOLATED_TARGET: state.champion.isolatedTarget ? "TRUE" : "FALSE",
+        CHAMPION_KHAZIX_Q_EVOLVED: state.champion.qEvolved ? "TRUE" : "FALSE",
+        CHAMPION_KHAZIX_R_EVOLVED: state.champion.rEvolved ? "TRUE" : "FALSE",
         RUNE_DARK_HARVEST_STACKS: state.runes.darkHarvestStacks.toString(),
         ITEM_HUBRIS_EMINENCE_ACTIVE: state.items.hubrisEminenceActive ? "TRUE" : "FALSE",
         ITEM_HUBRIS_EMINENCE_STACKS: state.items.hubrisEminenceStacks.toString(),
         ITEM_OPPORTUNITY_PREPARATION_READY: state.items.opportunityPreparationReady ? "TRUE" : "FALSE"
       },
-      runes: state.runes.selected,
-      items: state.items.selected.map(item => item.id),
+      game: state.game,
+      runes: state.runes,
+      items: state.items,
+      selectedItemIds: state.items.selected.map(item => item.id),
       target: state.target
     };
 
@@ -63,8 +70,14 @@ const startSimulation = async () => {
     })));
   } catch (error) {
     console.error('Simulation error:', error);
+    errorMessage.value = error.message;
   }
 };
+
+// Clear error when mode changes
+watch(() => selectedMode.value, () => {
+  errorMessage.value = '';
+});
 </script>
 
 <template>
@@ -84,6 +97,7 @@ const startSimulation = async () => {
             </template>
           </Dropdown>
         </div>
+        <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
       </div>
     </div>
     <div class="main-content">

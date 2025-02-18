@@ -16,6 +16,7 @@ import Tag from 'primevue/tag'
 import InputNumber from 'primevue/inputnumber'
 import Checkbox from 'primevue/checkbox'
 import Tooltip from 'primevue/tooltip';
+import Message from 'primevue/message'
 
 import 'primeicons/primeicons.css'
 
@@ -42,6 +43,7 @@ app.component('Column', Column)
 app.component('Tag', Tag)
 app.component('InputNumber', InputNumber)
 app.component('Checkbox', Checkbox)
+app.component('Message', Message)
 
 app.directive('tooltip', Tooltip);
 app.component('Tooltip', Tooltip);
