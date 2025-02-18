@@ -306,7 +306,7 @@ fn add_initial_auras(
             .iter()
             .any(|item_data| item_data.item == Item::Opportunity)
     {
-        println!("Adding Opportunity aura");
+        // println!("Adding Opportunity aura");
         state.add_attacker_aura(Aura::Preparation, Some(3_000), None, events);
     }
 
@@ -326,7 +326,7 @@ fn add_initial_auras(
             .unwrap_or(&"17".to_string())
             .parse::<u64>()
             .unwrap();
-        println!("Adding Hubris aura with {} stacks", stacks);
+        // println!("Adding Hubris aura with {} stacks", stacks);
         state.add_attacker_aura(Aura::HubrisEminence, Some(90_000), Some(stacks), events);
     }
 

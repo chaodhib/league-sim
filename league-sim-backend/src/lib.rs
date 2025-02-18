@@ -250,15 +250,15 @@ fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: Hash
         let current_progress = progress.fetch_add(1, Ordering::Relaxed);
         // let elapsed = now.elapsed();
         // println!("Elapsed: {:.2?}", elapsed);
-        println!(
-            "Progress: {:#?}%",
-            current_progress as f64 / size as f64 * 100.0
-        );
+        // println!(
+        //     "Progress: {:#?}%",
+        //     current_progress as f64 / size as f64 * 100.0
+        // );
         log_u32((current_progress as f64 / size as f64 * 100.0) as u32);
     });
 
     let results = sort_best_builds(static_data, best_builds.into_iter().collect_vec());
-    println!("Top results: {:#?}", results);
+    // println!("Top results: {:#?}", results);
 
     // let global_elapsed = global_start.elapsed();
     // println!("Elapsed: {:.2?}", global_elapsed);

@@ -568,11 +568,11 @@ pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, ItemData> {
         for passive in item_data_meraki.passives.iter() {
             let passive_name = passive.name.clone().unwrap_or_default();
             if let Some(passive_effect) = PassiveEffect::from_string(&passive_name) {
-                println!(
-                    "{:#?},{:#?}",
-                    item_data_meraki.name,
-                    passive_name.to_string()
-                );
+                // println!(
+                //     "{:#?},{:#?}",
+                //     item_data_meraki.name,
+                //     passive_name.to_string()
+                // );
                 passives.push(passive_effect);
             }
         }
