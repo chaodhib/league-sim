@@ -84,10 +84,10 @@ const clearAbilities = () => {
 };
 
 // Champion evolution settings
-const isolatedTarget = ref(false);
+const isolatedTarget = ref(true);
 const qEvolved = ref(false);
 const rEvolved = ref(false);
-const unseenThreatBuff = ref(false);
+const unseenThreatBuff = ref(true);
 
 // Runes
 const darkHarvestStacks = ref(0);
@@ -98,7 +98,7 @@ const numItems = ref(6);
 const selectedItems = ref([]);
 const hubrisEminenceActive = ref(false);
 const hubrisEminenceStacks = ref(0);
-const opportunityPreparationReady = ref(false);
+const opportunityPreparationReady = ref(true);
 const allItems = ref([
     { id: 3158, name: 'Ionian Boots of Lucidity' },
     { id: 3006, name: 'Berserker\'s Greaves' },
@@ -153,13 +153,13 @@ currentHealth.value = 1000;
 const getState = () => {
     // Validate based on mode
     if (props.mode === 'items' && abilitySequence.value.length === 0) {
-        throw new Error('In Item Optimizer mode, you must select at least one ability in the sequence.');
+        throw new Error('In Item Optimizer mode, you must add at least one ability in the Ability Sequence.');
     }
     if (props.mode === 'combo' && selectedItems.value.length === 0) {
         throw new Error('In Ability Optimizer mode, you must select at least one item.');
     }
     if (props.mode === 'single' && (abilitySequence.value.length === 0 || selectedItems.value.length === 0)) {
-        throw new Error('In Single Simulation mode, you must select at least one ability in the sequence and one item.');
+        throw new Error('In Single Simulation mode, you must add at least one ability in the sequence and select one item.');
     }
 
     return {
