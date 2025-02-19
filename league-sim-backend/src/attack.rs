@@ -19,7 +19,7 @@ pub struct SpellResult {
     pub cooldown: Option<u64>,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, serde::Serialize)]
 pub enum AttackType {
     AA,
     Q,
@@ -28,6 +28,19 @@ pub enum AttackType {
     R,
     P,
     // add item active?
+}
+impl AttackType {
+    pub(crate) fn from_str(ability: &str) -> AttackType {
+        match ability {
+            "AA" => AttackType::AA,
+            "Q" => AttackType::Q,
+            "W" => AttackType::W,
+            "E" => AttackType::E,
+            "R" => AttackType::R,
+            "P" => AttackType::P,
+            _ => panic!(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
