@@ -4,7 +4,7 @@
   "name": "Kha'Zix",
   "title": "the Voidreaver",
   "fullName": "",
-  "icon": "http://ddragon.leagueoflegends.com/cdn/14.23.1/img/champion/Khazix.png",
+  "icon": "http://ddragon.leagueoflegends.com/cdn/15.4.1/img/champion/Khazix.png",
   "resource": "MANA",
   "attackType": "MELEE",
   "adaptiveType": "PHYSICAL_DAMAGE",
@@ -224,7 +224,7 @@
         "icon": "https://cdn.communitydragon.org/latest/champion/Khazix/ability-icon/p",
         "effects": [
           {
-            "description": "Innate: Kha'Zix gains Unseen Threat whenever the enemy loses sight of him or he activates Void Assault. Unseen Threat: Kha'Zix empowers his next basic attack against an enemy champion to deal 14 − 116 (based on level) (+ 40% bonus AD) bonus magic damage and slow them by 25% for 2 seconds.",
+            "description": "Innate: Kha'Zix gains Unseen Threat whenever the enemy loses sight of him or he activates Void Assault. Unseen Threat: Kha'Zix empowers his next basic attack against an enemy champion to deal 14 : 116 (based on level) (+ 40% bonus AD) bonus magic damage and slow them by 25% for 2 seconds.",
             "leveling": []
           }
         ],
@@ -742,7 +742,7 @@
         "projectile": null,
         "onHitEffects": null,
         "occurrence": null,
-        "notes": "Kha'Zix can use his summoner spells and item actives while  leaping.\nBuffering Interactions\n\n Taste Their Fear can be buffered to cast after the  leap ends if it is cast while the target is out of range.\nIf the target is still out of range after landing, there will be a 0.5 second delay  before Kha'Zix starts moving towards the target compared to manually casting  Taste Their Fear after landing.\n Void Spike &  Void Assault can be buffered to cast after the leap ends.",
+        "notes": "Kha'Zix can use his summoner spells and item actives while  leaping.\nBuffering Interactions\n\n Taste Their Fear can be buffered to cast after the  leap ends if it is cast while the target is out of range. There is no check for the target coming in range during the  leap.\nIf the target is still out of range after landing, there will be a 0.5 second delay  before Kha'Zix starts moving towards the target compared to manually casting  Taste Their Fear after landing.\n Void Spike &  Void Assault can be buffered to cast after the  leap ends.",
         "blurb": "Active:  Kha'Zix  leaps to the target location, dealing physical damage to nearby enemies upon landing.",
         "missileSpeed": null,
         "rechargeRate": null,
@@ -777,7 +777,7 @@
         "projectile": null,
         "onHitEffects": null,
         "occurrence": null,
-        "notes": "Kha'Zix can use his summoner spells and item actives while  leaping.",
+        "notes": "Kha'Zix can use his summoner spells and item actives while  leaping.\nBuffering Interactions\n\n Taste Their Fear can be buffered to cast after the  leap ends if it is cast while the target is out of range. There is no check for the target coming in range during the  leap.\nIf the target is still out of range after landing, there will be a 0.5 second delay  before Kha'Zix starts moving towards the target compared to manually casting  Taste Their Fear after landing.\n Void Spike &  Void Assault can be buffered to cast after the  leap ends.",
         "blurb": "Evolved Bonus: Leap has increased range, and the cooldown  resets upon scoring a champion  takedown.",
         "missileSpeed": null,
         "rechargeRate": null,
