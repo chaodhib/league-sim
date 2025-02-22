@@ -216,7 +216,7 @@ impl DarkHarvest {
             .unwrap();
 
         // trigger the damage
-        let damage = self.base_damage
+        let unmitigated_damage = self.base_damage
             + self.damage_per_soul * stack_count as f64
             + self.bonus_ad * attacker_stats.ad_bonus
             + self.bonus_ap * attacker_stats.ability_power;
@@ -226,7 +226,17 @@ impl DarkHarvest {
             AdaptiveType::Magic => DamageType::Magical,
         };
 
-        simulation::on_damage_from_rune(&damage, damage_type, state, Rune::DarkHarvest);
+        let attacker_stats = common::compute_attacker_stats(game_params, state);
+        let target_stats = common::compute_target_stats(game_params, state);
+
+        let mitigated_damage = crate::attack::compute_mitigated_damage(
+            &attacker_stats,
+            &target_stats,
+            unmitigated_damage,
+            damage_type,
+        );
+
+        simulation::on_damage_from_rune(&mitigated_damage, damage_type, state, Rune::DarkHarvest);
 
         // set new stacks value
         state.config.insert(
