@@ -60,7 +60,7 @@ defineExpose({
                     <Checkbox v-model="data.kill" binary disabled variant="filled" />
                 </template>
             </Column>
-            <Column header="Actions">
+            <Column header="Damage Breakdown">
                 <template #body="{ data }">
                     <Button icon="pi pi-chart-line" severity="secondary" text rounded
                         @click="showDamageHistory(data)" />
@@ -68,7 +68,7 @@ defineExpose({
             </Column>
         </DataTable>
 
-        <Dialog v-model:visible="visible" modal header="Damage History" :style="{ width: '80vw' }">
+        <Dialog v-model:visible="visible" modal header="Damage Breakdown" :style="{ width: '80vw' }">
             <DataTable v-if="selectedDamageHistory.length > 0" :value="selectedDamageHistory"
                 tableStyle="min-width: 50rem" class="light-theme">
                 <Column field="time_ms" header="Time (s)">
@@ -83,7 +83,7 @@ defineExpose({
                                 data.damage_type === 'Physical' ? '#FF8C34' :
                                     data.damage_type === true ? '#F9966B' : 'inherit'
                         }">
-                            {{ Math.round(data.amount) }}
+                            {{ Math.floor(data.amount) }}
                         </span>
                     </template>
                 </Column>
@@ -91,7 +91,7 @@ defineExpose({
                 <Column header="Source Name">
                     <template #body="{ data }">
                         {{ data.source === 'Ability' ? data.source_ability :
-                            data.source === 'Item' ? data.source_item :
+                            data.source === 'ItemPassive' ? data.source_item :
                                 data.source === 'Rune' ? data.source_rune : '' }}
                     </template>
                 </Column>
