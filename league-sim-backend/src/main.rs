@@ -54,8 +54,8 @@ fn main() -> std::io::Result<()> {
     );
 
     config.insert("CHAMPION_KHAZIX_Q_EVOLVED".to_string(), "TRUE".to_string());
-    config.insert("CHAMPION_KHAZIX_R_EVOLVED".to_string(), "TRUE".to_string());
-    config.insert("RUNE_DARK_HARVEST_STACKS".to_string(), "2".to_string());
+    config.insert("CHAMPION_KHAZIX_R_EVOLVED".to_string(), "FALSE".to_string());
+    config.insert("RUNE_DARK_HARVEST_STACKS".to_string(), "0".to_string());
     config.insert(
         "ITEM_HUBRIS_EMINENCE_ACTIVE".to_string(),
         "FALSE".to_string(),
@@ -107,9 +107,9 @@ fn main() -> std::io::Result<()> {
     runes.insert(Rune::AdaptiveForce2);
     // runes.insert(Rune::AbilityHaste);
 
-    // run_multiple(config, item_ids, runes);
+    run_multiple(config, item_ids, runes);
     // run_single(config, item_ids, runes);
-    run_ttk(config, item_ids, runes);
+    // run_ttk(config, item_ids, runes);
 
     Ok(())
 }
@@ -118,14 +118,14 @@ fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: Hash
     let global_start = Instant::now();
 
     let mut selected_commands = VecDeque::new();
+    selected_commands.push_back(attack::AttackType::R);
+    selected_commands.push_back(attack::AttackType::AA);
     selected_commands.push_back(attack::AttackType::Q);
     selected_commands.push_back(attack::AttackType::W);
     // selected_commands.push_back(attack::AttackType::E);
     // selected_commands.push_back(attack::AttackType::R);
-    selected_commands.push_back(attack::AttackType::AA);
-    // selected_commands.push_back(attack::AttackType::R);
-    selected_commands.push_back(attack::AttackType::AA);
-    selected_commands.push_back(attack::AttackType::Q);
+    // selected_commands.push_back(attack::AttackType::AA);
+    // selected_commands.push_back(attack::AttackType::Q);
     let hp_perc = 100.0;
     let level: u64 = 18;
     let gold_cap: u64 = 20000;

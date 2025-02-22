@@ -144,6 +144,13 @@ fn compute_ability_damage(
     // config: &HashMap<String, String>,
     spell_rank: u64,
 ) -> f64 {
+    if spell_rank == 0 {
+        panic!(
+            "the following ability has not been learned yet: {:#?}",
+            ability.key
+        );
+    }
+
     let base_damage: &f64 = ability.ad_damage.get(&spell_rank).unwrap();
     // println!("1 base_damage: {:#?}", base_damage);
 

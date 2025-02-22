@@ -7,7 +7,7 @@ use crate::{
     simulation::{self, DamageInfo, DamageSource, State},
 };
 
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, serde::Serialize)]
 pub enum Rune {
     DarkHarvest,
     SuddenImpact,

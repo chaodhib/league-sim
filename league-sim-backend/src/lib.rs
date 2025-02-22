@@ -44,6 +44,7 @@ struct SimulationInputData {
     #[serde(rename(deserialize = "selectedItemIds"))]
     selected_item_ids: Vec<u64>,
     target: TargetInputData,
+    general: GeneralInputData,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -82,6 +83,15 @@ struct TargetInputData {
     magic_resistance: u64,
 }
 
+#[derive(Debug, Clone, serde::Deserialize)]
+
+struct GeneralInputData {
+    #[serde(rename(deserialize = "topResultNumber"))]
+    pub top_result_number: u64,
+    #[serde(rename(deserialize = "sortCriteria"))]
+    pub sort_criteria: String,
+}
+
 #[derive(Debug, Clone)]
 struct Build {
     damage: f64,
@@ -90,6 +100,7 @@ struct Build {
     time_ms: u64,
     selected_commands: Vec<attack::AttackType>,
     kill: bool,
+    damage_history: Vec<simulation::DamageInfo>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -100,6 +111,8 @@ struct TopResult {
     cost: u64,
     time_ms: u64,
     selected_commands: Vec<attack::AttackType>,
+    kill: bool,
+    damage_history: Vec<simulation::DamageInfo>,
 }
 
 #[wasm_bindgen]
@@ -265,16 +278,17 @@ fn optimize_items(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
 
         compile_passive_effects(&mut game_params);
 
-        let (damage, _damage_history, time_ms, kill) =
+        let (damage, damage_history, time_ms, kill) =
             simulation::run(selected_commands.clone(), &game_params);
 
         let build = Build {
-            damage: damage.clone(),
+            damage,
             item_ids: selected_item_ids.clone(),
-            dps: damage.clone() * (1000_f64 / time_ms as f64),
+            dps: damage * (1000_f64 / time_ms as f64),
             selected_commands: selected_commands.clone().into(),
             time_ms,
             kill,
+            damage_history,
         };
 
         let push_result = best_builds.push(build);
@@ -290,131 +304,58 @@ fn optimize_items(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
         .as_str());
     });
 
-    let results: Vec<TopResult> =
-        sort_best_builds(static_data, best_builds.into_iter().collect_vec());
+    let results: Vec<TopResult> = sort_best_builds(
+        static_data,
+        best_builds.into_iter().collect_vec(),
+        input.general.top_result_number as usize,
+        input.general.sort_criteria,
+    );
 
     results
-}
-
-fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSet<Rune>) {
-    // let global_start = Instant::now();
-
-    let mut selected_commands = VecDeque::new();
-    selected_commands.push_back(attack::AttackType::Q);
-    selected_commands.push_back(attack::AttackType::W);
-    // selected_commands.push_back(attack::AttackType::E);
-    // selected_commands.push_back(attack::AttackType::R);
-    selected_commands.push_back(attack::AttackType::AA);
-    // selected_commands.push_back(attack::AttackType::R);
-    selected_commands.push_back(attack::AttackType::AA);
-    selected_commands.push_back(attack::AttackType::Q);
-    let hp_perc = 100.0;
-    let level: u64 = 18;
-    let gold_cap: u64 = 20000;
-    let target_stats: TargetStats = TargetStats {
-        armor: 100.0,
-        max_health: 2400.0,
-        current_health: 2400.0,
-        magic_resistance: 100.0,
-    };
-
-    let static_data = data_input::parse_files(Champion::Khazix, &item_ids, &config);
-
-    // return;
-
-    let perms = item_ids.into_iter().combinations(5);
-    let progress = Arc::new(AtomicUsize::new(0));
-    let size: usize = perms.size_hint().1.unwrap();
-    let best_builds: ArrayQueue<Build> = ArrayQueue::new(size);
-
-    // perms.par_bridge().for_each(|selected_item_ids| {
-    perms.for_each(|selected_item_ids| {
-        // let now = Instant::now();
-        // let champ_stats: ChampionStats = base_champion_stats.clone();
-        let mut selected_items: Vec<&ItemData> = Vec::new();
-        // println!("items:");
-        for selected_item_id in selected_item_ids.iter() {
-            let new_item = static_data.items_map.get(selected_item_id).unwrap();
-            // // println!("{:#?}", new_item.name);
-            selected_items.push(new_item);
-        }
-
-        if has_item_group_duplicates(&selected_items) || above_gold_cap(&selected_items, &gold_cap)
-        {
-            return;
-        }
-
-        let mut game_params: GameParams<'_> = GameParams {
-            champion: Champion::Khazix,
-            champion_data: &static_data.champion_data,
-            champion_stats: &static_data.base_champion_stats,
-            level: level,
-            items: &selected_items,
-            initial_config: &config,
-            abilities: &static_data.abilities,
-            initial_target_stats: &target_stats,
-            runes: &runes,
-            attacker_hp_perc: hp_perc,
-            runes_data: &static_data.runes_data,
-            passive_effects: &mut Vec::new(),
-            crit_handling: CritHandlingChoice::Min,
-            initial_attacker_auras: &vec![AuraApplication {
-                aura: Aura::UnseenThreat,
-                stacks: None,
-                start_ms: 0,
-                end_ms: None,
-            }],
-            initial_target_auras: &Vec::new(),
-            abilities_extra_data: &static_data.abilities_extra_data,
-            start_time_ms: 0,
-        };
-
-        compile_passive_effects(&mut game_params);
-
-        let (damage, _damage_history, time_ms, kill) =
-            simulation::run(selected_commands.clone(), &game_params);
-
-        // println!("DPS:: {:#?}", damage * (1000_f64 / time_ms as f64));
-        let build = Build {
-            damage: damage.clone(),
-            item_ids: selected_item_ids.clone(),
-            dps: damage.clone() * (1000_f64 / time_ms as f64),
-            selected_commands: selected_commands.clone().into(),
-            time_ms,
-            kill,
-        };
-
-        let push_result = best_builds.push(build);
-        if push_result.is_err() {
-            panic!();
-        }
-
-        let current_progress = progress.fetch_add(1, Ordering::Relaxed);
-        // let elapsed = now.elapsed();
-        // println!("Elapsed: {:.2?}", elapsed);
-        // println!(
-        //     "Progress: {:#?}%",
-        //     current_progress as f64 / size as f64 * 100.0
-        // );
-        log_u32((current_progress as f64 / size as f64 * 100.0) as u32);
-    });
-
-    let results = sort_best_builds(static_data, best_builds.into_iter().collect_vec());
-    // println!("Top results: {:#?}", results);
-
-    // let global_elapsed = global_start.elapsed();
-    // println!("Elapsed: {:.2?}", global_elapsed);
 }
 
 fn sort_best_builds(
     static_data: data_input::StaticData,
     best_builds: Vec<Build>,
+    top_result_number: usize,
+    sort_criteria: String,
 ) -> Vec<TopResult> {
+    let compare_dps = |a: &Build, b: &Build| {
+        let dps_ord = b.dps.partial_cmp(&a.dps).unwrap();
+        if dps_ord == std::cmp::Ordering::Equal {
+            a.time_ms.partial_cmp(&b.time_ms).unwrap()
+        } else {
+            dps_ord
+        }
+    };
+    let compare_damage = |a: &Build, b: &Build| {
+        let damage_ord = b.damage.partial_cmp(&a.damage).unwrap();
+        if damage_ord == std::cmp::Ordering::Equal {
+            a.time_ms.partial_cmp(&b.time_ms).unwrap()
+        } else {
+            damage_ord
+        }
+    };
+    let compare_time = |a: &Build, b: &Build| {
+        let time_ord = a.time_ms.partial_cmp(&b.time_ms).unwrap();
+        if time_ord == std::cmp::Ordering::Equal {
+            b.damage.partial_cmp(&a.damage).unwrap()
+        } else {
+            time_ord
+        }
+    };
+
+    let cmp_fct = match sort_criteria.as_str() {
+        "dps_desc" => compare_dps,
+        "damage_desc" => compare_damage,
+        "time_asc" => compare_time,
+        &_ => panic!(),
+    };
+
     let results = best_builds
         .into_iter()
-        // .sorted_by(|a, b| b.time_ms.partial_cmp(&a.time_ms).unwrap())
-        .sorted_by(|a, b| a.time_ms.partial_cmp(&b.time_ms).unwrap())
-        .take(50)
+        .sorted_by(cmp_fct)
+        .take(top_result_number)
         .map(|build| {
             let item_names = build
                 .item_ids
@@ -436,6 +377,8 @@ fn sort_best_builds(
                 cost,
                 time_ms: build.time_ms,
                 selected_commands: build.selected_commands,
+                kill: build.kill,
+                damage_history: build.damage_history,
             }
         })
         .collect_vec();

@@ -15,7 +15,7 @@ use super::common::{
 use shared_structs::items_cdragon::*;
 use shared_structs::items_meraki::*;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
 pub enum Item {
     Unknown,
     IonianBootsofLucidity,

@@ -28,6 +28,11 @@ const errorMessage = computed(() => {
 onMounted(() => {
     if (props.mode === 'items') {
         selectedItems.value = [...allItems.value];
+
+        addAbility(availableAbilities[3]); // R
+        addAbility(availableAbilities[4]); // AA
+        addAbility(availableAbilities[0]); // Q
+        addAbility(availableAbilities[1]); // W
     }
 });
 
@@ -52,7 +57,7 @@ const availableItems = computed(() => {
 });
 
 // Champion stats
-const level = ref(1);
+const level = ref(18);
 const healthPercentage = ref(100);
 
 // Ability sequence
@@ -85,7 +90,7 @@ const clearAbilities = () => {
 
 // Champion evolution settings
 const isolatedTarget = ref(true);
-const qEvolved = ref(false);
+const qEvolved = ref(true);
 const rEvolved = ref(false);
 const unseenThreatBuff = ref(true);
 
@@ -94,7 +99,7 @@ const darkHarvestStacks = ref(0);
 
 // Items
 const maxGold = ref(null);
-const numItems = ref(6);
+const numItems = ref(3);
 const selectedItems = ref([]);
 const hubrisEminenceActive = ref(false);
 const hubrisEminenceStacks = ref(0);
@@ -131,8 +136,17 @@ const allItems = ref([
     { id: 3153, name: 'Blade of the Ruined King' },
 ]);
 
+// General settings
+const topResultNumber = ref(100);
+const sortCriteria = ref('damage_desc');
+const sortOptions = [
+    { label: 'Damage (highest first)', value: 'damage_desc' },
+    { label: 'DPS (highest first)', value: 'dps_desc' },
+    { label: 'Time (lowest first)', value: 'time_asc' }
+];
+
 // Game settings
-const critHandling = ref('average');
+const critHandling = ref('never');
 const gameTime = ref(0);
 const critHandlingOptions = [
     { label: 'Take the average', value: 'average' },
@@ -141,14 +155,10 @@ const critHandlingOptions = [
 ];
 
 // Target stats
-const armor = ref(0);
-const maxHealth = ref(1000);
-const currentHealth = ref(1000);
-const magicResistance = ref(0);
-
-// Set initial health values
-maxHealth.value = 1000;
-currentHealth.value = 1000;
+const armor = ref(100);
+const maxHealth = ref(2400);
+const currentHealth = ref(2400);
+const magicResistance = ref(100);
 
 const getState = () => {
     // Validate based on mode
@@ -185,6 +195,10 @@ const getState = () => {
             hubrisEminenceActive: hubrisEminenceActive.value,
             hubrisEminenceStacks: hubrisEminenceStacks.value,
             opportunityPreparationReady: opportunityPreparationReady.value
+        },
+        general: {
+            topResultNumber: topResultNumber.value,
+            sortCriteria: sortCriteria.value
         },
         game: {
             critHandling: critHandling.value,
@@ -300,12 +314,16 @@ defineExpose({
             <h2>Game Settings</h2>
             <div class="input-group">
                 <div class="field">
-                    <label for="critHandling">How to handle crits?</label>
+                    <label for="critHandling"
+                        v-tooltip.bottom="'How to deal with the randomness of critical hits? Either we take the average damage based on the crit chance, we never crit or we always crit.'">How
+                        to handle crits?</label>
                     <Dropdown id="critHandling" v-model="critHandling" :options="critHandlingOptions"
                         optionLabel="label" optionValue="value" />
                 </div>
                 <div class="field">
-                    <label for="gameTime">Game time (in min)</label>
+                    <label for="gameTime"
+                        v-tooltip.bottom="'The time in-game when the champion starts with the first ability. This can influence stats provided by scaling runes (such as Gathering Storm).'">Game
+                        time (in min)</label>
                     <InputNumber id="gameTime" v-model="gameTime" :min="0" showButtons buttonLayout="horizontal"
                         incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" />
                 </div>
@@ -316,19 +334,24 @@ defineExpose({
             <h2>Item Settings</h2>
             <div v-if="props.mode === 'items'" class="input-group">
                 <div class="field">
-                    <label for="maxGold">Max gold</label>
+                    <label for="maxGold"
+                        v-tooltip.bottom="'The limit cost of the entire build. Leave empty for no gold limit.'">Max
+                        gold</label>
                     <InputNumber id="maxGold" v-model="maxGold" :min="0" showButtons buttonLayout="horizontal"
                         incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" />
                 </div>
                 <div class="field">
-                    <label for="numItems">Number of items</label>
+                    <label for="numItems"
+                        v-tooltip.bottom="'How many completed items would you like your build to have. Keep in mind that the higher this number is, the slower the simulation will be.'">Number
+                        of items in the build</label>
                     <InputNumber id="numItems" v-model="numItems" :min="1" :max="6" showButtons
                         buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" />
                 </div>
             </div>
             <div class="items-container">
                 <div class="selected-items">
-                    <h3>Selected Items {{ props.mode !== 'items' ? `(${selectedItems.length}/6)` : '' }}</h3>
+                    <h3>{{ props.mode !== 'items' ? `Selected Items (${selectedItems.length}/6)` :
+                        'Find the best combination of items amongst' }}</h3>
                     <div class="items-grid">
                         <div v-for="(item, index) in selectedItems" :key="index" class="item-slot">
                             <Button :label="item.name" severity="secondary" @click="removeItem(index)" />
@@ -345,6 +368,7 @@ defineExpose({
                     </div>
                 </div>
             </div>
+            <h3>Item specific configuration</h3>
             <div class="input-group">
                 <div class="field-checkbox">
                     <Checkbox v-model="hubrisEminenceActive" :binary="true" inputId="hubrisEminenceActive" />
@@ -392,6 +416,22 @@ defineExpose({
                                 :disabled="props.mode === 'combo'" />
                         </div>
                     </div>
+                </div>
+            </div>
+        </TabPanel>
+
+        <TabPanel header="Results">
+            <h2>Results Settings</h2>
+            <div class="input-group">
+                <div class="field">
+                    <label for="sortCriteria">Sort the results by</label>
+                    <Dropdown id="sortCriteria" v-model="sortCriteria" :options="sortOptions" optionLabel="label"
+                        optionValue="value" />
+                </div>
+                <div class="field">
+                    <label for="topResultNumber">How many results will be shown</label>
+                    <InputNumber id="topResultNumber" v-model="topResultNumber" :min="1" showButtons
+                        buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" />
                 </div>
             </div>
         </TabPanel>

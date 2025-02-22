@@ -17,6 +17,7 @@ import InputNumber from 'primevue/inputnumber'
 import Checkbox from 'primevue/checkbox'
 import Tooltip from 'primevue/tooltip';
 import Message from 'primevue/message'
+import VueForceNextTick from 'vue-force-next-tick'
 
 import 'primeicons/primeicons.css'
 
@@ -32,6 +33,8 @@ app.use(PrimeVue, {
         }
     }
 });
+
+app.use(VueForceNextTick)
 
 // Register PrimeVue components
 app.component('Button', Button)
@@ -50,4 +53,3 @@ app.component('Tooltip', Tooltip);
 
 app.mount('#app');
 wasm.init();
-// wasm.execute_simulation();

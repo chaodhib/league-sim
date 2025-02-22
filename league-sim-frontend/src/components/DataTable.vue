@@ -1,132 +1,58 @@
-T
 <script setup>
 import { ref } from 'vue';
 
-const data = ref([
-    { id: 1, name: 'Test 1', status: 'Active', timestamp: '2024-02-20 10:00:00' },
-    { id: 2, name: 'Test 2', status: 'Inactive', timestamp: '2024-02-20 11:00:00' },
-    { id: 3, name: 'Test 3', status: 'Active', timestamp: '2024-02-20 12:00:00' },
-]);
+const results = ref([]);
 
-const getSeverity = (status) => {
-    switch (status.toLowerCase()) {
-        case 'active':
-            return 'success';
-        case 'inactive':
-            return 'danger';
-        default:
-            return 'info';
-    }
+const updateResults = (newResults) => {
+    results.value = newResults;
 };
 
-// const results = ref([]);
-
-// // Initialize with default values
-// const initializeResults = () => {
-//     results.value = [
-//         {
-//             ability: 'Q - Taste Their Fear',
-//             baseDamage: 0,
-//             bonusDamage: 0,
-//             totalDamage: 0,
-//             mitigatedDamage: 0,
-//             type: 'Physical'
-//         },
-//         {
-//             ability: 'W - Void Spike',
-//             baseDamage: 0,
-//             bonusDamage: 0,
-//             totalDamage: 0,
-//             mitigatedDamage: 0,
-//             type: 'Physical'
-//         },
-//         {
-//             ability: 'E - Leap',
-//             baseDamage: 0,
-//             bonusDamage: 0,
-//             totalDamage: 0,
-//             mitigatedDamage: 0,
-//             type: 'Physical'
-//         },
-//         {
-//             ability: 'Passive - Unseen Threat',
-//             baseDamage: 0,
-//             bonusDamage: 0,
-//             totalDamage: 0,
-//             mitigatedDamage: 0,
-//             type: 'Magic'
-//         }];
-// };
-
-// // Update results with new damage values
-// const updateResults = (damageValues) => {
-//     results.value = results.value.map((result, index) => ({
-//         ...result,
-//         ...damageValues[index]
-//     }));
-// };
-
-// // Initialize on component creation
-// initializeResults();
-
-// defineExpose({
-//     updateResults
-// });
-
-// const getDamageType = (type) => {
-//     switch (type.toLowerCase()) {
-//         case 'physical':
-//             return 'danger';
-//         case 'magic':
-//             return 'info';
-//         default:
-//             return 'warning';
-//     }
-// };
+defineExpose({
+    updateResults
+});
 </script>
 
 <template>
     <div class="card">
-        <h2 class="title">Results</h2>
-        <DataTable :value="data" tableStyle="min-width: 50rem" sortMode="multiple" class="light-theme">
-            <Column field="id" header="ID" sortable></Column>
-            <Column field="name" header="Name" sortable></Column>
-            <Column field="status" header="Status" sortable>
+        <h2 class="title">Top Results ({{ results.length }} results)</h2>
+        <DataTable :value="results" tableStyle="min-width: 50rem" sortMode="multiple" class="light-theme">
+            <Column field="damage" header="Damage">
                 <template #body="{ data }">
-                    <Tag :value="data.status" :severity="getSeverity(data.status)" />
+                    {{ Math.round(data.damage) }}
                 </template>
             </Column>
-            <Column field="timestamp" header="Timestamp" sortable></Column>
+            <Column field="time_ms" header="Time (s)">
+                <template #body="{ data }">
+                    {{ data.time_ms / 1000.0 }}
+                </template>
+            </Column>
+            <Column field="dps" header="DPS">
+                <template #body="{ data }">
+                    {{ Math.round(data.dps) }}
+                </template>
+            </Column>
+            <Column field="item_names" header="Items">
+                <template #body="{ data }">
+                    {{ data.item_names.join(', ') }}
+                </template>
+            </Column>
+            <Column field="cost" header="Cost (gold)">
+                <template #body="{ data }">
+                    {{ data.cost }}
+                </template>
+            </Column>
+            <Column field="selected_commands" header="Commands">
+                <template #body="{ data }">
+                    {{ data.selected_commands.join(' → ') }}
+                </template>
+            </Column>
+            <Column field="kill" header="Results in a kill?">
+                <template #body="{ data }">
+                    <Checkbox v-model="data.kill" binary disabled variant="filled" />
+                </template>
+            </Column>
         </DataTable>
 
-        <!-- <DataTable :value="results" tableStyle="min-width: 50rem">
-            <Column field="ability" header="Ability"></Column>
-            <Column field="type" header="Damage Type">
-                <template #body="{ data }">
-                    <Tag :value="data.type" :severity="getDamageType(data.type)" />
-                </template>
-            </Column>
-            <Column field="baseDamage" header="Base Damage">
-                <template #body="{ data }">
-                    {{ Math.round(data.baseDamage) }}
-                </template>
-            </Column>
-            <Column field="bonusDamage" header="Bonus Damage">
-                <template #body="{ data }">
-                    {{ Math.round(data.bonusDamage) }}
-                </template>
-            </Column>
-            <Column field="totalDamage" header="Total Damage">
-                <template #body="{ data }">
-                    {{ Math.round(data.totalDamage) }}
-                </template>
-            </Column>
-            <Column field="mitigatedDamage" header="After Mitigation">
-                <template #body="{ data }">
-                    {{ Math.round(data.mitigatedDamage) }}
-                </template>
-            </Column>
-        </DataTable> -->
     </div>
 </template>
 

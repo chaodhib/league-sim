@@ -54,7 +54,7 @@ impl PartialOrd for Event {
         Some(self.cmp(other))
     }
 }
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 pub enum DamageSource {
     Ability,
     Rune,
@@ -62,7 +62,7 @@ pub enum DamageSource {
     ItemActive,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct DamageInfo {
     pub amount: f64,
     pub damage_type: DamageType,

@@ -410,7 +410,7 @@ impl PassiveEffect {
     }
 }
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy, serde::Serialize)]
 pub enum DamageType {
     Physical,
     Magical,
