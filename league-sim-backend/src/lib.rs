@@ -170,16 +170,12 @@ pub fn execute_simulation(js_val: JsValue) -> Result<JsValue, JsValue> {
                 "items" => {
                     results = optimize_items(simulation_input_data, runes);
                 }
-                // "single" => {
-                //     run_single(
-                //         simulation_input_data.config,
-                //         simulation_input_data.selected_item_ids,
-                //         runes,
-                //     );
-                // }
-                // "combo" => {
-                //     run_ttk(config, item_ids, runes);
-                // }
+                "combo" => {
+                    results = optimize_combo(simulation_input_data, runes);
+                }
+                "single" => {
+                    results = run_single(simulation_input_data, runes);
+                }
                 _ => {
                     panic!("Unknown mode: {:#?}", simulation_input_data.mode);
                 }
@@ -314,6 +310,224 @@ fn optimize_items(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
     results
 }
 
+fn optimize_combo(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopResult> {
+    let target_stats: TargetStats = TargetStats {
+        armor: input.target.armor as f64,
+        max_health: input.target.max_health as f64,
+        current_health: input.target.current_health as f64,
+        magic_resistance: input.target.magic_resistance as f64,
+    };
+
+    let static_data =
+        data_input::parse_files(Champion::Khazix, &input.selected_item_ids, &input.config);
+
+    let selected_items: Vec<&ItemData> = static_data.items_map.values().collect();
+    log(format!("selected_items: {:#?}", selected_items).as_str());
+
+    let mut initial_attacker_auras: Vec<AuraApplication> = Vec::new();
+
+    if input.champion.unseen_threat_buff {
+        initial_attacker_auras.push(AuraApplication {
+            aura: Aura::UnseenThreat,
+            stacks: None,
+            start_ms: 0,
+            end_ms: None,
+        });
+    }
+
+    let crit_handling = match input.game.crit_handling.as_str() {
+        "average" => CritHandlingChoice::Avg,
+        "never" => CritHandlingChoice::Min,
+        "always" => CritHandlingChoice::Max,
+        &_ => panic!(),
+    };
+
+    let mut game_params: GameParams<'_> = GameParams {
+        champion: Champion::Khazix,
+        champion_data: &static_data.champion_data,
+        champion_stats: &static_data.base_champion_stats,
+        level: input.champion.level,
+        items: &selected_items,
+        initial_config: &input.config,
+        abilities: &static_data.abilities,
+        initial_target_stats: &target_stats,
+        runes: &runes,
+        attacker_hp_perc: input.champion.health_percentage,
+        runes_data: &static_data.runes_data,
+        passive_effects: &mut Vec::new(),
+        crit_handling,
+        initial_attacker_auras: &initial_attacker_auras,
+        initial_target_auras: &Vec::new(),
+        abilities_extra_data: &static_data.abilities_extra_data,
+        start_time_ms: input.game.game_time * 60 * 1000,
+    };
+
+    compile_passive_effects(&mut game_params);
+
+    let mut possible_commands = Vec::new();
+    possible_commands.push(attack::AttackType::AA);
+    possible_commands.push(attack::AttackType::Q);
+    possible_commands.push(attack::AttackType::W);
+    possible_commands.push(attack::AttackType::E);
+    possible_commands.push(attack::AttackType::R);
+
+    let mut best_builds: Vec<Build> = Vec::new();
+    test_next_possibilities(
+        &possible_commands,
+        &VecDeque::new(),
+        &game_params,
+        &mut best_builds,
+    );
+
+    let results: Vec<TopResult> = sort_best_builds(
+        static_data,
+        best_builds.into_iter().collect_vec(),
+        input.general.top_result_number as usize,
+        input.general.sort_criteria,
+    );
+    let mut filtered_results = results.clone();
+    // let best_build = results.get(0);
+    // if best_build.is_some() {
+    //     filtered_results.retain(|result| result.time_ms == best_build.unwrap().time_ms);
+    // }
+
+    filtered_results
+
+    // let global_elapsed = global_start.elapsed();
+}
+
+fn test_next_possibilities(
+    possible_commands: &Vec<attack::AttackType>,
+    commands_so_far: &VecDeque<attack::AttackType>,
+    game_params: &GameParams<'_>,
+    best_builds: &mut Vec<Build>,
+) {
+    for next_command in possible_commands.iter() {
+        let mut selected_commands: VecDeque<attack::AttackType> = commands_so_far.clone();
+        selected_commands.push_back(next_command.clone());
+
+        let (damage, damage_history, time_ms, kill) =
+            simulation::run(selected_commands.clone(), &game_params);
+
+        if kill || time_ms > 100_000 {
+            // if is_better_build(best_build, damage, time_ms) {
+            let new_build = Build {
+                damage: damage.clone(),
+                item_ids: Vec::new(),
+                dps: damage.clone() * (1000_f64 / time_ms as f64),
+                selected_commands: selected_commands.into(),
+                time_ms,
+                kill,
+                damage_history,
+            };
+
+            best_builds.push(new_build);
+            // }
+
+            return;
+        } else {
+            test_next_possibilities(
+                possible_commands,
+                &selected_commands,
+                game_params,
+                best_builds,
+            );
+        }
+    }
+}
+
+fn run_single(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopResult> {
+    let mut selected_commands = VecDeque::new();
+    input.ability_sequence.iter().for_each(|ability| {
+        selected_commands.push_back(attack::AttackType::from_str(ability));
+    });
+
+    let target_stats: TargetStats = TargetStats {
+        armor: input.target.armor as f64,
+        max_health: input.target.max_health as f64,
+        current_health: input.target.current_health as f64,
+        magic_resistance: input.target.magic_resistance as f64,
+    };
+
+    let static_data =
+        data_input::parse_files(Champion::Khazix, &input.selected_item_ids, &input.config);
+
+    let mut selected_items: Vec<&ItemData> = Vec::new();
+    for selected_item_id in input.selected_item_ids.iter() {
+        let new_item = static_data.items_map.get(selected_item_id).unwrap();
+        selected_items.push(new_item);
+    }
+
+    if has_item_group_duplicates(&selected_items)
+        || input
+            .items
+            .max_gold
+            .is_some_and(|gold_cap| above_gold_cap(&selected_items, &gold_cap))
+    {
+        panic!("Invalid item selection: above gold cap or duplicate item groups");
+    }
+
+    let mut initial_attacker_auras: Vec<AuraApplication> = Vec::new();
+
+    if input.champion.unseen_threat_buff {
+        initial_attacker_auras.push(AuraApplication {
+            aura: Aura::UnseenThreat,
+            stacks: None,
+            start_ms: 0,
+            end_ms: None,
+        });
+    }
+
+    let crit_handling = match input.game.crit_handling.as_str() {
+        "average" => CritHandlingChoice::Avg,
+        "never" => CritHandlingChoice::Min,
+        "always" => CritHandlingChoice::Max,
+        &_ => panic!(),
+    };
+
+    let mut game_params: GameParams<'_> = GameParams {
+        champion: Champion::Khazix,
+        champion_data: &static_data.champion_data,
+        champion_stats: &static_data.base_champion_stats,
+        level: input.champion.level,
+        items: &selected_items,
+        initial_config: &input.config,
+        abilities: &static_data.abilities,
+        initial_target_stats: &target_stats,
+        runes: &runes,
+        attacker_hp_perc: input.champion.health_percentage,
+        runes_data: &static_data.runes_data,
+        passive_effects: &mut Vec::new(),
+        crit_handling,
+        initial_attacker_auras: &initial_attacker_auras,
+        initial_target_auras: &Vec::new(),
+        abilities_extra_data: &static_data.abilities_extra_data,
+        start_time_ms: input.game.game_time * 60 * 1000,
+    };
+
+    compile_passive_effects(&mut game_params);
+
+    let (damage, damage_history, time_ms, kill) =
+        simulation::run(selected_commands.clone(), &game_params);
+
+    let build = Build {
+        damage,
+        item_ids: input.selected_item_ids.clone(),
+        dps: damage * (1000_f64 / time_ms as f64),
+        selected_commands: selected_commands.clone().into(),
+        time_ms,
+        kill,
+        damage_history,
+    };
+
+    sort_best_builds(
+        static_data,
+        vec![build],
+        input.general.top_result_number as usize,
+        input.general.sort_criteria,
+    )
+}
+
 fn sort_best_builds(
     static_data: data_input::StaticData,
     best_builds: Vec<Build>,
@@ -321,28 +535,43 @@ fn sort_best_builds(
     sort_criteria: String,
 ) -> Vec<TopResult> {
     let compare_dps = |a: &Build, b: &Build| {
-        let dps_ord = b.dps.partial_cmp(&a.dps).unwrap();
-        if dps_ord == std::cmp::Ordering::Equal {
-            a.time_ms.partial_cmp(&b.time_ms).unwrap()
-        } else {
-            dps_ord
+        let kill_ord = b.kill.partial_cmp(&a.kill).unwrap();
+        if kill_ord != std::cmp::Ordering::Equal {
+            return kill_ord;
         }
+
+        let dps_ord = b.dps.partial_cmp(&a.dps).unwrap();
+        if dps_ord != std::cmp::Ordering::Equal {
+            return dps_ord;
+        }
+
+        a.time_ms.partial_cmp(&b.time_ms).unwrap()
     };
     let compare_damage = |a: &Build, b: &Build| {
-        let damage_ord = b.damage.partial_cmp(&a.damage).unwrap();
-        if damage_ord == std::cmp::Ordering::Equal {
-            a.time_ms.partial_cmp(&b.time_ms).unwrap()
-        } else {
-            damage_ord
+        let kill_ord = b.kill.partial_cmp(&a.kill).unwrap();
+        if kill_ord != std::cmp::Ordering::Equal {
+            return kill_ord;
         }
+
+        let damage_ord = b.damage.partial_cmp(&a.damage).unwrap();
+        if damage_ord != std::cmp::Ordering::Equal {
+            return damage_ord;
+        }
+
+        a.time_ms.partial_cmp(&b.time_ms).unwrap()
     };
     let compare_time = |a: &Build, b: &Build| {
-        let time_ord = a.time_ms.partial_cmp(&b.time_ms).unwrap();
-        if time_ord == std::cmp::Ordering::Equal {
-            b.damage.partial_cmp(&a.damage).unwrap()
-        } else {
-            time_ord
+        let kill_ord = b.kill.partial_cmp(&a.kill).unwrap();
+        if kill_ord != std::cmp::Ordering::Equal {
+            return kill_ord;
         }
+
+        let time_ord = a.time_ms.partial_cmp(&b.time_ms).unwrap();
+        if time_ord != std::cmp::Ordering::Equal {
+            return time_ord;
+        }
+
+        b.damage.partial_cmp(&a.damage).unwrap()
     };
 
     let cmp_fct = match sort_criteria.as_str() {
