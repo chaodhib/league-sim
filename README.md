@@ -89,9 +89,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 A big thanks to:
-- [The Meraki project](https://github.com/meraki-analytics/lolstaticdata) from which we pull game data.
-- [Cdragon project](https://github.com/CommunityDragon/Data) from which we pull game data.
-- The League of Legends Wiki contributors
+- The [Meraki project](https://github.com/meraki-analytics/lolstaticdata) (from which we pull most of our game data) and its contributors.
+- The [Cdragon project](https://github.com/CommunityDragon/Data) (from which we pull game data) and its contributors.
+- The League of Legends Wiki (from which Meraki pull its data) and all its contributors.
 - The community and project contributors.
 
 ## Contact
