@@ -483,6 +483,10 @@ pub fn pull_items_data(item_ids: &[u64]) -> HashMap<u64, ItemData> {
         let item_id = item_data_meraki.id as u64;
         let item_data = item_map.get(&format!("Items/{item_id}")).unwrap();
 
+        if !item_ids.contains(&item_id) {
+            continue;
+        }
+
         let stats = AttackerStats {
             ability_haste: item_data_meraki
                 .clone()
