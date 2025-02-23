@@ -50,7 +50,7 @@ defineExpose({
                     {{ data.cost }}
                 </template>
             </Column>
-            <Column field="selected_commands" header="Commands">
+            <Column field="selected_commands" header="Ability sequence">
                 <template #body="{ data }">
                     {{ data.selected_commands.join(' → ') }}
                 </template>

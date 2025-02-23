@@ -16,7 +16,7 @@ const errorMessage = computed(() => {
         return 'In Item Optimizer mode, you must add at least one ability in the Ability Sequence.';
     }
     if (props.mode === 'combo' && selectedItems.value.length === 0) {
-        return 'In Ability Optimizer mode, you must select at least one item.';
+        return 'In Combo Optimizer mode, you must select at least one item.';
     }
     if (props.mode === 'single' && (abilitySequence.value.length === 0 || selectedItems.value.length === 0)) {
         return 'In Single Simulation mode, you must add at least one ability in the sequence and one item.';
@@ -166,7 +166,7 @@ const getState = () => {
         throw new Error('In Item Optimizer mode, you must add at least one ability in the Ability Sequence.');
     }
     if (props.mode === 'combo' && selectedItems.value.length === 0) {
-        throw new Error('In Ability Optimizer mode, you must select at least one item.');
+        throw new Error('In Combo Optimizer mode, you must select at least one item.');
     }
     if (props.mode === 'single' && (abilitySequence.value.length === 0 || selectedItems.value.length === 0)) {
         throw new Error('In Single Simulation mode, you must add at least one ability in the sequence and select one item.');
@@ -393,7 +393,7 @@ defineExpose({
             <div class="abilities-container">
                 <div class="selected-abilities">
                     <div class="abilities-header">
-                        <h3>Selected Sequence {{ props.mode === 'combo' ? '(disabled in Ability Optimizer mode)' : '' }}
+                        <h3>Selected Sequence {{ props.mode === 'combo' ? '(disabled in Combo Optimizer mode)' : '' }}
                         </h3>
                         <Button label="Clear" severity="danger" @click="clearAbilities"
                             :disabled="abilitySequence.length === 0 || props.mode === 'combo'" />
