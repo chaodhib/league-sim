@@ -21,7 +21,7 @@ const simulationModes = [
     tooltip: 'Find the best item combinations for maximum damage'
   },
   {
-    name: 'Ability Optimizer',
+    name: 'Combo Optimizer',
     code: 'combo',
     tooltip: 'Find the most effective ability sequence'
   },
