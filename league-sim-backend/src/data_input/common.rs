@@ -122,7 +122,7 @@ pub struct GameParams<'a> {
     pub start_time_ms: u64,
 }
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, serde::Serialize)]
 pub enum PassiveEffect {
     // Items
     Carve,
@@ -424,7 +424,7 @@ pub enum Unit {
     Target,
 }
 
-#[derive(Clone, Copy, Eq, Hash, PartialEq, Debug)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq, Debug, serde::Serialize)]
 pub enum Aura {
     SuddenImpactReady,
     Invisibility, // Stealth includes Camouflage & Invisibility

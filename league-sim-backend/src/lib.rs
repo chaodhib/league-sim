@@ -101,6 +101,7 @@ struct Build {
     selected_commands: Vec<attack::AttackType>,
     kill: bool,
     damage_history: Vec<simulation::DamageInfo>,
+    event_history: Vec<simulation::Event>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -113,6 +114,7 @@ struct TopResult {
     selected_commands: Vec<attack::AttackType>,
     kill: bool,
     damage_history: Vec<simulation::DamageInfo>,
+    event_history: Vec<simulation::Event>,
 }
 
 #[wasm_bindgen]
@@ -274,7 +276,7 @@ fn optimize_items(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
 
         compile_passive_effects(&mut game_params);
 
-        let (damage, damage_history, time_ms, kill) =
+        let (damage, damage_history, event_history, time_ms, kill) =
             simulation::run(selected_commands.clone(), &game_params);
 
         let build = Build {
@@ -285,6 +287,7 @@ fn optimize_items(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
             time_ms,
             kill,
             damage_history,
+            event_history,
         };
 
         let push_result = best_builds.push(build);
@@ -406,7 +409,7 @@ fn test_next_possibilities(
         let mut selected_commands: VecDeque<attack::AttackType> = commands_so_far.clone();
         selected_commands.push_back(next_command.clone());
 
-        let (damage, damage_history, time_ms, kill) =
+        let (damage, damage_history, event_history, time_ms, kill) =
             simulation::run(selected_commands.clone(), &game_params);
 
         if kill || time_ms > 100_000 {
@@ -419,6 +422,7 @@ fn test_next_possibilities(
                 time_ms,
                 kill,
                 damage_history,
+                event_history,
             };
 
             best_builds.push(new_build);
@@ -507,7 +511,7 @@ fn run_single(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopResult
 
     compile_passive_effects(&mut game_params);
 
-    let (damage, damage_history, time_ms, kill) =
+    let (damage, damage_history, event_history, time_ms, kill) =
         simulation::run(selected_commands.clone(), &game_params);
 
     let build = Build {
@@ -518,6 +522,7 @@ fn run_single(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopResult
         time_ms,
         kill,
         damage_history,
+        event_history,
     };
 
     sort_best_builds(
@@ -608,6 +613,7 @@ fn sort_best_builds(
                 selected_commands: build.selected_commands,
                 kill: build.kill,
                 damage_history: build.damage_history,
+                event_history: build.event_history,
             }
         })
         .collect_vec();

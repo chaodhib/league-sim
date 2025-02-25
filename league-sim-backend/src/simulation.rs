@@ -18,9 +18,10 @@ use crate::{
         items::{Item, ItemData},
         runes::Rune,
     },
+    log,
 };
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, serde::Serialize)]
 pub enum EventCategory {
     AttackCastStart,
     AttackCastEnd,
@@ -34,7 +35,7 @@ pub enum EventCategory {
     TargetDied,
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone, serde::Serialize)]
 pub struct Event {
     pub time_ms: u64,
     pub category: EventCategory,
@@ -76,6 +77,7 @@ pub struct DamageInfo {
 pub struct State<'a> {
     pub total_damage: f64,
     pub damage_history: &'a mut Vec<DamageInfo>,
+    pub event_history: &'a mut Vec<Event>,
     pub time_ms: u64,
     pub cooldowns: &'a mut HashMap<AttackType, u64>,
     pub effects_cooldowns: &'a mut HashMap<PassiveEffect, u64>,
@@ -257,7 +259,7 @@ impl State<'_> {
 pub fn run(
     mut selected_commands: VecDeque<AttackType>,
     game_params: &GameParams,
-) -> (f64, Vec<DamageInfo>, u64, bool) {
+) -> (f64, Vec<DamageInfo>, Vec<Event>, u64, bool) {
     // use a priority queue to manage the events
     let mut events: BinaryHeap<Event> = BinaryHeap::new();
 
@@ -271,6 +273,7 @@ pub fn run(
         attacker_auras: &mut HashMap::new(),
         target_auras: &mut HashMap::new(),
         damage_history: &mut Vec::new(),
+        event_history: &mut Vec::new(),
         recast_charges: &mut Vec::new(),
         recast_ready: &mut HashSet::new(),
         is_casting: false,
@@ -344,22 +347,26 @@ fn execute_commands(
     remaining_commands: &mut VecDeque<AttackType>,
     state: &mut State,
     game_params: &GameParams,
-) -> (f64, Vec<DamageInfo>, u64, bool) {
+) -> (f64, Vec<DamageInfo>, Vec<Event>, u64, bool) {
     loop {
         match events.pop() {
             None => {
                 return (
                     state.total_damage.clone(),
                     state.damage_history.clone(),
+                    state.event_history.clone(),
                     state.last_attack_time_ms,
                     false,
                 )
             }
             Some(next_event) => {
+                state.event_history.push(next_event.clone());
+
                 if next_event.category == EventCategory::TargetDied {
                     return (
                         state.total_damage.clone(),
                         state.damage_history.clone(),
+                        state.event_history.clone(),
                         state.last_attack_time_ms,
                         true,
                     );
@@ -717,51 +724,71 @@ fn insert_next_attack_event(
     current_time_ms: u64,
     game_params: &GameParams,
 ) {
-    let command = commands.pop_front();
-    if command.is_some() {
-        let attack_type = command.unwrap();
+    // If there are no more commands, do nothing
+    let Some(attack_type) = commands.pop_front() else {
+        return;
+    };
 
-        let time_ms: u64 = if state.cooldowns.contains_key(&attack_type) {
-            if state.recast_charges.contains(&attack_type) {
-                let ability = find_ability(
-                    game_params.abilities,
-                    attack_type,
-                    game_params.initial_config,
-                );
-                if let Some(invis_aura_app) = state.attacker_auras.get(&Aura::Invisibility) {
-                    invis_aura_app.end_ms.unwrap() + ability.recast_gap_duration.unwrap()
-                } else {
-                    if let Some(delay_aura_app) = state.attacker_auras.get(&Aura::VoidAssaultDelay)
-                    {
-                        delay_aura_app.end_ms.unwrap()
-                    } else {
-                        if let Some(_) = state.attacker_auras.get(&Aura::VoidAssaultRecastReady) {
-                            current_time_ms
-                        } else {
-                            // the ability is in cooldown. We can't queue it right away.
-                            state.cooldowns.remove(&attack_type).unwrap()
-                        }
-                    }
-                }
-            } else {
-                // the ability is in cooldown. We can't queue it right away.
-                state.cooldowns.remove(&attack_type).unwrap()
-            }
-        } else {
-            // ability is off CD. Let's start it right away
-            current_time_ms
-        };
+    // Calculate when the next attack should occur
+    let time_ms = calculate_next_attack_time(attack_type, state, current_time_ms, game_params);
+    log(format!("Next attack: {:#?} at {:#?}", attack_type, time_ms).as_str());
 
-        let event = Event {
-            attack_type: Some(attack_type),
-            category: EventCategory::AttackCastStart,
-            time_ms,
-            passive_effect: None,
-            aura: None,
-        };
+    // Create and push the attack event
+    let event = Event {
+        attack_type: Some(attack_type),
+        category: EventCategory::AttackCastStart,
+        time_ms,
+        passive_effect: None,
+        aura: None,
+    };
 
-        events.push(event);
+    events.push(event);
+}
+
+/// Calculates the time when the next attack should occur based on cooldowns and auras
+fn calculate_next_attack_time(
+    attack_type: AttackType,
+    state: &mut State,
+    current_time_ms: u64,
+    game_params: &GameParams,
+) -> u64 {
+    // If ability is not on cooldown, it can be used immediately
+    if !state.cooldowns.contains_key(&attack_type) {
+        return current_time_ms;
     }
+
+    // Special case: ability has recast charges
+    if state.recast_charges.contains(&attack_type) {
+        let ability = find_ability(
+            game_params.abilities,
+            attack_type,
+            game_params.initial_config,
+        );
+
+        // Check for invisibility aura
+        if let Some(invis_aura_app) = state.attacker_auras.get(&Aura::Invisibility) {
+            return invis_aura_app.end_ms.unwrap() + ability.recast_gap_duration.unwrap();
+        }
+
+        // Check for void assault delay aura
+        if let Some(delay_aura_app) = state.attacker_auras.get(&Aura::VoidAssaultDelay) {
+            return delay_aura_app.end_ms.unwrap();
+        }
+
+        // Check for void assault recast ready aura
+        if state
+            .attacker_auras
+            .contains_key(&Aura::VoidAssaultRecastReady)
+        {
+            return current_time_ms;
+        } else {
+            panic!("this should not happen")
+        }
+    }
+
+    // Default case: ability is on cooldown, schedule it after cooldown ends
+    // Remove and return the cooldown time
+    state.cooldowns.remove(&attack_type).unwrap()
 }
 
 fn insert_cooldown_ended_event(events: &mut BinaryHeap<Event>, event: &Event, time_ms: u64) {

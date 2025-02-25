@@ -5,7 +5,9 @@ import Dialog from 'primevue/dialog';
 
 const results = ref([]);
 const visible = ref(false);
+const eventHistoryVisible = ref(false);
 const selectedDamageHistory = ref([]);
+const selectedEventHistory = ref([]);
 
 const updateResults = (newResults) => {
     results.value = newResults;
@@ -14,6 +16,11 @@ const updateResults = (newResults) => {
 const showDamageHistory = (data) => {
     selectedDamageHistory.value = data.damage_history || [];
     visible.value = true;
+};
+
+const showEventHistory = (data) => {
+    selectedEventHistory.value = data.event_history || [];
+    eventHistoryVisible.value = true;
 };
 
 defineExpose({
@@ -66,9 +73,14 @@ defineExpose({
                         @click="showDamageHistory(data)" />
                 </template>
             </Column>
+            <Column header="Event History">
+                <template #body="{ data }">
+                    <Button icon="pi pi-history" severity="secondary" text rounded @click="showEventHistory(data)" />
+                </template>
+            </Column>
         </DataTable>
 
-        <Dialog v-model:visible="visible" modal header="Damage Breakdown" :style="{ width: '80vw' }">
+        <Dialog v-model:visible="visible" modal header="Damage Breakdown" :style="{ width: '80vw' }" dismissableMask>
             <DataTable v-if="selectedDamageHistory.length > 0" :value="selectedDamageHistory"
                 tableStyle="min-width: 50rem" class="light-theme">
                 <Column field="time_ms" header="Time (s)">
@@ -93,6 +105,34 @@ defineExpose({
                         {{ data.source === 'Ability' ? data.source_ability :
                             data.source === 'ItemPassive' ? data.source_item :
                                 data.source === 'Rune' ? data.source_rune : '' }}
+                    </template>
+                </Column>
+            </DataTable>
+        </Dialog>
+
+        <Dialog v-model:visible="eventHistoryVisible" modal header="Event History" :style="{ width: '80vw' }"
+            dismissableMask>
+            <DataTable v-if="selectedEventHistory.length > 0" :value="selectedEventHistory"
+                tableStyle="min-width: 50rem" class="light-theme">
+                <Column field="time_ms" header="Time (s)">
+                    <template #body="{ data }">
+                        {{ data.time_ms / 1000.0 }}
+                    </template>
+                </Column>
+                <Column field="category" header="Event Type" />
+                <Column header="Attack Type">
+                    <template #body="{ data }">
+                        {{ data.attack_type || '-' }}
+                    </template>
+                </Column>
+                <Column header="Passive Effect">
+                    <template #body="{ data }">
+                        {{ data.passive_effect || '-' }}
+                    </template>
+                </Column>
+                <Column header="Aura">
+                    <template #body="{ data }">
+                        {{ data.aura || '-' }}
                     </template>
                 </Column>
             </DataTable>
