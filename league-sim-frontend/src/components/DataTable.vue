@@ -23,6 +23,36 @@ const showEventHistory = (data) => {
     eventHistoryVisible.value = true;
 };
 
+const exportToCSV = () => {
+    // Format headers
+    const headers = ['Damage', 'Time (s)', 'DPS', 'Items', 'Cost (gold)', 'Ability sequence', 'Results in a kill?'];
+
+    // Format data rows
+    const csvData = results.value.map(row => [
+        Math.round(row.damage),
+        (row.time_ms / 1000.0).toFixed(2),
+        Math.round(row.dps),
+        `"${row.item_names.join(', ')}"`,
+        row.cost,
+        `"${row.selected_commands.join(' -> ')}"`,
+        row.kill
+    ]);
+
+    // Create CSV content
+    const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n');
+
+    // Create downloadable file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'simulation_results.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 defineExpose({
     updateResults
 });
@@ -30,7 +60,10 @@ defineExpose({
 
 <template>
     <div class="card">
-        <h2 class="title">Top Results ({{ results.length }} results)</h2>
+        <div class="header-container">
+            <h2 class="title">Top Results ({{ results.length }} results)</h2>
+            <Button label="Export to CSV" icon="pi pi-download" @click="exportToCSV" severity="info" />
+        </div>
         <DataTable :value="results" tableStyle="min-width: 50rem" sortMode="multiple" class="light-theme">
             <Column field="damage" header="Damage">
                 <template #body="{ data }">
@@ -147,8 +180,15 @@ defineExpose({
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
 .title {
-    margin: 0 0 1rem 0;
+    margin: 0;
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--text-color);
