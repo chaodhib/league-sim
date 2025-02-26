@@ -185,11 +185,12 @@ fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: Hash
             initial_target_auras: &Vec::new(),
             abilities_extra_data: &static_data.abilities_extra_data,
             start_time_ms: 0,
+            capture_event_history: false,
         };
 
         compile_passive_effects(&mut game_params);
 
-        let (damage, _damage_history, time_ms, kill) =
+        let (damage, _damage_history, _, time_ms, kill) =
             simulation::run(selected_commands.clone(), &game_params);
 
         // println!("DPS:: {:#?}", damage * (1000_f64 / time_ms as f64));
@@ -361,11 +362,12 @@ fn run_single(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSe
         initial_target_auras: &Vec::new(),
         abilities_extra_data: &static_data.abilities_extra_data,
         start_time_ms: 0,
+        capture_event_history: false,
     };
 
     compile_passive_effects(&mut game_params);
 
-    let (damage, damage_history, time_ms, kill) =
+    let (damage, damage_history, _, time_ms, kill) =
         simulation::run(selected_commands.clone(), &game_params);
     println!("kill: {:#?}", kill);
     println!("damage: {:#?}", damage);
@@ -452,6 +454,7 @@ fn run_ttk(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSet<R
         initial_target_auras: &Vec::new(),
         abilities_extra_data: &static_data.abilities_extra_data,
         start_time_ms: 0,
+        capture_event_history: false,
     };
 
     compile_passive_effects(&mut game_params);
@@ -533,7 +536,7 @@ fn test_next_possibilities(
         selected_commands.push_back(next_command.clone());
 
         println!("running: {:#?}", selected_commands);
-        let (damage, damage_history, time_ms, kill) =
+        let (damage, damage_history, _, time_ms, kill) =
             simulation::run(selected_commands.clone(), &game_params);
         println!(
             "damage: {:#?}. time_ms: {:#?}. kill: {:#?}",

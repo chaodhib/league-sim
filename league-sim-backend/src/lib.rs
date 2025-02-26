@@ -90,6 +90,8 @@ struct GeneralInputData {
     pub top_result_number: u64,
     #[serde(rename(deserialize = "sortCriteria"))]
     pub sort_criteria: String,
+    #[serde(rename(deserialize = "showDetailledEventHistory"))]
+    pub show_detailled_event_history: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -272,6 +274,7 @@ fn optimize_items(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
             initial_target_auras: &Vec::new(),
             abilities_extra_data: &static_data.abilities_extra_data,
             start_time_ms: input.game.game_time * 60 * 1000,
+            capture_event_history: input.general.show_detailled_event_history,
         };
 
         compile_passive_effects(&mut game_params);
@@ -363,6 +366,7 @@ fn optimize_combo(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
         initial_target_auras: &Vec::new(),
         abilities_extra_data: &static_data.abilities_extra_data,
         start_time_ms: input.game.game_time * 60 * 1000,
+        capture_event_history: input.general.show_detailled_event_history,
     };
 
     compile_passive_effects(&mut game_params);
@@ -507,6 +511,7 @@ fn run_single(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopResult
         initial_target_auras: &Vec::new(),
         abilities_extra_data: &static_data.abilities_extra_data,
         start_time_ms: input.game.game_time * 60 * 1000,
+        capture_event_history: input.general.show_detailled_event_history,
     };
 
     compile_passive_effects(&mut game_params);

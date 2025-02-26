@@ -120,6 +120,7 @@ pub struct GameParams<'a> {
     pub initial_attacker_auras: &'a Vec<AuraApplication>,
     pub initial_target_auras: &'a Vec<AuraApplication>,
     pub start_time_ms: u64,
+    pub capture_event_history: bool,
 }
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, serde::Serialize)]

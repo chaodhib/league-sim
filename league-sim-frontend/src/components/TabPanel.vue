@@ -139,6 +139,7 @@ const allItems = ref([
 // General settings
 const topResultNumber = ref(100);
 const sortCriteria = ref('damage_desc');
+const showDetailledEventHistory = ref(false);
 const sortOptions = [
     { label: 'Damage (highest first)', value: 'damage_desc' },
     { label: 'DPS (highest first)', value: 'dps_desc' },
@@ -198,7 +199,8 @@ const getState = () => {
         },
         general: {
             topResultNumber: topResultNumber.value,
-            sortCriteria: sortCriteria.value
+            sortCriteria: sortCriteria.value,
+            showDetailledEventHistory: showDetailledEventHistory.value
         },
         game: {
             critHandling: critHandling.value,
@@ -432,6 +434,12 @@ defineExpose({
                     <label for="topResultNumber">How many results will be shown</label>
                     <InputNumber id="topResultNumber" v-model="topResultNumber" :min="1" showButtons
                         buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" />
+                </div>
+                <div class="field-checkbox">
+                    <Checkbox v-model="showDetailledEventHistory" :binary="true" inputId="showDetailledEventHistory" />
+                    <label for="showDetailledEventHistory"
+                        v-tooltip.bottom="'For advanced users only. It shows in detail every step of the simulation. Only useful for tracking bugs.'">Show
+                        detailled Event History</label>
                 </div>
             </div>
         </TabPanel>

@@ -4,6 +4,7 @@ import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 
 const results = ref([]);
+const eventHistoryColumn = ref(false);
 const visible = ref(false);
 const eventHistoryVisible = ref(false);
 const selectedDamageHistory = ref([]);
@@ -11,6 +12,10 @@ const selectedEventHistory = ref([]);
 
 const updateResults = (newResults) => {
     results.value = newResults;
+};
+
+const toggleEventHistoryColumn = (showEventHistoryColumn) => {
+    eventHistoryColumn.value = showEventHistoryColumn;
 };
 
 const showDamageHistory = (data) => {
@@ -54,7 +59,8 @@ const exportToCSV = () => {
 };
 
 defineExpose({
-    updateResults
+    updateResults,
+    toggleEventHistoryColumn
 });
 </script>
 
@@ -106,7 +112,7 @@ defineExpose({
                         @click="showDamageHistory(data)" />
                 </template>
             </Column>
-            <Column header="Event History">
+            <Column header="Event History" v-if="eventHistoryColumn">
                 <template #body="{ data }">
                     <Button icon="pi pi-history" severity="secondary" text rounded @click="showEventHistory(data)" />
                 </template>

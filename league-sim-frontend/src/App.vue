@@ -65,6 +65,7 @@ async function runSimulation() {
 
   // Update results table with TopResult array
   dataTableRef.value.updateResults(result);
+  dataTableRef.value.toggleEventHistoryColumn(state.general.showDetailledEventHistory)
 };
 
 const instance = getCurrentInstance();

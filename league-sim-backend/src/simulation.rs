@@ -360,7 +360,9 @@ fn execute_commands(
                 )
             }
             Some(next_event) => {
-                state.event_history.push(next_event.clone());
+                if game_params.capture_event_history {
+                    state.event_history.push(next_event.clone());
+                }
 
                 if next_event.category == EventCategory::TargetDied {
                     return (
