@@ -28,7 +28,7 @@ jobs:
       run: cargo test --verbose
     - name: Build WASM
       working-directory: ./league-sim-backend
-      run: wasm-pack buil
+      run: wasm-pack build
     - name: Use Node.js ${{ matrix.node-version }}
       # working-directory: ./league-sim-frontend
       uses: actions/setup-node@v4
