@@ -21,6 +21,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Install wasm-pack
+      run: npm install -g wasm-pack 
     - name: Run tests
       working-directory: ./league-sim-backend
       run: cargo test --verbose
