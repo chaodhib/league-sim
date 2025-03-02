@@ -37,6 +37,8 @@ jobs:
         cache-dependency-path: ./league-sim-frontend/package-lock.json
     # - run: npm ci
     #   working-directory: ./league-sim-frontend
+    - run: npm install
+      working-directory: ./league-sim-frontend
     - run: npm run build --if-present
       working-directory: ./league-sim-frontend
     - run: npm test
