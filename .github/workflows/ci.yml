@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master" ]
+  # pull_request:
+  #   branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run tests
+      working-directory: ./league-sim-backend
+      run: cargo test --verbose
+    - name: Build WASM
+      working-directory: ./league-sim-backend
+      run: wasm-pack buil
+    - name: Use Node.js ${{ matrix.node-version }}
+      # working-directory: ./league-sim-frontend
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    # - run: npm ci
+    #   working-directory: ./league-sim-frontend
+    - run: npm run build --if-present
+      working-directory: ./league-sim-frontend
+    - run: npm test
+      working-directory: ./league-sim-frontend
