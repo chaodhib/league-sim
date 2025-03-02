@@ -34,7 +34,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-      working-directory: ./league-sim-frontend
+        cache-dependency-path: ./league-sim-frontend/package-lock.json
     # - run: npm ci
     #   working-directory: ./league-sim-frontend
     - run: npm run build --if-present
