@@ -18,7 +18,6 @@ use crate::{
         items::{Item, ItemData},
         runes::Rune,
     },
-    log,
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, serde::Serialize)]
@@ -733,7 +732,6 @@ fn insert_next_attack_event(
 
     // Calculate when the next attack should occur
     let time_ms = calculate_next_attack_time(attack_type, state, current_time_ms, game_params);
-    log(format!("Next attack: {:#?} at {:#?}", attack_type, time_ms).as_str());
 
     // Create and push the attack event
     let event = Event {
