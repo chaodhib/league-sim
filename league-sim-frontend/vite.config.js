@@ -8,6 +8,9 @@ import topLevelAwait from "vite-plugin-top-level-await";
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    target: 'esnext' //browsers can handle the latest ES features
+  },
   plugins: [
     vue(),
     vueDevTools(),
@@ -19,4 +22,5 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  base: "/league-sim/"
 })
