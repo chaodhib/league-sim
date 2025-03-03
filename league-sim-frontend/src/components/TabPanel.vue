@@ -295,6 +295,7 @@ defineExpose({
 
         <TabPanel header="Runes">
             <h2>Rune Settings</h2>
+            <div>Runes cannot be changed for now. Here are the one used:</div>
             <div class="runes-container">
                 <img :src="runesImage" alt="Runes" class="runes-image" />
                 <div class="field">
@@ -307,6 +308,7 @@ defineExpose({
 
         <TabPanel header="Skill Order">
             <h2>Skill Order</h2>
+            <div>Skill Order cannot be changed for now. Here is the one used:</div>
             <div class="skill-order-container">
                 <img :src="skillOrderImage" alt="Skill Order" class="skill-order-image" />
             </div>
