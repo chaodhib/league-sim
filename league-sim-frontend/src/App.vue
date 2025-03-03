@@ -8,6 +8,7 @@ import Message from 'primevue/message';
 import TabPanel from './components/TabPanel.vue';
 import DataTable from './components/DataTable.vue';
 import ChampionIcon from './components/icons/ChampionIcon.vue';
+import GitHubIcon from './components/icons/GitHubIcon.vue';
 const tabPanelRef = ref(null);
 const dataTableRef = ref(null);
 const errorMessage = ref('');
@@ -125,6 +126,11 @@ watch(() => selectedMode.value, () => {
           </Dropdown>
         </div>
         <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
+        <div class="github-link">
+          <a href="https://github.com/chaodhib/league-sim" target="_blank" rel="noopener noreferrer">
+            <GitHubIcon />
+          </a>
+        </div>
       </div>
     </div>
     <div class="main-content">
@@ -154,6 +160,9 @@ watch(() => selectedMode.value, () => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  height: 100%;
+  min-height: calc(100vh - 2rem);
+  /* Account for padding */
 }
 
 .side-panel-content .field label {
@@ -208,5 +217,26 @@ body {
 
 .header:hover :deep(.champion-icon) {
   transform: scale(1.1);
+}
+
+.github-link {
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem;
+}
+
+.github-link a {
+  color: var(--text-color-secondary);
+  transition: color 0.2s ease;
+}
+
+.github-link a:hover {
+  color: var(--text-color);
+}
+
+.github-link svg {
+  width: 48px;
+  height: 48px;
 }
 </style>

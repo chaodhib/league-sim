@@ -512,6 +512,8 @@ defineExpose({
 .available-items {
     padding: 1rem;
     border-radius: 0.5rem;
+    border: 1px solid var(--surface-border);
+    background-color: var(--surface-ground);
 }
 
 .items-grid {
@@ -559,6 +561,8 @@ h3 {
 .available-abilities {
     padding: 1rem;
     border-radius: 0.5rem;
+    border: 1px solid var(--surface-border);
+    background-color: var(--surface-ground);
 }
 
 .abilities-sequence {
