@@ -12,7 +12,7 @@ use crate::{
     simulation::{Event, State},
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct SpellResult {
     pub damage: Option<f64>,
     pub damage_type: Option<DamageType>,
@@ -84,10 +84,6 @@ pub fn simulate_spell(
         AttackType::P => panic!(),
         // &_ => todo!(),
     };
-
-    if state.recast_ready.contains(&AttackType::R) {
-        spell_result.cooldown = None;
-    }
 
     if ability.is_some() && ability.unwrap().active_effect.is_some() {
         ability.unwrap().active_effect.unwrap().on_effect(

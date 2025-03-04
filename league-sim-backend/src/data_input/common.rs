@@ -466,6 +466,7 @@ impl Aura {
         event: &crate::simulation::Event,
         events: &mut std::collections::BinaryHeap<crate::simulation::Event>,
         affected_unit: Unit,
+        early_end: bool,
     ) {
         // println!("aura.on_end: {:#?} {:#?}", self, event.time_ms);
 
@@ -500,7 +501,16 @@ impl Aura {
                 );
             }
             Aura::VoidAssaultRecastReady => {
+                if early_end {
+                    return;
+                }
+
                 state.recast_ready.remove(&AttackType::R);
+
+                // remove all recast charges
+                state
+                    .recast_charges
+                    .retain(|&x| x != crate::attack::AttackType::R);
             }
             _ => (),
         }

@@ -14,6 +14,7 @@ use super::common::{
 // #[derive(Debug)]
 pub struct SpellData {
     pub key: String,
+    pub attack_type: AttackType,
     pub coefficient_ad: f64,
     pub coefficient_ap: f64,
     pub ad_damage: HashMap<u64, f64>,
@@ -144,19 +145,20 @@ impl ScriptedEffect for KhazixR {
         let r_evolved: bool = game_params
             .initial_config
             .get("CHAMPION_KHAZIX_R_EVOLVED")
-            .unwrap()
+            .unwrap_or(&"FALSE".to_string())
             == "TRUE";
 
         // first cast scenario
-        if !state.cooldowns.contains_key(&AttackType::R)
-        //&& !state.recast_ready.contains(&AttackType::R)
-        {
+        if !state.cooldowns.contains_key(&AttackType::R) {
             state.recast_charges.retain(|&x| x != AttackType::R);
 
-            if r_evolved {
-                state.recast_charges.push(AttackType::R);
-                state.recast_charges.push(AttackType::R);
-            } else {
+            let r_ability = find_ability(
+                game_params.abilities,
+                AttackType::R,
+                game_params.initial_config,
+            );
+
+            for _ in 1..=r_ability.recast_charges.unwrap() {
                 state.recast_charges.push(AttackType::R);
             }
         } else if state.recast_ready.contains(&AttackType::R) {
@@ -167,6 +169,8 @@ impl ScriptedEffect for KhazixR {
                 event,
                 events,
             );
+
+            state.recast_ready.remove(&AttackType::R);
 
             // remove one recast charge
             let index = state
@@ -254,10 +258,13 @@ pub fn pull_abilities_data(
         );
     }
 
-    if config.get("CHAMPION_KHAZIX_ISOLATED_TARGET").unwrap() == "TRUE"
+    if config
+        .get("CHAMPION_KHAZIX_ISOLATED_TARGET")
+        .unwrap_or(&"FALSE".to_string())
+        == "TRUE"
         && config
             .get("CHAMPION_KHAZIX_Q_EVOLVED")
-            .unwrap_or(&"TRUE".to_string())
+            .unwrap_or(&"FALSE".to_string())
             == "TRUE"
     {
         for cooldown in cooldown_ms.values_mut() {
@@ -272,6 +279,7 @@ pub fn pull_abilities_data(
         coefficient_ad: khazix.abilities.q[0].effects[1].leveling[0].modifiers[1].values[0] * 0.01,
         coefficient_ap: 0.0f64,
         key: "Q".to_string(),
+        attack_type: AttackType::Q,
         variation_name: Some("Physical Damage".to_string()),
         cast_time_ms: Some((cast_time_s * 1000f64) as u64),
         cooldown_ms: Some(cooldown_ms.clone()),
@@ -300,6 +308,7 @@ pub fn pull_abilities_data(
         coefficient_ad: khazix.abilities.q[0].effects[1].leveling[1].modifiers[1].values[0] * 0.01,
         coefficient_ap: 0.0f64,
         key: "Q".to_string(),
+        attack_type: AttackType::Q,
         variation_name: Some("Increased Damage".to_string()),
         cast_time_ms: Some((cast_time_s * 1000f64) as u64),
         cooldown_ms: Some(cooldown_ms.clone()),
@@ -344,6 +353,7 @@ pub fn pull_abilities_data(
         coefficient_ad: khazix.abilities.w[0].effects[0].leveling[0].modifiers[1].values[0] * 0.01,
         coefficient_ap: 0.0f64,
         key: "W".to_string(),
+        attack_type: AttackType::W,
         variation_name: None,
         cast_time_ms: Some((cast_time_s * 1000f64) as u64),
         cooldown_ms: Some(cooldown_ms.clone()),
@@ -381,6 +391,7 @@ pub fn pull_abilities_data(
         coefficient_ad: khazix.abilities.e[0].effects[0].leveling[0].modifiers[1].values[0] * 0.01,
         coefficient_ap: 0.0f64,
         key: "E".to_string(),
+        attack_type: AttackType::E,
         variation_name: None,
         cast_time_ms: None,
         cooldown_ms: Some(cooldown_ms.clone()),
@@ -419,6 +430,7 @@ pub fn pull_abilities_data(
         coefficient_ad: 0.0f64,
         coefficient_ap: 0.0f64,
         key: "R".to_string(),
+        attack_type: AttackType::R,
         variation_name: None,
         cast_time_ms: None,
         cooldown_ms: Some(cooldown_ms.clone()),
