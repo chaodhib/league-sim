@@ -275,6 +275,7 @@ fn optimize_items(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
             abilities_extra_data: &static_data.abilities_extra_data,
             start_time_ms: input.game.game_time * 60 * 1000,
             capture_event_history: input.general.show_detailled_event_history,
+            weave_auto_attacks: false,
         };
 
         compile_passive_effects(&mut game_params);
@@ -367,12 +368,13 @@ fn optimize_combo(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
         abilities_extra_data: &static_data.abilities_extra_data,
         start_time_ms: input.game.game_time * 60 * 1000,
         capture_event_history: input.general.show_detailled_event_history,
+        weave_auto_attacks: true,
     };
 
     compile_passive_effects(&mut game_params);
 
     let mut possible_commands = Vec::new();
-    possible_commands.push(attack::AttackType::AA);
+    // possible_commands.push(attack::AttackType::AA);
     possible_commands.push(attack::AttackType::Q);
     possible_commands.push(attack::AttackType::W);
     possible_commands.push(attack::AttackType::E);
@@ -512,6 +514,7 @@ fn run_single(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopResult
         abilities_extra_data: &static_data.abilities_extra_data,
         start_time_ms: input.game.game_time * 60 * 1000,
         capture_event_history: input.general.show_detailled_event_history,
+        weave_auto_attacks: false,
     };
 
     compile_passive_effects(&mut game_params);

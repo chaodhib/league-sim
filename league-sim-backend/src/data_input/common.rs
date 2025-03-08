@@ -121,6 +121,8 @@ pub struct GameParams<'a> {
     pub initial_target_auras: &'a Vec<AuraApplication>,
     pub start_time_ms: u64,
     pub capture_event_history: bool,
+    // weave auto attacks in between commands if there is enough time between the 2
+    pub weave_auto_attacks: bool,
 }
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, serde::Serialize)]

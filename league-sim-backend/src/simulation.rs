@@ -278,13 +278,7 @@ pub fn run(
     };
 
     // add first attack event
-    insert_next_attack_event(
-        &mut events,
-        &mut selected_commands,
-        &mut state,
-        0,
-        game_params,
-    );
+    insert_next_attack_event(&mut events, &mut selected_commands, &mut state, game_params);
 
     add_initial_auras(game_params, &mut state, &mut events);
 
@@ -495,13 +489,7 @@ fn on_event(
                 insert_cooldown_ended_event(events, event, cooldown_end_ms);
                 add_cooldown_to_state(state, event.attack_type.unwrap(), cooldown_end_ms);
             }
-            insert_next_attack_event(
-                events,
-                remaining_commands,
-                state,
-                state.time_ms,
-                game_params,
-            );
+            insert_next_attack_event(events, remaining_commands, state, game_params);
         }
         // EventCategory::CooldownEnded => on_cooldown_ended(event),
         // EventCategory::PassiveTriggered => on_passive_triggered(event),
@@ -719,33 +707,50 @@ fn insert_next_attack_event(
     events: &mut BinaryHeap<Event>,
     commands: &mut VecDeque<AttackType>,
     state: &mut State,
-    current_time_ms: u64,
     game_params: &GameParams,
 ) {
     // If there are no more commands, do nothing
-    let Some(attack_type) = commands.pop_front() else {
+    let Some(next_command_attack_type) = commands.front() else {
         return;
     };
 
     // Calculate when the next attack should occur
-    let time_ms = calculate_next_attack_time(attack_type, state, game_params);
+    let next_possible_attack_ms =
+        next_earliest_time_possible_for(*next_command_attack_type, state, game_params);
 
-    // Create and push the attack event
-    let event = Event {
-        attack_type: Some(attack_type),
-        category: EventCategory::AttackCastStart,
-        time_ms,
-        passive_effect: None,
-        aura: None,
-    };
+    if *next_command_attack_type != AttackType::AA
+        && game_params.weave_auto_attacks
+        && can_weave_auto_attack(state, game_params, next_possible_attack_ms)
+    {
+        let next_possible_auto_attack_ms =
+            next_earliest_time_possible_for(AttackType::AA, state, game_params);
+        let event: Event = Event {
+            attack_type: Some(AttackType::AA),
+            category: EventCategory::AttackCastStart,
+            time_ms: next_possible_auto_attack_ms,
+            passive_effect: None,
+            aura: None,
+        };
 
-    events.push(event);
+        events.push(event);
+    } else {
+        let event = Event {
+            attack_type: Some(*next_command_attack_type),
+            category: EventCategory::AttackCastStart,
+            time_ms: next_possible_attack_ms,
+            passive_effect: None,
+            aura: None,
+        };
+
+        events.push(event);
+        commands.pop_front();
+    }
 }
 
-/// Calculates the time when the next attack should occur based on cooldowns and auras
-fn calculate_next_attack_time(
+/// Calculates the time when the next attack can occur based on cooldowns and auras
+fn next_earliest_time_possible_for(
     attack_type: AttackType,
-    state: &mut State,
+    state: &State,
     game_params: &GameParams,
 ) -> u64 {
     let current_time_ms = state.time_ms;
@@ -780,9 +785,29 @@ fn calculate_next_attack_time(
         panic!("this should not happen")
     }
 
-    // Default case: ability is on cooldown, schedule it after cooldown ends
-    // Remove and return the cooldown time
-    state.cooldowns.remove(&attack_type).unwrap()
+    // Default case: ability is on cooldown, return the cooldown time
+    *state.cooldowns.get(&attack_type).unwrap()
+}
+
+fn can_weave_auto_attack(
+    state: &mut State<'_>,
+    game_params: &GameParams<'_>,
+    next_possible_attack_ms: u64,
+) -> bool {
+    let next_possible_aa_ms = next_earliest_time_possible_for(AttackType::AA, state, game_params);
+
+    let attacker_stats: AttackerStats = compute_attacker_stats(game_params, state);
+
+    let aa_cast_time = cast_time(
+        &attacker_stats,
+        AttackType::AA,
+        game_params.initial_config,
+        game_params.abilities,
+    );
+
+    let aa_cast_end_ms = next_possible_aa_ms + aa_cast_time;
+
+    aa_cast_end_ms <= next_possible_attack_ms
 }
 
 fn insert_cooldown_ended_event(events: &mut BinaryHeap<Event>, event: &Event, time_ms: u64) {
@@ -952,7 +977,7 @@ pub fn on_post_damage_events(
 }
 
 #[cfg(test)]
-mod tests {
+mod integration_tests {
     use super::*;
     use crate::data_input::{
         self,
@@ -961,7 +986,7 @@ mod tests {
     use std::collections::{HashMap, HashSet, VecDeque};
 
     #[test]
-    fn test_calculate_next_attack_time_no_cooldown() {
+    fn test_next_earliest_time_possible_for_no_cooldown() {
         let current_time_ms = 5_000;
 
         let mut state = State {
@@ -1015,6 +1040,7 @@ mod tests {
             abilities_extra_data: &static_data.abilities_extra_data,
             start_time_ms: 0,
             capture_event_history: false,
+            weave_auto_attacks: false,
         };
 
         let r_ability = static_data
@@ -1023,7 +1049,8 @@ mod tests {
             .find(|ability| ability.attack_type == AttackType::R)
             .unwrap();
 
-        let next_attack_time = calculate_next_attack_time(AttackType::Q, &mut state, &game_params);
+        let next_attack_time =
+            next_earliest_time_possible_for(AttackType::Q, &mut state, &game_params);
         assert_eq!(next_attack_time, current_time_ms);
 
         fast_forward_to(next_attack_time, &mut state, &game_params);
@@ -1052,7 +1079,7 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_next_attack_time_with_invisibility() {
+    fn test_next_earliest_time_possible_for_with_invisibility() {
         let current_time_ms = 5_000;
 
         let mut state = State {
@@ -1106,6 +1133,7 @@ mod tests {
             abilities_extra_data: &static_data.abilities_extra_data,
             start_time_ms: 0,
             capture_event_history: false,
+            weave_auto_attacks: false,
         };
 
         let spell_result = simulate_spell(
@@ -1152,7 +1180,8 @@ mod tests {
 
         let recast_gap = r_ability.recast_gap_duration.unwrap();
 
-        let next_attack_time = calculate_next_attack_time(AttackType::R, &mut state, &game_params);
+        let next_attack_time =
+            next_earliest_time_possible_for(AttackType::R, &mut state, &game_params);
         assert_eq!(next_attack_time, invis_end_ms + recast_gap);
 
         // cannot fast forward to next attack time directly because of how
@@ -1184,7 +1213,7 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_next_attack_time_with_void_assault_delay() {
+    fn test_next_earliest_time_possible_for_with_void_assault_delay() {
         let current_time_ms = 5_000;
 
         let mut state = State {
@@ -1238,6 +1267,7 @@ mod tests {
             abilities_extra_data: &static_data.abilities_extra_data,
             start_time_ms: 0,
             capture_event_history: false,
+            weave_auto_attacks: false,
         };
 
         simulate_spell(
@@ -1282,7 +1312,8 @@ mod tests {
             .end_ms
             .unwrap();
 
-        let next_attack_time = calculate_next_attack_time(AttackType::R, &mut state, &game_params);
+        let next_attack_time =
+            next_earliest_time_possible_for(AttackType::R, &mut state, &game_params);
         assert_eq!(next_attack_time, gap_end_ms);
 
         fast_forward_to(next_attack_time, &mut state, &game_params);
@@ -1311,7 +1342,7 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_next_attack_time_with_void_assault_recast_ready() {
+    fn test_next_earliest_time_possible_for_with_void_assault_recast_ready() {
         let current_time_ms = 5_000;
 
         let mut state = State {
@@ -1365,6 +1396,7 @@ mod tests {
             abilities_extra_data: &static_data.abilities_extra_data,
             start_time_ms: 0,
             capture_event_history: false,
+            weave_auto_attacks: false,
         };
 
         simulate_spell(
@@ -1424,7 +1456,7 @@ mod tests {
             fast_forward_to(i, &mut state, &game_params);
 
             let next_attack_time =
-                calculate_next_attack_time(AttackType::R, &mut state, &game_params);
+                next_earliest_time_possible_for(AttackType::R, &mut state, &game_params);
             assert_eq!(next_attack_time, i);
         }
 
@@ -1452,7 +1484,7 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_next_attack_time_on_cooldown() {
+    fn test_next_earliest_time_possible_for_on_cooldown() {
         let current_time_ms = 5_000;
 
         let mut state = State {
@@ -1506,6 +1538,7 @@ mod tests {
             abilities_extra_data: &static_data.abilities_extra_data,
             start_time_ms: 0,
             capture_event_history: false,
+            weave_auto_attacks: false,
         };
 
         simulate_spell(
@@ -1561,7 +1594,8 @@ mod tests {
 
         fast_forward_to(possible_recast_end_ms, &mut state, &game_params);
 
-        let next_attack_time = calculate_next_attack_time(AttackType::R, &mut state, &game_params);
+        let next_attack_time =
+            next_earliest_time_possible_for(AttackType::R, &mut state, &game_params);
         assert_eq!(next_attack_time, cd_ms + current_time_ms);
 
         fast_forward_to(next_attack_time, &mut state, &game_params);
@@ -1604,5 +1638,360 @@ mod tests {
         let events = &mut BinaryHeap::new();
 
         state.refresh_cds_and_auras(game_params, &event, events);
+    }
+}
+
+#[cfg(test)]
+mod insert_next_attack_event_tests {
+    use super::*;
+    use crate::data_input::{
+        self,
+        common::{Aura, AuraApplication, CritHandlingChoice, GameParams, TargetStats},
+    };
+    use std::collections::{HashMap, HashSet, VecDeque};
+
+    #[test]
+    fn works() {
+        let current_time_ms = 5_000;
+
+        let mut state = State {
+            total_damage: 0.0,
+            time_ms: current_time_ms,
+            cooldowns: &mut HashMap::new(),
+            last_attack_time_ms: 0,
+            effects_cooldowns: &mut HashMap::new(),
+            config: &mut HashMap::new(),
+            attacker_auras: &mut HashMap::new(),
+            target_auras: &mut HashMap::new(),
+            damage_history: &mut Vec::new(),
+            event_history: &mut Vec::new(),
+            recast_charges: &mut Vec::new(),
+            recast_ready: &mut HashSet::new(),
+            is_casting: false,
+        };
+
+        let config = HashMap::new();
+        let static_data = data_input::parse_files(Champion::Khazix, &Vec::new(), &config);
+
+        let mut runes: HashSet<Rune> = HashSet::new();
+        runes.insert(Rune::DarkHarvest);
+        runes.insert(Rune::SuddenImpact);
+        runes.insert(Rune::AbsoluteFocus);
+        runes.insert(Rune::GatheringStorm);
+        runes.insert(Rune::AdaptiveForce1);
+        runes.insert(Rune::AdaptiveForce2);
+
+        let game_params: GameParams<'_> = GameParams {
+            champion: Champion::Khazix,
+            champion_data: &static_data.champion_data,
+            champion_stats: &static_data.base_champion_stats,
+            level: 18,
+            items: &Vec::new(),
+            initial_config: &config,
+            abilities: &static_data.abilities,
+            initial_target_stats: &TargetStats {
+                armor: 0.0,
+                magic_resistance: 0.0,
+                max_health: 1000.0,
+                current_health: 1000.0,
+            },
+            runes: &runes,
+            attacker_hp_perc: 100.0,
+            runes_data: &static_data.runes_data,
+            passive_effects: &mut Vec::new(),
+            crit_handling: CritHandlingChoice::Min,
+            initial_attacker_auras: &Vec::new(),
+            initial_target_auras: &Vec::new(),
+            abilities_extra_data: &static_data.abilities_extra_data,
+            start_time_ms: 0,
+            capture_event_history: false,
+            weave_auto_attacks: false,
+        };
+
+        let events: &mut BinaryHeap<Event> = &mut BinaryHeap::new();
+        let mut commands = VecDeque::new();
+        commands.push_back(AttackType::Q);
+        commands.push_back(AttackType::AA);
+
+        insert_next_attack_event(events, &mut commands, &mut state, &game_params);
+
+        assert_eq!(
+            events.as_slice(),
+            vec![Event {
+                time_ms: current_time_ms,
+                category: EventCategory::AttackCastStart,
+                attack_type: Some(AttackType::Q),
+                passive_effect: None,
+                aura: None
+            }]
+        );
+
+        assert_eq!(commands, vec![AttackType::AA]);
+    }
+
+    #[test]
+    fn works_with_weaving_auto_attack() {
+        let current_time_ms = 5_000;
+
+        let mut state = State {
+            total_damage: 0.0,
+            time_ms: current_time_ms,
+            cooldowns: &mut HashMap::new(),
+            last_attack_time_ms: 0,
+            effects_cooldowns: &mut HashMap::new(),
+            config: &mut HashMap::new(),
+            attacker_auras: &mut HashMap::new(),
+            target_auras: &mut HashMap::new(),
+            damage_history: &mut Vec::new(),
+            event_history: &mut Vec::new(),
+            recast_charges: &mut Vec::new(),
+            recast_ready: &mut HashSet::new(),
+            is_casting: false,
+        };
+
+        let config = HashMap::new();
+        let static_data = data_input::parse_files(Champion::Khazix, &Vec::new(), &config);
+
+        let mut runes: HashSet<Rune> = HashSet::new();
+        runes.insert(Rune::DarkHarvest);
+        runes.insert(Rune::SuddenImpact);
+        runes.insert(Rune::AbsoluteFocus);
+        runes.insert(Rune::GatheringStorm);
+        runes.insert(Rune::AdaptiveForce1);
+        runes.insert(Rune::AdaptiveForce2);
+
+        let game_params: GameParams<'_> = GameParams {
+            champion: Champion::Khazix,
+            champion_data: &static_data.champion_data,
+            champion_stats: &static_data.base_champion_stats,
+            level: 18,
+            items: &Vec::new(),
+            initial_config: &config,
+            abilities: &static_data.abilities,
+            initial_target_stats: &TargetStats {
+                armor: 0.0,
+                magic_resistance: 0.0,
+                max_health: 1000.0,
+                current_health: 1000.0,
+            },
+            runes: &runes,
+            attacker_hp_perc: 100.0,
+            runes_data: &static_data.runes_data,
+            passive_effects: &mut Vec::new(),
+            crit_handling: CritHandlingChoice::Min,
+            initial_attacker_auras: &Vec::new(),
+            initial_target_auras: &Vec::new(),
+            abilities_extra_data: &static_data.abilities_extra_data,
+            start_time_ms: 0,
+            capture_event_history: false,
+            weave_auto_attacks: true,
+        };
+
+        let attacker_stats = compute_attacker_stats(&game_params, &state);
+        let aa_cast_time = cast_time(
+            &attacker_stats,
+            AttackType::AA,
+            &config,
+            &static_data.abilities,
+        );
+
+        add_cooldown_to_state(&mut state, AttackType::Q, current_time_ms + aa_cast_time);
+
+        let events: &mut BinaryHeap<Event> = &mut BinaryHeap::new();
+        let mut commands = VecDeque::new();
+        commands.push_back(AttackType::Q);
+
+        insert_next_attack_event(events, &mut commands, &mut state, &game_params);
+
+        assert_eq!(
+            events.as_slice(),
+            vec![Event {
+                time_ms: current_time_ms,
+                category: EventCategory::AttackCastStart,
+                attack_type: Some(AttackType::AA),
+                passive_effect: None,
+                aura: None
+            }]
+        );
+
+        assert_eq!(commands, vec![AttackType::Q]);
+    }
+
+    #[test]
+    fn does_not_weave_auto_attack_if_not_enough_time() {
+        let current_time_ms = 5_000;
+
+        let mut state = State {
+            total_damage: 0.0,
+            time_ms: current_time_ms,
+            cooldowns: &mut HashMap::new(),
+            last_attack_time_ms: 0,
+            effects_cooldowns: &mut HashMap::new(),
+            config: &mut HashMap::new(),
+            attacker_auras: &mut HashMap::new(),
+            target_auras: &mut HashMap::new(),
+            damage_history: &mut Vec::new(),
+            event_history: &mut Vec::new(),
+            recast_charges: &mut Vec::new(),
+            recast_ready: &mut HashSet::new(),
+            is_casting: false,
+        };
+
+        let config = HashMap::new();
+        let static_data = data_input::parse_files(Champion::Khazix, &Vec::new(), &config);
+
+        let mut runes: HashSet<Rune> = HashSet::new();
+        runes.insert(Rune::DarkHarvest);
+        runes.insert(Rune::SuddenImpact);
+        runes.insert(Rune::AbsoluteFocus);
+        runes.insert(Rune::GatheringStorm);
+        runes.insert(Rune::AdaptiveForce1);
+        runes.insert(Rune::AdaptiveForce2);
+
+        let game_params: GameParams<'_> = GameParams {
+            champion: Champion::Khazix,
+            champion_data: &static_data.champion_data,
+            champion_stats: &static_data.base_champion_stats,
+            level: 18,
+            items: &Vec::new(),
+            initial_config: &config,
+            abilities: &static_data.abilities,
+            initial_target_stats: &TargetStats {
+                armor: 0.0,
+                magic_resistance: 0.0,
+                max_health: 1000.0,
+                current_health: 1000.0,
+            },
+            runes: &runes,
+            attacker_hp_perc: 100.0,
+            runes_data: &static_data.runes_data,
+            passive_effects: &mut Vec::new(),
+            crit_handling: CritHandlingChoice::Min,
+            initial_attacker_auras: &Vec::new(),
+            initial_target_auras: &Vec::new(),
+            abilities_extra_data: &static_data.abilities_extra_data,
+            start_time_ms: 0,
+            capture_event_history: false,
+            weave_auto_attacks: true,
+        };
+
+        let attacker_stats = compute_attacker_stats(&game_params, &state);
+        let aa_cast_time = cast_time(
+            &attacker_stats,
+            AttackType::AA,
+            &config,
+            &static_data.abilities,
+        );
+
+        let cooldown_end_ms = current_time_ms + aa_cast_time - 1;
+        add_cooldown_to_state(&mut state, AttackType::Q, cooldown_end_ms);
+
+        let events: &mut BinaryHeap<Event> = &mut BinaryHeap::new();
+        let mut commands = VecDeque::new();
+        commands.push_back(AttackType::Q);
+
+        insert_next_attack_event(events, &mut commands, &mut state, &game_params);
+
+        assert_eq!(
+            events.as_slice(),
+            vec![Event {
+                time_ms: cooldown_end_ms,
+                category: EventCategory::AttackCastStart,
+                attack_type: Some(AttackType::Q),
+                passive_effect: None,
+                aura: None
+            }]
+        );
+
+        assert_eq!(commands, vec![]);
+    }
+
+    #[test]
+    fn does_not_weave_auto_attack_with_another_auto() {
+        let current_time_ms = 5_000;
+
+        let mut state = State {
+            total_damage: 0.0,
+            time_ms: current_time_ms,
+            cooldowns: &mut HashMap::new(),
+            last_attack_time_ms: 0,
+            effects_cooldowns: &mut HashMap::new(),
+            config: &mut HashMap::new(),
+            attacker_auras: &mut HashMap::new(),
+            target_auras: &mut HashMap::new(),
+            damage_history: &mut Vec::new(),
+            event_history: &mut Vec::new(),
+            recast_charges: &mut Vec::new(),
+            recast_ready: &mut HashSet::new(),
+            is_casting: false,
+        };
+
+        let config = HashMap::new();
+        let static_data = data_input::parse_files(Champion::Khazix, &Vec::new(), &config);
+
+        let mut runes: HashSet<Rune> = HashSet::new();
+        runes.insert(Rune::DarkHarvest);
+        runes.insert(Rune::SuddenImpact);
+        runes.insert(Rune::AbsoluteFocus);
+        runes.insert(Rune::GatheringStorm);
+        runes.insert(Rune::AdaptiveForce1);
+        runes.insert(Rune::AdaptiveForce2);
+
+        let game_params: GameParams<'_> = GameParams {
+            champion: Champion::Khazix,
+            champion_data: &static_data.champion_data,
+            champion_stats: &static_data.base_champion_stats,
+            level: 18,
+            items: &Vec::new(),
+            initial_config: &config,
+            abilities: &static_data.abilities,
+            initial_target_stats: &TargetStats {
+                armor: 0.0,
+                magic_resistance: 0.0,
+                max_health: 1000.0,
+                current_health: 1000.0,
+            },
+            runes: &runes,
+            attacker_hp_perc: 100.0,
+            runes_data: &static_data.runes_data,
+            passive_effects: &mut Vec::new(),
+            crit_handling: CritHandlingChoice::Min,
+            initial_attacker_auras: &Vec::new(),
+            initial_target_auras: &Vec::new(),
+            abilities_extra_data: &static_data.abilities_extra_data,
+            start_time_ms: 0,
+            capture_event_history: false,
+            weave_auto_attacks: true,
+        };
+
+        let attacker_stats = compute_attacker_stats(&game_params, &state);
+        let aa_cast_time = cast_time(
+            &attacker_stats,
+            AttackType::AA,
+            &config,
+            &static_data.abilities,
+        );
+
+        let cooldown_end_ms = current_time_ms + aa_cast_time;
+        add_cooldown_to_state(&mut state, AttackType::AA, cooldown_end_ms);
+
+        let events: &mut BinaryHeap<Event> = &mut BinaryHeap::new();
+        let mut commands = VecDeque::new();
+        commands.push_back(AttackType::AA);
+
+        insert_next_attack_event(events, &mut commands, &mut state, &game_params);
+
+        assert_eq!(
+            events.as_slice(),
+            vec![Event {
+                time_ms: cooldown_end_ms,
+                category: EventCategory::AttackCastStart,
+                attack_type: Some(AttackType::AA),
+                passive_effect: None,
+                aura: None
+            }]
+        );
+
+        assert_eq!(commands, vec![]);
     }
 }

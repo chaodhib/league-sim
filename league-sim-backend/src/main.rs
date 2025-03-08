@@ -186,6 +186,7 @@ fn run_multiple(config: HashMap<String, String>, item_ids: Vec<u64>, runes: Hash
             abilities_extra_data: &static_data.abilities_extra_data,
             start_time_ms: 0,
             capture_event_history: false,
+            weave_auto_attacks: false,
         };
 
         compile_passive_effects(&mut game_params);
@@ -363,6 +364,7 @@ fn run_single(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSe
         abilities_extra_data: &static_data.abilities_extra_data,
         start_time_ms: 0,
         capture_event_history: false,
+        weave_auto_attacks: false,
     };
 
     compile_passive_effects(&mut game_params);
@@ -455,6 +457,7 @@ fn run_ttk(config: HashMap<String, String>, item_ids: Vec<u64>, runes: HashSet<R
         abilities_extra_data: &static_data.abilities_extra_data,
         start_time_ms: 0,
         capture_event_history: false,
+        weave_auto_attacks: false,
     };
 
     compile_passive_effects(&mut game_params);
