@@ -413,14 +413,14 @@ fn optimize_combo(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
 
     let results: Vec<TopResult> = sort_best_builds(
         static_data,
-        best_builds.into_iter().collect_vec(),
+        best_builds,
         input.general.top_result_number as usize,
         input.general.sort_criteria,
     );
     let mut filtered_results = results.clone();
-    let best_build = results.get(0);
-    if best_build.is_some() {
-        filtered_results.retain(|result| result.time_ms == best_build.unwrap().time_ms);
+    let first_result = results.get(0);
+    if first_result.is_some() {
+        filtered_results.retain(|result| result.time_ms == first_result.unwrap().time_ms);
     }
 
     filtered_results
@@ -602,16 +602,25 @@ fn sort_best_builds(
         a.time_ms.partial_cmp(&b.time_ms).unwrap()
     };
     let compare_time = |a: &Build, b: &Build| {
+        // show kills first
         let kill_ord = b.kill.partial_cmp(&a.kill).unwrap();
         if kill_ord != std::cmp::Ordering::Equal {
             return kill_ord;
         }
 
+        // show fastest times first
         let time_ord = a.time_ms.partial_cmp(&b.time_ms).unwrap();
         if time_ord != std::cmp::Ordering::Equal {
             return time_ord;
         }
 
+        // show shorter combos first
+        let combo_len_ord = a.selected_commands.len().cmp(&b.selected_commands.len());
+        if combo_len_ord != std::cmp::Ordering::Equal {
+            return combo_len_ord;
+        }
+
+        // defaults to highest damage
         b.damage.partial_cmp(&a.damage).unwrap()
     };
 
