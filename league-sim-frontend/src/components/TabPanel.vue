@@ -15,11 +15,8 @@ const errorMessage = computed(() => {
     if (props.mode === 'items' && abilitySequence.value.length === 0) {
         return 'In Item Optimizer mode, you must add at least one ability in the Ability Sequence.';
     }
-    if (props.mode === 'combo' && selectedItems.value.length === 0) {
-        return 'In Combo Optimizer mode, you must select at least one item.';
-    }
-    if (props.mode === 'single' && (abilitySequence.value.length === 0 || selectedItems.value.length === 0)) {
-        return 'In Single Simulation mode, you must add at least one ability in the sequence and one item.';
+    if (props.mode === 'single' && abilitySequence.value.length === 0) {
+        return 'In Single Simulation mode, you must add at least one ability in the Ability Sequence.';
     }
     return '';
 });
@@ -167,11 +164,8 @@ const getState = () => {
     if (props.mode === 'items' && abilitySequence.value.length === 0) {
         throw new Error('In Item Optimizer mode, you must add at least one ability in the Ability Sequence.');
     }
-    if (props.mode === 'combo' && selectedItems.value.length === 0) {
-        throw new Error('In Combo Optimizer mode, you must select at least one item.');
-    }
-    if (props.mode === 'single' && (abilitySequence.value.length === 0 || selectedItems.value.length === 0)) {
-        throw new Error('In Single Simulation mode, you must add at least one ability in the sequence and select one item.');
+    if (props.mode === 'single' && abilitySequence.value.length === 0) {
+        throw new Error('In Single Simulation mode, you must add at least one ability in the Ability Sequence.');
     }
 
     return {
