@@ -435,7 +435,7 @@ defineExpose({
                 <div class="field-checkbox">
                     <Checkbox v-model="showDetailledEventHistory" :binary="true" inputId="showDetailledEventHistory" />
                     <label for="showDetailledEventHistory"
-                        v-tooltip.bottom="'For advanced users only. It shows in detail every step of the simulation. Only useful for tracking bugs.'">Show
+                        v-tooltip.bottom="'Shows in detail every step of the simulation (including when cooldowns and buffs/debuffs start and end).'">Show
                         detailled Event History</label>
                 </div>
             </div>
