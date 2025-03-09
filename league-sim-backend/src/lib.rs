@@ -219,7 +219,8 @@ fn optimize_items(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
         .combinations(input.items.num_items as usize);
     let progress = Arc::new(AtomicUsize::new(0));
     let size: usize = perms.size_hint().1.unwrap();
-    let best_builds: ArrayQueue<Build> = ArrayQueue::new(size);
+    // let best_builds: ArrayQueue<Build> = ArrayQueue::new(size);
+    let mut best_builds: Vec<Build> = Vec::with_capacity(size);
 
     // perms.par_bridge().for_each(|selected_item_ids| {
     perms.for_each(|selected_item_ids| {
@@ -280,7 +281,7 @@ fn optimize_items(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
 
         compile_passive_effects(&mut game_params);
 
-        let (damage, damage_history, event_history, time_ms, kill) =
+        let (damage, damage_history, event_history, _attack_history, time_ms, kill) =
             simulation::run(selected_commands.clone(), &game_params);
 
         let build = Build {
@@ -294,10 +295,7 @@ fn optimize_items(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
             event_history,
         };
 
-        let push_result = best_builds.push(build);
-        if push_result.is_err() {
-            panic!();
-        }
+        best_builds.push(build);
 
         let current_progress = progress.fetch_add(1, Ordering::Relaxed);
         log(format!(
@@ -373,8 +371,32 @@ fn optimize_combo(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
 
     compile_passive_effects(&mut game_params);
 
+    // step 1: get the basic kill combo: spam Q + auto attack weaving until the target is dead.
+    let mut basic_combo_commands = VecDeque::new();
+    let mut kill: bool = false;
+    let mut max_time_ms: u64 = 0;
+    while !kill {
+        basic_combo_commands.push_back(attack::AttackType::Q);
+        let (
+            _damage,
+            _damage_history,
+            _event_history,
+            _attack_history,
+            basic_combo_time_ms,
+            kill_result,
+        ) = simulation::run(basic_combo_commands.clone(), &game_params);
+        kill = kill_result;
+        max_time_ms = basic_combo_time_ms;
+    }
+
+    // log(format!("max_time_ms: {:#?}", max_time_ms).as_str());
+
+    // step 2: iterate through all possible combos recursively to find the best one.
+    // from here, we can already eliminiate all combos that are longer than the basic combo.
+    // on each iteration, when we find a shorter combo that kills the target, we update the max_time_ms
+    // and skip all combos that are longer than the new max_time_ms.
     let mut possible_commands = Vec::new();
-    // possible_commands.push(attack::AttackType::AA);
+    possible_commands.push(attack::AttackType::AA);
     possible_commands.push(attack::AttackType::Q);
     possible_commands.push(attack::AttackType::W);
     possible_commands.push(attack::AttackType::E);
@@ -386,6 +408,7 @@ fn optimize_combo(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
         &VecDeque::new(),
         &game_params,
         &mut best_builds,
+        &mut max_time_ms,
     );
 
     let results: Vec<TopResult> = sort_best_builds(
@@ -395,14 +418,12 @@ fn optimize_combo(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
         input.general.sort_criteria,
     );
     let mut filtered_results = results.clone();
-    // let best_build = results.get(0);
-    // if best_build.is_some() {
-    //     filtered_results.retain(|result| result.time_ms == best_build.unwrap().time_ms);
-    // }
+    let best_build = results.get(0);
+    if best_build.is_some() {
+        filtered_results.retain(|result| result.time_ms == best_build.unwrap().time_ms);
+    }
 
     filtered_results
-
-    // let global_elapsed = global_start.elapsed();
 }
 
 fn test_next_possibilities(
@@ -410,21 +431,25 @@ fn test_next_possibilities(
     commands_so_far: &VecDeque<attack::AttackType>,
     game_params: &GameParams<'_>,
     best_builds: &mut Vec<Build>,
+    max_time_ms: &mut u64,
 ) {
     for next_command in possible_commands.iter() {
         let mut selected_commands: VecDeque<attack::AttackType> = commands_so_far.clone();
         selected_commands.push_back(next_command.clone());
 
-        let (damage, damage_history, event_history, time_ms, kill) =
+        // log(format!("test_next_possibilities: {:#?}", selected_commands).as_str());
+
+        let (damage, damage_history, event_history, attack_history, time_ms, kill) =
             simulation::run(selected_commands.clone(), &game_params);
 
-        if kill || time_ms > 100_000 {
-            // if is_better_build(best_build, damage, time_ms) {
+        if time_ms > *max_time_ms {
+            return;
+        } else if kill {
             let new_build = Build {
                 damage: damage.clone(),
                 item_ids: Vec::new(),
                 dps: damage.clone() * (1000_f64 / time_ms as f64),
-                selected_commands: selected_commands.into(),
+                selected_commands: attack_history.into(),
                 time_ms,
                 kill,
                 damage_history,
@@ -432,7 +457,9 @@ fn test_next_possibilities(
             };
 
             best_builds.push(new_build);
-            // }
+            if time_ms < *max_time_ms {
+                *max_time_ms = time_ms;
+            }
 
             return;
         } else {
@@ -441,6 +468,7 @@ fn test_next_possibilities(
                 &selected_commands,
                 game_params,
                 best_builds,
+                max_time_ms,
             );
         }
     }
@@ -519,7 +547,7 @@ fn run_single(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopResult
 
     compile_passive_effects(&mut game_params);
 
-    let (damage, damage_history, event_history, time_ms, kill) =
+    let (damage, damage_history, event_history, _attack_history, time_ms, kill) =
         simulation::run(selected_commands.clone(), &game_params);
 
     let build = Build {

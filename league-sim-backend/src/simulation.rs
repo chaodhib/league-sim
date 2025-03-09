@@ -76,6 +76,7 @@ pub struct State<'a> {
     pub total_damage: f64,
     pub damage_history: &'a mut Vec<DamageInfo>,
     pub event_history: &'a mut Vec<Event>,
+    pub attack_history: &'a mut Vec<AttackType>,
     pub time_ms: u64,
     pub cooldowns: &'a mut HashMap<AttackType, u64>,
     pub effects_cooldowns: &'a mut HashMap<PassiveEffect, u64>,
@@ -257,7 +258,7 @@ impl State<'_> {
 pub fn run(
     mut selected_commands: VecDeque<AttackType>,
     game_params: &GameParams,
-) -> (f64, Vec<DamageInfo>, Vec<Event>, u64, bool) {
+) -> (f64, Vec<DamageInfo>, Vec<Event>, Vec<AttackType>, u64, bool) {
     // use a priority queue to manage the events
     let mut events: BinaryHeap<Event> = BinaryHeap::new();
 
@@ -272,6 +273,7 @@ pub fn run(
         target_auras: &mut HashMap::new(),
         damage_history: &mut Vec::new(),
         event_history: &mut Vec::new(),
+        attack_history: &mut Vec::new(),
         recast_charges: &mut Vec::new(),
         recast_ready: &mut HashSet::new(),
         is_casting: false,
@@ -339,7 +341,7 @@ fn execute_commands(
     remaining_commands: &mut VecDeque<AttackType>,
     state: &mut State,
     game_params: &GameParams,
-) -> (f64, Vec<DamageInfo>, Vec<Event>, u64, bool) {
+) -> (f64, Vec<DamageInfo>, Vec<Event>, Vec<AttackType>, u64, bool) {
     loop {
         match events.pop() {
             None => {
@@ -347,6 +349,7 @@ fn execute_commands(
                     state.total_damage.clone(),
                     state.damage_history.clone(),
                     state.event_history.clone(),
+                    state.attack_history.clone(),
                     state.last_attack_time_ms,
                     false,
                 )
@@ -361,6 +364,7 @@ fn execute_commands(
                         state.total_damage.clone(),
                         state.damage_history.clone(),
                         state.event_history.clone(),
+                        state.attack_history.clone(),
                         state.last_attack_time_ms,
                         true,
                     );
@@ -733,6 +737,7 @@ fn insert_next_attack_event(
         };
 
         events.push(event);
+        state.attack_history.push(AttackType::AA);
     } else {
         let event = Event {
             attack_type: Some(*next_command_attack_type),
@@ -743,6 +748,7 @@ fn insert_next_attack_event(
         };
 
         events.push(event);
+        state.attack_history.push(*next_command_attack_type);
         commands.pop_front();
     }
 }
@@ -1000,6 +1006,7 @@ mod integration_tests {
             target_auras: &mut HashMap::new(),
             damage_history: &mut Vec::new(),
             event_history: &mut Vec::new(),
+            attack_history: &mut Vec::new(),
             recast_charges: &mut Vec::new(),
             recast_ready: &mut HashSet::new(),
             is_casting: false,
@@ -1093,6 +1100,7 @@ mod integration_tests {
             target_auras: &mut HashMap::new(),
             damage_history: &mut Vec::new(),
             event_history: &mut Vec::new(),
+            attack_history: &mut Vec::new(),
             recast_charges: &mut Vec::new(),
             recast_ready: &mut HashSet::new(),
             is_casting: false,
@@ -1227,6 +1235,7 @@ mod integration_tests {
             target_auras: &mut HashMap::new(),
             damage_history: &mut Vec::new(),
             event_history: &mut Vec::new(),
+            attack_history: &mut Vec::new(),
             recast_charges: &mut Vec::new(),
             recast_ready: &mut HashSet::new(),
             is_casting: false,
@@ -1356,6 +1365,7 @@ mod integration_tests {
             target_auras: &mut HashMap::new(),
             damage_history: &mut Vec::new(),
             event_history: &mut Vec::new(),
+            attack_history: &mut Vec::new(),
             recast_charges: &mut Vec::new(),
             recast_ready: &mut HashSet::new(),
             is_casting: false,
@@ -1498,6 +1508,7 @@ mod integration_tests {
             target_auras: &mut HashMap::new(),
             damage_history: &mut Vec::new(),
             event_history: &mut Vec::new(),
+            attack_history: &mut Vec::new(),
             recast_charges: &mut Vec::new(),
             recast_ready: &mut HashSet::new(),
             is_casting: false,
@@ -1665,6 +1676,7 @@ mod insert_next_attack_event_tests {
             target_auras: &mut HashMap::new(),
             damage_history: &mut Vec::new(),
             event_history: &mut Vec::new(),
+            attack_history: &mut Vec::new(),
             recast_charges: &mut Vec::new(),
             recast_ready: &mut HashSet::new(),
             is_casting: false,
@@ -1744,6 +1756,7 @@ mod insert_next_attack_event_tests {
             target_auras: &mut HashMap::new(),
             damage_history: &mut Vec::new(),
             event_history: &mut Vec::new(),
+            attack_history: &mut Vec::new(),
             recast_charges: &mut Vec::new(),
             recast_ready: &mut HashSet::new(),
             is_casting: false,
@@ -1832,6 +1845,7 @@ mod insert_next_attack_event_tests {
             target_auras: &mut HashMap::new(),
             damage_history: &mut Vec::new(),
             event_history: &mut Vec::new(),
+            attack_history: &mut Vec::new(),
             recast_charges: &mut Vec::new(),
             recast_ready: &mut HashSet::new(),
             is_casting: false,
@@ -1921,6 +1935,7 @@ mod insert_next_attack_event_tests {
             target_auras: &mut HashMap::new(),
             damage_history: &mut Vec::new(),
             event_history: &mut Vec::new(),
+            attack_history: &mut Vec::new(),
             recast_charges: &mut Vec::new(),
             recast_ready: &mut HashSet::new(),
             is_casting: false,
