@@ -14,6 +14,19 @@ A simulator for League of Legends champion abilities and item combinations, focu
   - Game state settings (crit handling, game time)
   - Item-specific configurations
 
+## Known limitations:
+- Only kha'zix is supported for now. The project is very open for contributions
+- As the target, only a dummy target is supported for now (meaning a bag of HP and Armor + MR)
+- No way to change the runes for now
+- No way to change the skill order for now
+- No summoner spells
+- No item active
+- Not all items are supported yet
+
+## Known bugs: 
+- when the simulation takes a while, the screen freezes until the simulation has ended. This will be fixed in a later version.
+- the combo optimizer may return duplicate results.
+
 ## Project Structure
 
 - `league-sim-frontend/`: Vue.js frontend application.
