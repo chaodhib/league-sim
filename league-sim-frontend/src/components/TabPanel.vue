@@ -47,6 +47,7 @@ watch(() => props.mode, (newMode, oldMode) => {
     }
     if (newMode === 'combo') {
         abilitySequence.value = [];
+        sortCriteria.value = 'time_asc';
     }
 });
 
@@ -430,7 +431,7 @@ defineExpose({
                 <div class="field">
                     <label for="sortCriteria">Sort the results by</label>
                     <Dropdown id="sortCriteria" v-model="sortCriteria" :options="sortOptions" optionLabel="label"
-                        optionValue="value" />
+                        optionValue="value" :disabled="props.mode === 'combo'" />
                 </div>
                 <div class="field">
                     <label for="topResultNumber">How many results will be shown</label>
