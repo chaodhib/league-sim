@@ -92,7 +92,7 @@ const darkHarvestStacks = ref(0);
 
 // Items
 const maxGold = ref(null);
-const numItems = ref(3);
+const numItems = ref(5);
 const selectedItems = ref([]);
 const hubrisEminenceActive = ref(false);
 const hubrisEminenceStacks = ref(0);
