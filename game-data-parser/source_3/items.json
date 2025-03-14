@@ -18630,7 +18630,7 @@
         "unique": true,
         "mythic": false,
         "name": null,
-        "effects": "You have acquired '''Lucky Dice''' and gained 1 additional Reroll. This effect is automatically granted, including if your inventory is full. ''Activate to consume and remove this item from your inventory.''",
+        "effects": "You have acquired '''Lucky Dice''' and gained 1 additional Reroll. This effect is automatically granted, including if your inventory is full. ''Activate to consume and remove this item from your inventory. Can be used while a [[Arena#Selection screen|selection screen]] is open.''",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -26004,410 +26004,6 @@
       },
       "purchasable": true,
       "tags": []
-    },
-    "iconOverlay": false
-  },
-  "3011": {
-    "name": "Chemtech Putrifier",
-    "id": 3011,
-    "tier": 3,
-    "rank": [
-      "LEGENDARY"
-    ],
-    "buildsFrom": [
-      3916,
-      3114
-    ],
-    "buildsInto": [],
-    "specialRecipe": 0,
-    "noEffects": false,
-    "removed": false,
-    "requiredChampion": "",
-    "requiredAlly": "",
-    "icon": "https://raw.communitydragon.org/15.5/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/3011_enchanter_t3_chemtechfumigator.png",
-    "simpleDescription": null,
-    "nicknames": [
-      "putrid",
-      "grievous wounds",
-      "purifier"
-    ],
-    "passives": [
-      {
-        "unique": true,
-        "mythic": false,
-        "name": "Puffcap Toxin",
-        "effects": "Dealing damage to enemy champions inflicts them with {{tip|Grievous Wounds}} for 3 seconds. If the target is afflicted with {{tip|Grievous Wounds}} and heals for a total amount that is over {{as|80% of their '''maximum''' health}}, the strength of the healing reduction is increased to 60%.",
-        "range": null,
-        "cooldown": null,
-        "stats": {
-          "abilityPower": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "armor": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "armorPenetration": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "attackDamage": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "attackSpeed": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "cooldownReduction": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "criticalStrikeChance": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "goldPer10": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "healAndShieldPower": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "health": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "healthRegen": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "lethality": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "lifesteal": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "magicPenetration": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "magicResistance": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "mana": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "manaRegen": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "movespeed": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "abilityHaste": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "omnivamp": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "tenacity": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          },
-          "criticalStrikeDamage": {
-            "flat": 0.0,
-            "percent": 0.0,
-            "perLevel": 0.0,
-            "percentPerLevel": 0.0,
-            "percentBase": 0.0,
-            "percentBonus": 0.0
-          }
-        }
-      }
-    ],
-    "active": [],
-    "stats": {
-      "abilityPower": {
-        "flat": 40.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "armor": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "armorPenetration": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "attackDamage": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "attackSpeed": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "cooldownReduction": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "criticalStrikeChance": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "goldPer10": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "healAndShieldPower": {
-        "flat": 12.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "health": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "healthRegen": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "lethality": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "lifesteal": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "magicPenetration": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "magicResistance": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "mana": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "manaRegen": {
-        "flat": 0.0,
-        "percent": 75.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "movespeed": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "abilityHaste": {
-        "flat": 30.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "omnivamp": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "tenacity": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      },
-      "criticalStrikeDamage": {
-        "flat": 0.0,
-        "percent": 0.0,
-        "perLevel": 0.0,
-        "percentPerLevel": 0.0,
-        "percentBase": 0.0,
-        "percentBonus": 0.0
-      }
-    },
-    "shop": {
-      "prices": {
-        "total": 2500,
-        "combined": 0,
-        "sell": 1000
-      },
-      "purchasable": false,
-      "tags": [
-        "SUPPORT"
-      ]
     },
     "iconOverlay": false
   },
@@ -59031,11 +58627,11 @@
     "iconOverlay": false
   },
   "3172": {
-    "name": "Gunmetal Greaves",
+    "name": "Zephyr",
     "id": 3172,
     "tier": 3,
     "rank": [
-      "BOOTS"
+      "LEGENDARY"
     ],
     "buildsFrom": [
       3006
@@ -59053,8 +58649,8 @@
       {
         "unique": true,
         "mythic": false,
-        "name": "Noxian Gait",
-        "effects": "Basic attacks [[on-hit]] against champions grant you {{as|{{rd|15%|10%}} '''bonus''' movement speed}} decaying over 2 seconds.",
+        "name": "Like the Wind",
+        "effects": "Basic attacks [[on-hit]] grant a stack of ''Like The Wind'' for 6 seconds, refreshing on subsequent attacks. For each stack, gain {{as|5% '''bonus''' movement speed|ms}}, stacking up to 5 times for a total of {{as|25%|ms}}.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -59196,7 +58792,7 @@
           },
           "movespeed": {
             "flat": 0.0,
-            "percent": 0.0,
+            "percent": 5.0,
             "perLevel": 0.0,
             "percentPerLevel": 0.0,
             "percentBase": 0.0,
@@ -59272,7 +58868,7 @@
         "percentBonus": 0.0
       },
       "attackSpeed": {
-        "flat": 40.0,
+        "flat": 50.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -59376,15 +58972,15 @@
         "percentBonus": 0.0
       },
       "movespeed": {
-        "flat": 50.0,
-        "percent": 0.0,
+        "flat": 0.0,
+        "percent": 10.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
         "percentBase": 0.0,
         "percentBonus": 0.0
       },
       "abilityHaste": {
-        "flat": 0.0,
+        "flat": 30.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -59401,7 +58997,7 @@
       },
       "tenacity": {
         "flat": 0.0,
-        "percent": 0.0,
+        "percent": 20.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
         "percentBase": 0.0,
@@ -59418,12 +59014,15 @@
     },
     "shop": {
       "prices": {
-        "total": 1850,
+        "total": 2500,
         "combined": 0,
-        "sell": 740
+        "sell": 1000
       },
       "purchasable": true,
-      "tags": []
+      "tags": [
+        "MARKSMAN",
+        "FIGHTER"
+      ]
     },
     "iconOverlay": false
   },
@@ -78311,9 +77910,9 @@
         "unique": true,
         "mythic": false,
         "name": "Char",
-        "effects": "Basic attacks [[on-hit]] and [[champion ability|ability]] hits against enemies {{tip|heal}} you for {{as|{{fd|1.5}}% of target's '''current''' health}} and apply a {{as|Burn|buzzword3}} that deals {{as|4|physical damage}} {{as|(+ 8% '''bonus''' AD)}} {{as|(+ 8% AP)}} {{as|(+ 2% of target's '''missing''' health)}} {{as|physical damage}} every second over 4 seconds.",
+        "effects": "Your next ability hit applies a {{as|Burn}} that deals {{pp|5/8 to (2*5)/8 for 11|0 to 2000|key=%|type='''maximum''' health difference|showtype=false|round=3|color=health}} {{as|(+ {{pp|0.2/8 to (2*0.2)/8 for 11|0 to 2000|key=%|type='''maximum''' health difference|showtype=false|round=3}} per 1 Lethality)|lethality}} {{as|(based on '''maximum''' health difference)|hp}} {{as|target '''current''' health}} {{as|physical damage}} every {{fd|0.5}} seconds for 4 seconds.",
         "range": null,
-        "cooldown": null,
+        "cooldown": "20",
         "stats": {
           "abilityPower": {
             "flat": 0.0,
@@ -78650,7 +78249,7 @@
       },
       "omnivamp": {
         "flat": 0.0,
-        "percent": 10.0,
+        "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
         "percentBase": 0.0,
@@ -89524,7 +89123,7 @@
         "unique": true,
         "mythic": false,
         "name": "Desolate",
-        "effects": "Killing an {{tt|enemy unit|Excluding wards and structures.}} deals{{ft|{{as|{{ap|{{#var:hollow_ibase}}*2}} {{as|(+ {{ap|{{#var:hollow_ihp}}*2}}% '''bonus''' health)}} magic damage|magic damage}}|200% of ''Immolate's'' damage}}to enemies near them.",
+        "effects": "Killing a {{tt|non-champion unit|Excluding wards and structures.}} causes an eruption around their death location that deals{{ft|{{as|{{ap|{{#var:hollow_ibase}}*2}} {{as|(+ {{ap|{{#var:hollow_ihp}}*2}}% '''bonus''' health)}} magic damage|magic damage}}|200% of ''Immolate's'' damage}}to enemies within 350 units. Scoring a {{tip|takedown}} against an enemy champion within 3 seconds of damaging them causes a larger eruption that deals{{ft|{{as|{{ap|{{#var:hollow_ibase}}*4}} {{as|(+ {{ap|{{#var:hollow_ihp}}*4}}% '''bonus''' health)}} magic damage|magic damage}}|400% of ''Immolate's'' damage}}to enemies within 500 units.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -99590,7 +99189,7 @@
         "unique": true,
         "mythic": false,
         "name": "Bolt",
-        "effects": "When fully {{tip|Energized}}, your next basic attack deals {{as|200 '''bonus''' magic damage}} [[on-hit]] and grants you {{as|50% '''bonus''' movement speed}} for {{fd|1.5}} seconds.",
+        "effects": "When fully {{tip|Energized}}, your next basic attack deals {{as|100 '''bonus''' magic damage}} [[on-hit]] and grants you {{as|45% '''bonus''' movement speed}} for {{fd|1.5}} seconds.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -99732,7 +99331,7 @@
           },
           "movespeed": {
             "flat": 0.0,
-            "percent": 50.0,
+            "percent": 45.0,
             "perLevel": 0.0,
             "percentPerLevel": 0.0,
             "percentBase": 0.0,
@@ -100604,7 +100203,7 @@
       {
         "unique": true,
         "name": "Soul Anchor",
-        "effects": "Mark your current location. After 5 seconds, you will {{tip|blink}} to the marked location.",
+        "effects": "Mark your current location; the mark persists for 5 seconds. ''Soul Anchor'' can be recast and will do so automatically upon the mark expiring.<br><br>{{sbc|Recast:}} {{tip|Blink}} to ''Soul Anchor's'' marked location.",
         "range": null,
         "cooldown": null
       }
@@ -101202,7 +100801,7 @@
     "id": 226630,
     "tier": 3,
     "rank": [
-      "LEGENDARY"
+      "DISTRIBUTED"
     ],
     "buildsFrom": [],
     "buildsInto": [],
@@ -101406,9 +101005,9 @@
     },
     "shop": {
       "prices": {
-        "total": 2500,
+        "total": 0,
         "combined": 0,
-        "sell": 1000
+        "sell": 0
       },
       "purchasable": true,
       "tags": [
@@ -101439,7 +101038,7 @@
         "unique": true,
         "mythic": false,
         "name": "Vendetta",
-        "effects": "Take 20% reduced damage from your ''Nemesis'' and reduce their tenacity by 20% while they are within {{tip|cr|icononly=true}} 700 units of you.",
+        "effects": "Take 30% reduced damage from your ''Nemesis'' and reduce their {{tip|tenacity}} by 20% while they are within {{tip|cr|icononly=true}} 700 units of you.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -101705,7 +101304,7 @@
         "percentBonus": 0.0
       },
       "health": {
-        "flat": 600.0,
+        "flat": 650.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -101777,7 +101376,7 @@
         "percentBonus": 0.0
       },
       "abilityHaste": {
-        "flat": 15.0,
+        "flat": 20.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -105798,7 +105397,7 @@
         "unique": true,
         "mythic": false,
         "name": "Enduring Vitality",
-        "effects": "Gain {{sti|hsp|1% heal and shield power}} per {{as|100 '''current''' health}} you are missing, up to 35% at {{as|3500 '''current''' health}} missing.",
+        "effects": "Gain {{sti|hsp|{{fd|2.5}}% heal and shield power}} per {{as|100 '''current''' health}} you are missing, up to 60% at {{as|2400 '''current''' health}} missing.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -105992,7 +105591,7 @@
         "percentBonus": 0.0
       },
       "armor": {
-        "flat": 65.0,
+        "flat": 50.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -106096,7 +105695,7 @@
         "percentBonus": 0.0
       },
       "magicResistance": {
-        "flat": 65.0,
+        "flat": 50.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -106814,7 +106413,7 @@
       {
         "unique": true,
         "name": "Supercharged",
-        "effects": "Remove all crowd control debuffs (excluding {{tip|airborne}}) and become {{tip|displacement immune|unstoppable}} for 3 seconds.",
+        "effects": "Removes all {{tip|crowd control}} debuffs (except {{tip|Airborne}}) from your champion and grants you {{tip|Cc-immune|total crowd control immunity}} for the next 3 seconds.",
         "range": null,
         "cooldown": null
       }
@@ -107032,7 +106631,7 @@
         "unique": true,
         "mythic": false,
         "name": "Unanimity",
-        "effects": "Gain 10% of your teammate's {{as|attack damage}}, {{as|ability power}}, {{as|'''total''' attack speed}}, {{as|'''maximum''' health}}, {{as|armor}}, {{as|magic resistance}}, and {{as|ability haste}}, increased to 30% if they also have '''Twin Mask''' and are alive.",
+        "effects": "Gain 15% of your teammate's {{as|attack damage}}, {{as|ability power}}, {{as|'''total''' attack speed}}, {{as|'''maximum''' health}}, {{as|armor}}, {{as|magic resistance}}, and {{as|ability haste}}, increased to 30% if they also have '''Twin Mask''' and are alive.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -108407,7 +108006,7 @@
       {
         "unique": true,
         "name": "Unbreakable",
-        "effects": "Gain a {{tip|shield}} for 300 {{as|(+ 100% '''bonus''' health)}} that decays over 5 seconds, and 25% increased [[size]] while the shield holds.",
+        "effects": "Gain a {{tip|shield}} for 300 {{as|(+ 100% '''bonus''' health)}} that decays over 5 seconds, and 25% increased [[size]] for the same duration.",
         "range": null,
         "cooldown": null
       }
@@ -108628,7 +108227,7 @@
         "unique": true,
         "mythic": false,
         "name": "Soulrend",
-        "effects": "Damaging an enemy champion with a basic attack or [[ability damage]] deals {{as|125 {{as|(+ 25% '''bonus''' AD)}} {{as|(+ 15% AP)}} '''bonus''' magic damage|magic damage}} and grants you {{as|40% '''bonus''' movement speed}} for {{fd|1.5}} seconds, with the duration extending on subsequent triggers.",
+        "effects": "Damaging an enemy champion with a basic attack or [[ability damage]] deals {{as|125 {{as|(+ 15% AP)}} '''bonus''' magic damage|magic damage}} and grants you {{as|40% '''bonus''' movement speed}} for {{fd|1.5}} seconds, with the duration extending on subsequent triggers.",
         "range": null,
         "cooldown": "10 (per champion)",
         "stats": {
@@ -108886,7 +108485,7 @@
         "percentBonus": 0.0
       },
       "health": {
-        "flat": 400.0,
+        "flat": 300.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -108958,7 +108557,7 @@
         "percentBonus": 0.0
       },
       "abilityHaste": {
-        "flat": 40.0,
+        "flat": 25.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -109027,12 +108626,12 @@
         "unique": true,
         "mythic": false,
         "name": "Sinister Pact",
-        "effects": "Increase your {{as|ability power}} by {{as|4%|ap}} for every {{as|300 '''current''' health}} you are missing, up to a {{as|40%|ap}} increase at {{as|3000 '''current''' health}} missing.",
+        "effects": "Increase your {{as|ability power}} by {{as|{{fd|1.5}}%|ap}} and gain {{as|{{fd|1.5}}% '''bonus''' movement speed}} for every {{as|100 '''current''' health}} you are missing, up to a {{as|45% ability power}} and {{as|45% '''bonus''' movement speed}} at {{as|3000 '''current''' health}} missing.",
         "range": null,
         "cooldown": null,
         "stats": {
           "abilityPower": {
-            "flat": 0.0,
+            "flat": 45.0,
             "percent": 0.0,
             "perLevel": 0.0,
             "percentPerLevel": 0.0,
@@ -109169,7 +108768,7 @@
           },
           "movespeed": {
             "flat": 0.0,
-            "percent": 0.0,
+            "percent": 45.0,
             "perLevel": 0.0,
             "percentPerLevel": 0.0,
             "percentBase": 0.0,
@@ -109210,15 +108809,7 @@
         }
       }
     ],
-    "active": [
-      {
-        "unique": true,
-        "name": "Price of Power",
-        "effects": "Pay a {{tip|health resource|health cost}} of {{as|300 '''current''' health}} to gain {{as|100% '''bonus''' movement speed}} decaying over 3 seconds. This effect '''cannot''' reduce the user below {{as|1 health}}.",
-        "range": null,
-        "cooldown": null
-      }
-    ],
+    "active": [],
     "stats": {
       "abilityPower": {
         "flat": 80.0,
@@ -109365,7 +108956,7 @@
         "percentBonus": 0.0
       },
       "abilityHaste": {
-        "flat": 30.0,
+        "flat": 0.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -110232,7 +109823,7 @@
       {
         "unique": true,
         "name": "Glaciate",
-        "effects": "Unleash a fan of icy shards in a cone in the target direction, dealing {{as|200|magic damage}} {{as|(+ 100% '''bonus''' AD)}} {{as|(+ 75% AP)}} {{as|magic damage}} to enemies struck within and {{tip|slow|slowing}} them by 70% for {{fd|1.5}} seconds. Enemies hit in the center of the cone are {{tip|root|rooted}} for the same duration instead.",
+        "effects": "Unleash a fan of icy shards in a cone in the target direction, dealing {{as|200|magic damage}} {{as|(+ 75% AP)}} {{as|magic damage}} to enemies struck within and {{tip|slow|slowing}} them by 70% for 1 second. Enemies hit in the center of the cone are {{tip|root|rooted}} for the same duration instead.",
         "range": null,
         "cooldown": null
       }
@@ -110311,7 +109902,7 @@
         "percentBonus": 0.0
       },
       "health": {
-        "flat": 500.0,
+        "flat": 250.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -111463,10 +111054,10 @@
       {
         "unique": true,
         "mythic": false,
-        "name": "Sandstrike",
-        "effects": "Using a {{tip|dash}}, {{tip|lunge}} or {{tip|blink}}, or exiting from {{tip|stealth}}, empowers your next basic attack against a champion within 3 seconds to deal {{as|{{rd|85|65}}|physical damage}} {{as|(+ {{rd|55%|35%}} '''bonus''' AD)}} {{as|(+ {{rd|35%|20%}} AP)}} {{as|'''bonus''' physical damage}} [[on-hit]] and {{tip|slow}} the target by 99% for {{fd|0.5}} seconds.",
-        "range": null,
-        "cooldown": "5 (begins after using the empowered attack)",
+        "name": "Sandswipe",
+        "effects": "{{tip|Dash}} to 150 units beyond the {{tt|target enemy champion's location|At the end of the cast time.}}, and upon completing the dash, deal {{as|12% {{as|(+ 5% per 100 '''bonus''' AD)}} of target's '''maximum''' health}} {{as|'''bonus''' physical damage}} to the target. You then deal 20% increased damage to the target for the next 3 seconds.",
+        "range": 0,
+        "cooldown": "25",
         "stats": {
           "abilityPower": {
             "flat": 0.0,
@@ -111674,7 +111265,7 @@
         "percentBonus": 0.0
       },
       "attackDamage": {
-        "flat": 60.0,
+        "flat": 55.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -111738,7 +111329,7 @@
         "percentBonus": 0.0
       },
       "lethality": {
-        "flat": 20,
+        "flat": 22,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -112651,7 +112242,7 @@
         "unique": true,
         "mythic": false,
         "name": "ZZ'Rot",
-        "effects": "Basic attacks [[on-attack]] and damaging abilities against enemies summon 3 allied {{ui|Voidmite|Voidmites}} to attack the target (8 second cooldown). {{ui|Voidmite|Voidmites}} deal {{as|6|magic damage}} {{as|(+ 4% of your AD)}} {{as|(+ 8% of your AP)}} {{as|magic damage}} with each of their basic attacks and last for up to 5 seconds. Additionally, summon 6 {{ui|Voidmite|Voidmites}} upon your death.",
+        "effects": "Basic attacks [[on-attack]] and damaging abilities against enemies summon 8 allied {{ui|Voidmite|Voidmites}} to attack the target that are permanently {{tip|untargetable}} (15 second cooldown). {{ui|Voidmite|Voidmites}} deal {{as|6|magic damage}} {{as|(+ 4% of your AD)}} {{as|(+ 8% of your AP)}} {{as|magic damage}} with each of their basic attacks and last for up to 3 seconds. Additionally, summon 6 {{ui|Voidmite|Voidmites}} upon your death.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -113048,7 +112639,7 @@
         "unique": true,
         "mythic": false,
         "name": "Scarlet Allegiance",
-        "effects": "If your {{stil|life steal}} and/or {{stil|omnivamp}} values exceed 30%, gain {{as|500 '''bonus''' health}} and {{tip|heal}} yourself equal to 10% of the damage that enemy champions in a {{tip|cr|icononly=true}} 525 units radius around you take from all sources.",
+        "effects": "If your {{stil|life steal}} and {{stil|omnivamp}} sum to at least 30%, gain {{as|500 '''bonus''' health}} and {{tip|heal}} yourself equal to 10% of the damage that enemy champions in a {{tip|cr|icononly=true}} 525 units radius around you take from all sources.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -113387,7 +112978,7 @@
       },
       "omnivamp": {
         "flat": 0.0,
-        "percent": 10.0,
+        "percent": 15.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
         "percentBase": 0.0,
@@ -114060,7 +113651,7 @@
         "unique": true,
         "mythic": false,
         "name": "Inner Flame",
-        "effects": "Every 2 rounds, gain a random {{bi|Dragon Soul}}. Additionally, increase your '''total''' {{as|attack damage}}, {{as|ability power}}, {{as|attack speed}}, {{as|'''maximum''' health}}, {{as|armor}}, {{as|magic resistance}}, and {{as|ability haste}} by 5% for each {{bi|Dragon Soul}} you possess, up to 30% at maximum souls.<br><br>Once you have obtained all 6 {{bi|Dragon Soul|Dragon Souls}}, you also gain the {{bi|Aspect of the Dragon}} buff permanently at the next round interval. This buff counts as a soul for this effect, for a total stat increase of 35%.",
+        "effects": "Every 2 rounds, gain a random {{bi|Dragon Soul}}. Additionally, increase your '''total''' {{as|attack damage}}, {{as|ability power}}, {{as|attack speed}}, {{as|'''maximum''' health}}, {{as|armor}}, {{as|magic resistance}}, and {{as|ability haste}} by 4% for each {{bi|Dragon Soul}} you possess, up to 30% at maximum souls.<br><br>Once you have obtained all 6 {{bi|Dragon Soul|Dragon Souls}}, you also gain the {{bi|Aspect of the Dragon}} buff permanently at the next round interval. This buff counts as a soul for this effect, for a total stat increase of 35%.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -116857,7 +116448,7 @@
         "percentBonus": 0.0
       },
       "health": {
-        "flat": 0.0,
+        "flat": 500.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -116873,7 +116464,7 @@
         "percentBonus": 0.0
       },
       "lethality": {
-        "flat": 18,
+        "flat": 0.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -116889,7 +116480,7 @@
         "percentBonus": 0.0
       },
       "magicPenetration": {
-        "flat": 18.0,
+        "flat": 0.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -117391,7 +116982,7 @@
         "unique": true,
         "mythic": false,
         "name": "Reverberate",
-        "effects": "After 2 seconds from the start of the combat phase in each round, gain {{as|4 '''bonus''' health}} per {{as|1% '''bonus''' attack speed}}.",
+        "effects": "After 2 seconds from the start of the combat phase in each round, gain {{as|5 '''bonus''' health}} per {{as|1% '''bonus''' attack speed}}.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -117577,7 +117168,7 @@
         "unique": true,
         "mythic": false,
         "name": "Resonate",
-        "effects": "Basic attacks [[on-hit]] deal {{as|10|magic damage}} {{as|(+ 1% of your '''bonus''' health)}} {{as|'''bonus''' magic damage}}. {{tip|Immobilize|Immobilizing}} an enemy champion generates 25 stacks of ''Reverberation'' for 8 seconds, stacking up to 100 times and refreshing on-hit as well as on subsequent immobilizations. At '''maximum''' stacks and upon {{tip|immobilize|immobilizing}} an enemy, your on-hit effects are applied to them 3 times; additionally, you activate ''Rumble''.",
+        "effects": "Basic attacks [[on-hit]] deal {{as|10|magic damage}} {{as|(+ 2% of your '''bonus''' health)}} {{as|'''bonus''' magic damage}}.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -117763,9 +117354,9 @@
         "unique": true,
         "mythic": false,
         "name": "Rumble",
-        "effects": "While at 100 ''Reverberation'' stacks, automatically unleashes a wave around you that {{tip|airborne|pulls}} in nearby enemies.",
+        "effects": "{{tip|Immobilize|Immobilizing}} an enemy champion generates 25 stacks of ''Reverberation'' for 10 seconds, stacking up to 100 times and refreshing on-hit as well as on subsequent immobilizations. At '''maximum''' stacks and upon {{tip|immobilize|immobilizing}} an enemy, your on-hit effects are applied to them 3 times.",
         "range": null,
-        "cooldown": "8",
+        "cooldown": null,
         "stats": {
           "abilityPower": {
             "flat": 0.0,
@@ -118557,7 +118148,7 @@
         "unique": true,
         "mythic": false,
         "name": "Between the Ribs",
-        "effects": "You can now identify the ''Weakpoints'' of nearby enemy champions, marked as an arc around them and pointing towards a specific direction. ''Weakpoints'' on targets take 4 seconds to become exposed and linger for {{fd|11.25}} seconds afterwards. Dealing damage in the direction of an exposed ''Weakpoint'' will consume it to deal {{as|'''bonus''' true damage}} equal to {{as|3%|hp}} {{as|(+ {{fd|0.15}}% per 1 Lethality)}} {{as|(+ {{fd|0.15}}% per 1 flat magic penetration)}} {{as|of the target's '''maximum''' health}} and grant you {{as|{{pp|15 to 40|key=%}} '''bonus''' movement speed}} for {{fd|1.5}} seconds. Once a target's ''Weakpoint'' is consumed or expires, you identify a new ''Weakpoint'' on them.",
+        "effects": "You can now identify the ''Weakpoints'' of nearby enemy champions, marked as an arc around them and pointing towards a specific direction. ''Weakpoints'' on targets take 4 seconds to become exposed and linger for {{fd|11.25}} seconds afterwards. Dealing damage in the direction of an exposed ''Weakpoint'' will consume it to deal {{as|'''bonus''' true damage}} equal to {{as|3%|hp}} {{as|(+ 3% per 100 AD)}} {{as|(+ 2% per 100 AP)}} {{as|of the target's '''maximum''' health}} and grant you {{as|{{pp|15 to 60|key=%}} '''bonus''' movement speed}} for {{fd|1.5}} seconds. Once a target's ''Weakpoint'' is consumed or expires, you identify a new ''Weakpoint'' on them.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -118667,7 +118258,7 @@
           },
           "magicPenetration": {
             "flat": 0.0,
-            "percent": 4.0,
+            "percent": 0.0,
             "perLevel": 0.0,
             "percentPerLevel": 0.0,
             "percentBase": 0.0,
@@ -118815,7 +118406,7 @@
         "percentBonus": 0.0
       },
       "health": {
-        "flat": 0.0,
+        "flat": 400.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -118831,7 +118422,7 @@
         "percentBonus": 0.0
       },
       "lethality": {
-        "flat": 12,
+        "flat": 0.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -118847,7 +118438,7 @@
         "percentBonus": 0.0
       },
       "magicPenetration": {
-        "flat": 12.0,
+        "flat": 0.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -118928,6 +118519,7 @@
       "purchasable": true,
       "tags": [
         "ASSASSIN",
+        "FIGHTER",
         "MAGE"
       ]
     },
@@ -121105,7 +120697,7 @@
         "unique": true,
         "mythic": false,
         "name": "Accretion",
-        "effects": "Basic attacks [[on-hit]] and {{tip|immobilize|immobilizing}} effects against enemy champions generate 1 and 5 stacks of ''Accretion'', respectively, up to 50. For each ''Accretion'' stack, gain {{as|10% '''base''' health regeneration}}, up to {{as|500% '''base''' health regeneration}} at '''maximum''' stacks. Additionally, for every 10 ''Accretion'' stacks, gain 10% increased size, up to 50% at '''maximum''' stacks. Stacks are reset every round and between each phase in a round.",
+        "effects": "Basic attacks [[on-hit]] and {{tip|immobilize|immobilizing}} effects against enemy champions generate 1 and 5 stacks of ''Accretion'', respectively, up to 50. For each ''Accretion'' stack, gain {{as|10% '''base''' health regeneration}}, up to {{as|500% '''base''' health regeneration}} at '''maximum''' stacks. Additionally, for every 10 ''Accretion'' stacks, gain 20% increased size, up to 100% at '''maximum''' stacks. Stacks are reset every round and between each phase in a round.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -121380,7 +120972,7 @@
       },
       "healthRegen": {
         "flat": 0.0,
-        "percent": 200.0,
+        "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
         "percentBase": 0.0,
@@ -121510,7 +121102,7 @@
         "unique": true,
         "mythic": false,
         "name": "Pull Their Strings",
-        "effects": "Basic attacks against enemy champions apply a ''Puppeteer'' stack for 5 seconds, stacking up to 4 times. The fourth stack against a target consumes them all to render the target {{tip|berserk}} for 2 seconds, causing them to gain {{as|50%|as}} {{as|(+ 150% of your heal and shield power)}} {{as|'''bonus''' attack speed}} and {{as|40% '''bonus''' movement speed}} (45 second cooldown). If only one champion is alive on the enemy team, instead {{tip|fear}} the target for the same duration.",
+        "effects": "Basic attacks against enemy champions apply a ''Puppeteer'' stack for 15 seconds, stacking up to 4 times. The fourth stack against a target consumes them all to render the target {{tip|berserk}} for 2 seconds, causing them to gain {{as|50%|as}} {{as|(+ 150% of your heal and shield power)}} {{as|'''bonus''' attack speed}} and {{as|40% '''bonus''' movement speed}} (25 second cooldown). If only one champion is alive on the enemy team, instead {{tip|fear}} the target for the same duration.",
         "range": null,
         "cooldown": null,
         "stats": {
@@ -121882,7 +121474,7 @@
     "active": [],
     "stats": {
       "abilityPower": {
-        "flat": 30.0,
+        "flat": 0.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -121914,7 +121506,7 @@
         "percentBonus": 0.0
       },
       "attackSpeed": {
-        "flat": 0.0,
+        "flat": 30.0,
         "percent": 0.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
@@ -122011,7 +121603,7 @@
       },
       "manaRegen": {
         "flat": 0.0,
-        "percent": 125.0,
+        "percent": 150.0,
         "perLevel": 0.0,
         "percentPerLevel": 0.0,
         "percentBase": 0.0,
