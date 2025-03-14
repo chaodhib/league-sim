@@ -345,7 +345,7 @@ defineExpose({
             <div class="items-container">
                 <div class="selected-items">
                     <h3>{{ props.mode !== 'items' ? `Selected Items (${selectedItems.length}/6)` :
-                        'Find the best combination of items amongst' }}</h3>
+                        'Items to include in the simulations' }}</h3>
                     <div class="items-grid">
                         <div v-for="(item, index) in selectedItems" :key="index" class="item-slot">
                             <Button :label="item.name" severity="secondary" @click="removeItem(index)" />
@@ -353,7 +353,8 @@ defineExpose({
                     </div>
                 </div>
                 <div class="available-items">
-                    <h3>Available Items</h3>
+                    <h3>{{ props.mode !== 'items' ? `Available Items` :
+                        'Items to ignore in the simulations' }}</h3>
                     <div class="items-grid">
                         <div v-for="item in availableItems" :key="item.id" class="item-slot">
                             <Button :label="item.name" :disabled="(props.mode !== 'items' && selectedItems.length >= 6)"
