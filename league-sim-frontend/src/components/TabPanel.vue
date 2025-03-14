@@ -13,10 +13,10 @@ const props = defineProps({
 // Error message handling
 const errorMessage = computed(() => {
     if (props.mode === 'items' && abilitySequence.value.length === 0) {
-        return 'In Item Optimizer mode, you must add at least one ability in the Ability Sequence.';
+        return 'In Item Optimizer mode, you must add at least one ability in the Ability Sequence (in the Abilities tab).';
     }
     if (props.mode === 'single' && abilitySequence.value.length === 0) {
-        return 'In Single Simulation mode, you must add at least one ability in the Ability Sequence.';
+        return 'In Single Simulation mode, you must add at least one ability in the Ability Sequence (in the Abilities tab).';
     }
     return '';
 });
@@ -25,11 +25,6 @@ const errorMessage = computed(() => {
 onMounted(() => {
     if (props.mode === 'items') {
         selectedItems.value = [...allItems.value];
-
-        addAbility(availableAbilities[3]); // R
-        addAbility(availableAbilities[4]); // AA
-        addAbility(availableAbilities[0]); // Q
-        addAbility(availableAbilities[1]); // W
     }
 });
 
@@ -162,10 +157,10 @@ const magicResistance = ref(100);
 const getState = () => {
     // Validate based on mode
     if (props.mode === 'items' && abilitySequence.value.length === 0) {
-        throw new Error('In Item Optimizer mode, you must add at least one ability in the Ability Sequence.');
+        throw new Error('In Item Optimizer mode, you must add at least one ability in the Ability Sequence (in the Abilities tab).');
     }
     if (props.mode === 'single' && abilitySequence.value.length === 0) {
-        throw new Error('In Single Simulation mode, you must add at least one ability in the Ability Sequence.');
+        throw new Error('In Single Simulation mode, you must add at least one ability in the Ability Sequence (in the Abilities tab).');
     }
 
     return {
