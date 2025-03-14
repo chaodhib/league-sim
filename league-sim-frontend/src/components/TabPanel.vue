@@ -140,7 +140,7 @@ const sortOptions = [
 ];
 
 // Game settings
-const critHandling = ref('never');
+const critHandling = ref('average');
 const gameTime = ref(0);
 const critHandlingOptions = [
     { label: 'Take the average', value: 'average' },
