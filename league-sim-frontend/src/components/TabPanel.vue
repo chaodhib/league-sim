@@ -98,8 +98,6 @@ const hubrisEminenceActive = ref(false);
 const hubrisEminenceStacks = ref(0);
 const opportunityPreparationReady = ref(true);
 const allItems = ref([
-    { id: 3158, name: 'Ionian Boots of Lucidity' },
-    { id: 3006, name: 'Berserker\'s Greaves' },
     { id: 3142, name: 'Youmuu\'s Ghostblade' },
     { id: 6701, name: 'Opportunity' },
     { id: 3814, name: 'Edge of Night' },
@@ -127,6 +125,8 @@ const allItems = ref([
     { id: 3110, name: 'Frozen Heart' },
     { id: 6631, name: 'Stridebreaker' },
     { id: 3153, name: 'Blade of the Ruined King' },
+    { id: 3158, name: 'Ionian Boots of Lucidity' },
+    { id: 3006, name: 'Berserker\'s Greaves' },
 ]);
 
 // General settings
