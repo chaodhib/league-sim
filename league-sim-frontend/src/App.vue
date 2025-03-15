@@ -108,15 +108,10 @@ watch(() => selectedMode.value, () => {
             <ChampionIcon champion="Khazix" size="48" />
           </div>
         </div>
-        <Button severity="primary" class="p-button-lg w-full" raised @click="startSimulation">
-          <div v-if="isSimulationRunning">
-            <i class="pi pi-spinner pi-spin"></i> <span>Simulation in progress</span>
-          </div>
-          <div v-else>
-            Run simulation
-          </div>
-        </Button>
         <div class="field mb-4">
+          <label for="mode" class="block mb-2"
+            v-tooltip.right="'Item Optimizer: The user needs to input the ability sequence. The sim tests every item combination and finds the combination with the highest damage output.\n\nCombo Optimizer: The user needs to input the item build. The sim tests every ability combination and finds the quickest ability sequence to kill the target.\n\nSingle Simulation: Test a specific item build and ability sequence.'">Simulation
+            Mode:</label>
           <Dropdown id="mode" v-model="selectedMode" :options="simulationModes" optionLabel="name" class="w-full">
             <template #option="slotProps">
               <div class="p-2" v-tooltip.right.focus="slotProps.option.tooltip">
@@ -125,6 +120,14 @@ watch(() => selectedMode.value, () => {
             </template>
           </Dropdown>
         </div>
+        <Button severity="primary" class="p-button-lg w-full" raised @click="startSimulation">
+          <div v-if="isSimulationRunning">
+            <i class="pi pi-spinner pi-spin"></i> <span>Simulation in progress</span>
+          </div>
+          <div v-else>
+            Run simulation
+          </div>
+        </Button>
         <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
         <div class="github-link">
           <a href="https://github.com/chaodhib/league-sim" target="_blank" rel="noopener noreferrer">
