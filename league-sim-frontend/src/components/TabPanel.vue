@@ -159,8 +159,11 @@ const getState = () => {
     if (props.mode === 'items' && abilitySequence.value.length === 0) {
         throw new Error('In Item Optimizer mode, you must add at least one ability in the Ability Sequence (in the Abilities tab).');
     }
-    if (props.mode === 'single' && abilitySequence.value.length === 0) {
-        throw new Error('In Single Simulation mode, you must add at least one ability in the Ability Sequence (in the Abilities tab).');
+    if (props.mode === 'single' && (abilitySequence.value.length === 0 || selectedItems.value.length === 0)) {
+        throw new Error('In Single Simulation mode, you must add at least one ability in the Ability Sequence (in the Abilities tab) and equip one item (in the Items tab).');
+    }
+    if (props.mode === 'combo' && selectedItems.value.length === 0) {
+        throw new Error('In Combo Optimizer mode, you must equip at least one item (in the Items tab)');
     }
 
     return {
