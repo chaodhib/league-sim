@@ -448,7 +448,7 @@ fn test_next_possibilities(
         } else if kill {
             let new_build = Build {
                 damage: damage.clone(),
-                item_ids: Vec::new(),
+                item_ids: game_params.items.iter().map(|item| item.id).collect(),
                 dps: damage.clone() * (1000_f64 / time_ms as f64),
                 selected_commands: attack_history.into(),
                 time_ms,
