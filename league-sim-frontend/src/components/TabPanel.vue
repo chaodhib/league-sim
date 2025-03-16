@@ -160,7 +160,7 @@ const getState = () => {
         throw new Error('In Item Optimizer mode, you must add at least one ability in the Ability Sequence (in the Abilities tab).');
     }
     if (props.mode === 'single' && (abilitySequence.value.length === 0 || selectedItems.value.length === 0)) {
-        throw new Error('In Single Simulation mode, you must add at least one ability in the Ability Sequence (in the Abilities tab) and equip one item (in the Items tab).');
+        throw new Error('In Single Simulation mode, you must add at least one ability in the Ability Sequence (in the Abilities tab) and equip at least one item (in the Items tab).');
     }
     if (props.mode === 'combo' && selectedItems.value.length === 0) {
         throw new Error('In Combo Optimizer mode, you must equip at least one item (in the Items tab)');
@@ -311,16 +311,17 @@ defineExpose({
             <h2>Game Settings</h2>
             <div class="input-group">
                 <div class="field">
-                    <label for="critHandling"
-                        v-tooltip.bottom="'How to deal with the randomness of critical hits? Either we take the average damage based on the crit chance, we never crit or we always crit.'">How
-                        to handle crits?</label>
+                    <label for="critHandling">How to handle crits? <i class="pi pi-info-circle"
+                            style="font-size: 0.8rem; margin-left: 0.2rem; color: var(--text-color-secondary);"
+                            v-tooltip.right="'How to deal with the randomness of critical hits? Either we take the average damage based on the crit chance, we never crit or we always crit.'"></i></label>
                     <Dropdown id="critHandling" v-model="critHandling" :options="critHandlingOptions"
                         optionLabel="label" optionValue="value" />
                 </div>
                 <div class="field">
-                    <label for="gameTime"
-                        v-tooltip.bottom="'The time in-game when the champion starts with the first ability. This can influence stats provided by scaling runes (such as Gathering Storm).'">Game
-                        time (in min)</label>
+                    <label for="gameTime">Game
+                        time (in min) <i class="pi pi-info-circle"
+                            style="font-size: 0.8rem; margin-left: 0.2rem; color: var(--text-color-secondary);"
+                            v-tooltip.right="'The time in-game when the champion starts with the first ability. This can influence stats provided by scaling runes (such as Gathering Storm).'"></i></label>
                     <InputNumber id="gameTime" v-model="gameTime" :min="0" showButtons buttonLayout="horizontal"
                         incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" />
                 </div>
@@ -331,16 +332,18 @@ defineExpose({
             <h2>Item Settings</h2>
             <div v-if="props.mode === 'items'" class="input-group">
                 <div class="field">
-                    <label for="maxGold"
-                        v-tooltip.bottom="'The limit cost of the entire build. Leave empty for no gold limit.'">Max
-                        gold</label>
+                    <label for="maxGold">Max
+                        cost <i class="pi pi-info-circle"
+                            style="font-size: 0.8rem; margin-left: 0.2rem; color: var(--text-color-secondary);"
+                            v-tooltip.right="'The cost limit for the entire build. Leave empty for no gold limit.'"></i></label>
                     <InputNumber id="maxGold" v-model="maxGold" :min="0" showButtons buttonLayout="horizontal"
                         incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" />
                 </div>
                 <div class="field">
-                    <label for="numItems"
-                        v-tooltip.bottom="'How many completed items would you like your build to have. Keep in mind that the higher this number is, the slower the simulation will be.'">Number
-                        of items in the build</label>
+                    <label for="numItems">Number
+                        of items in the build <i class="pi pi-info-circle"
+                            style="font-size: 0.8rem; margin-left: 0.2rem; color: var(--text-color-secondary);"
+                            v-tooltip.right="'How many completed items would you like your build to have. Keep in mind that the higher this number is, the slower the simulation will be.'"></i></label>
                     <InputNumber id="numItems" v-model="numItems" :min="1" :max="6" showButtons
                         buttonLayout="horizontal" incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" />
                 </div>
@@ -348,7 +351,7 @@ defineExpose({
             <div class="items-container">
                 <div class="selected-items">
                     <h3>{{ props.mode !== 'items' ? `Selected Items (${selectedItems.length}/6)` :
-                        'Items to include in the simulations' }}</h3>
+                        'Items to include in the simulation' }}</h3>
                     <div class="items-grid">
                         <div v-for="(item, index) in selectedItems" :key="index" class="item-slot">
                             <Button :label="item.name" severity="secondary" @click="removeItem(index)" />
@@ -357,7 +360,7 @@ defineExpose({
                 </div>
                 <div class="available-items">
                     <h3>{{ props.mode !== 'items' ? `Available Items` :
-                        'Items to ignore in the simulations' }}</h3>
+                        'Items to ignore in the simulation' }}</h3>
                     <div class="items-grid">
                         <div v-for="item in availableItems" :key="item.id" class="item-slot">
                             <Button :label="item.name" :disabled="(props.mode !== 'items' && selectedItems.length >= 6)"
@@ -433,9 +436,10 @@ defineExpose({
                 </div>
                 <div class="field-checkbox">
                     <Checkbox v-model="showDetailledEventHistory" :binary="true" inputId="showDetailledEventHistory" />
-                    <label for="showDetailledEventHistory"
-                        v-tooltip.bottom="'Shows in detail every step of the simulation (including when cooldowns and buffs/debuffs start and end).'">Show
-                        detailled Event History</label>
+                    <label for="showDetailledEventHistory">Show
+                        detailled Event History <i class="pi pi-info-circle"
+                            style="font-size: 0.8rem; margin-left: 0.2rem; color: var(--text-color-secondary);"
+                            v-tooltip.right="'Shows in detail every step of the simulation (including when cooldowns and buffs/debuffs start and end).'"></i></label>
                 </div>
             </div>
         </TabPanel>

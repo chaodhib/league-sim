@@ -19,12 +19,12 @@ const simulationModes = [
   {
     name: 'Item Optimizer',
     code: 'items',
-    tooltip: 'Find the best item combinations for maximum damage'
+    tooltip: 'Find the best item builds for maximum damage'
   },
   {
     name: 'Combo Optimizer',
     code: 'combo',
-    tooltip: 'Find the most effective ability sequence'
+    tooltip: 'Find the most effective ability sequence to kill the target as quickly as possible'
   },
   {
     name: 'Single Simulation',
@@ -109,12 +109,16 @@ watch(() => selectedMode.value, () => {
           </div>
         </div>
         <div class="field mb-4">
-          <label for="mode" class="block mb-2"
-            v-tooltip.right="'Item Optimizer: The user needs to input the ability sequence. The sim tests every item combination and finds the combination with the highest damage output.\n\nCombo Optimizer: The user needs to input the item build. The sim tests every ability combination and finds the quickest ability sequence to kill the target.\n\nSingle Simulation: Test a specific item build and ability sequence.'">Simulation
-            Mode:</label>
+          <label for="mode" class="block mb-2">
+            <span>
+              Simulation Mode <i class="pi pi-info-circle"
+                style="font-size: 0.8rem; margin-left: 0.2rem; color: var(--text-color-secondary);"
+                v-tooltip.right="'Item Optimizer: The user needs to input the ability sequence. The sim tests every item combination and finds the combination with the highest damage output.\n\nCombo Optimizer: The user needs to input the item build. The sim tests every ability combination and finds the quickest ability sequence to kill the target.\n\nSingle Simulation: Test a specific item build and ability sequence.'"></i>
+            </span>
+          </label>
           <Dropdown id="mode" v-model="selectedMode" :options="simulationModes" optionLabel="name" class="w-full">
             <template #option="slotProps">
-              <div class="p-2" v-tooltip.right.focus="slotProps.option.tooltip">
+              <div class="p-2" v-tooltip.right="slotProps.option.tooltip">
                 {{ slotProps.option.name }}
               </div>
             </template>
