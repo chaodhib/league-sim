@@ -305,12 +305,10 @@ fn optimize_items(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
         .as_str());
     });
 
-    let results: Vec<TopResult> = sort_best_builds(
-        static_data,
-        best_builds.into_iter().collect_vec(),
-        input.general.top_result_number as usize,
-        input.general.sort_criteria,
-    );
+    let results: Vec<TopResult> = sort_best_builds(best_builds, input.general.sort_criteria)
+        .take(input.general.top_result_number as usize)
+        .map(|build| map_to_top_result(build, &static_data))
+        .collect_vec();
 
     results
 }
@@ -411,19 +409,22 @@ fn optimize_combo(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopRe
         &mut max_time_ms,
     );
 
-    let results: Vec<TopResult> = sort_best_builds(
-        static_data,
-        best_builds,
-        input.general.top_result_number as usize,
-        input.general.sort_criteria,
-    );
+    let results: Vec<Build> = sort_best_builds(best_builds, "time_asc".to_string()).collect_vec();
+
     let mut filtered_results = results.clone();
     let first_result = results.get(0);
     if first_result.is_some() {
-        filtered_results.retain(|result| result.time_ms == first_result.unwrap().time_ms);
+        filtered_results.retain(|result| {
+            result.time_ms == first_result.unwrap().time_ms
+                && result.selected_commands.len() == first_result.unwrap().selected_commands.len()
+        });
     }
 
     filtered_results
+        .into_iter()
+        .map(|build| map_to_top_result(build, &static_data))
+        .unique_by(|result| result.selected_commands.to_owned())
+        .collect_vec()
 }
 
 fn test_next_possibilities(
@@ -561,20 +562,10 @@ fn run_single(input: SimulationInputData, runes: HashSet<Rune>) -> Vec<TopResult
         event_history,
     };
 
-    sort_best_builds(
-        static_data,
-        vec![build],
-        input.general.top_result_number as usize,
-        input.general.sort_criteria,
-    )
+    vec![map_to_top_result(build, &static_data)]
 }
 
-fn sort_best_builds(
-    static_data: data_input::StaticData,
-    best_builds: Vec<Build>,
-    top_result_number: usize,
-    sort_criteria: String,
-) -> Vec<TopResult> {
+fn sort_best_builds(best_builds: Vec<Build>, sort_criteria: String) -> std::vec::IntoIter<Build> {
     let compare_dps = |a: &Build, b: &Build| {
         let kill_ord = b.kill.partial_cmp(&a.kill).unwrap();
         if kill_ord != std::cmp::Ordering::Equal {
@@ -631,36 +622,32 @@ fn sort_best_builds(
         &_ => panic!(),
     };
 
-    let results = best_builds
-        .into_iter()
-        .sorted_by(cmp_fct)
-        .take(top_result_number)
-        .map(|build| {
-            let item_names = build
-                .item_ids
-                .iter()
-                .map(|item_id| static_data.items_map.get(item_id).unwrap().item.clone())
-                .map(|item_name| Item::to_string(item_name))
-                .collect_vec();
+    best_builds.into_iter().sorted_by(cmp_fct)
+}
 
-            let cost = build
-                .item_ids
-                .iter()
-                .map(|item_id| static_data.items_map.get(item_id).unwrap())
-                .fold(0, |acc, item| acc + item.total_cost);
-
-            TopResult {
-                damage: build.damage,
-                dps: build.dps,
-                item_names,
-                cost,
-                time_ms: build.time_ms,
-                selected_commands: build.selected_commands,
-                kill: build.kill,
-                damage_history: build.damage_history,
-                event_history: build.event_history,
-            }
-        })
+fn map_to_top_result(build: Build, static_data: &data_input::StaticData) -> TopResult {
+    let item_names = build
+        .item_ids
+        .iter()
+        .map(|item_id| static_data.items_map.get(item_id).unwrap().item.clone())
+        .map(|item_name| Item::to_string(item_name))
         .collect_vec();
-    results
+
+    let cost = build
+        .item_ids
+        .iter()
+        .map(|item_id| static_data.items_map.get(item_id).unwrap())
+        .fold(0, |acc, item| acc + item.total_cost);
+
+    TopResult {
+        damage: build.damage,
+        dps: build.dps,
+        item_names,
+        cost,
+        time_ms: build.time_ms,
+        selected_commands: build.selected_commands,
+        kill: build.kill,
+        damage_history: build.damage_history,
+        event_history: build.event_history,
+    }
 }
