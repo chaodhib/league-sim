@@ -4,7 +4,7 @@
   "name": "Kha'Zix",
   "title": "the Voidreaver",
   "fullName": "",
-  "icon": "http://ddragon.leagueoflegends.com/cdn/15.5.1/img/champion/Khazix.png",
+  "icon": "http://ddragon.leagueoflegends.com/cdn/15.6.1/img/champion/Khazix.png",
   "resource": "MANA",
   "attackType": "MELEE",
   "adaptiveType": "PHYSICAL_DAMAGE",
@@ -224,7 +224,7 @@
         "icon": "https://cdn.communitydragon.org/latest/champion/Khazix/ability-icon/p",
         "effects": [
           {
-            "description": "Innate: Kha'Zix gains Unseen Threat whenever the enemy loses sight of him or he activates Void Assault. Unseen Threat: Kha'Zix empowers his next basic attack against an enemy champion to deal 14 : 116 (based on level) (+ 40% bonus AD) bonus magic damage and slow them by 25% for 2 seconds.",
+            "description": "Innate: Kha'Zix gains Unseen Threat whenever the enemy loses sight of him or he activates Void Assault. Unseen Threat: Kha'Zix empowers his next basic attack against an enemy champion to deal 17 : 136 (based on level) (+ 50% bonus AD) bonus magic damage and slow them by 25% for 2 seconds.",
             "leveling": []
           }
         ],
@@ -669,11 +669,11 @@
                   },
                   {
                     "values": [
-                      20,
-                      20,
-                      20,
-                      20,
-                      20
+                      40,
+                      40,
+                      40,
+                      40,
+                      40
                     ],
                     "units": [
                       "% bonus AD",
@@ -911,7 +911,7 @@
   },
   "releaseDate": "2012-09-27",
   "releasePatch": "1.0.0.148",
-  "patchLastChanged": "14.23",
+  "patchLastChanged": "25.06",
   "price": {
     "blueEssence": 2400,
     "rp": 880,

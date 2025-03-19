@@ -452,9 +452,9 @@ pub fn pull_abilities_data(
         abilities_data,
         AbilitiesExtraData {
             unseen_threat: UnseenThreat {
-                base_damage: 8.0,
-                per_level_bonus: 6.0,
-                bonus_ad_ratio: 0.4,
+                base_damage: 10.0,
+                per_level_bonus: 7.0,
+                bonus_ad_ratio: 0.5,
             },
         },
     )
